@@ -28,7 +28,7 @@ export default async function HomePage() {
             Sweet Memories
           </h1>
           <p className="text-cocoa-500 max-w-xl mx-auto text-sm sm:text-base px-2">
-            Browse through our collection of moments — every cake, every celebration.
+            🌸 欢迎欣赏我们的美丽蛋糕作品 🍰
           </p>
         </div>
 
