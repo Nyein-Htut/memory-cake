@@ -76,7 +76,7 @@ export default async function HomePage() {
       </main>
 
       <footer className="border-t border-cocoa-200/60 py-6 text-center text-xs text-cocoa-400">
-        Memory Cake &middot; {new Date().getFullYear()}
+        Memory Cake &middot; since 2023
       </footer>
     </div>
   );
