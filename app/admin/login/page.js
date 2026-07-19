@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -34,9 +35,18 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cocoa-900 px-6">
+    <div className="min-h-screen flex items-center justify-center bg-cocoa-800 px-6">
       <div className="w-full max-w-sm bg-cream rounded-2xl shadow-soft p-8">
-        <h1 className="font-serif text-2xl text-cocoa-900 text-center mb-1">
+        <div className="flex justify-center mb-4">
+          <Image
+            src="/logo.jpg"
+            alt="Memory Cake logo"
+            width={64}
+            height={64}
+            className="rounded-full object-cover"
+          />
+        </div>
+        <h1 className="font-serif font-medium text-3xl text-cocoa-900 text-center mb-1">
           Memory Cake
         </h1>
         <p className="text-cocoa-400 text-center text-sm mb-8">Admin sign in</p>

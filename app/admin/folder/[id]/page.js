@@ -197,7 +197,7 @@ export default function AdminFolderPage({ params }) {
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl text-cocoa-900">{folder.name}</h1>
+                <h1 className="font-serif font-medium text-3xl text-cocoa-900">{folder.name}</h1>
                 {folder.description && (
                   <p className="text-cocoa-500 mt-1">{folder.description}</p>
                 )}

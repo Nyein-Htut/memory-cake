@@ -1,19 +1,20 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  background-color: #fbf8f4;
-  color: #2a1a12;
+  background-color: #fbf6ee;
+  color: #3f2f24;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 .font-serif {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
 }
 
 ::selection {
-  background-color: #ddc3ae;
-  color: #2a1a12;
+  background-color: #e8d1b8;
+  color: #3f2f24;
 }

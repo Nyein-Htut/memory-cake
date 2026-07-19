@@ -26,7 +26,7 @@ export default async function HomePage() {
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-14">
         <div className="mb-12 text-center">
-          <h1 className="font-serif text-4xl md:text-5xl text-cocoa-900 mb-3">
+          <h1 className="font-serif font-semibold text-4xl md:text-5xl text-cocoa-900 mb-3">
             Sweet Memories, Beautifully Kept
           </h1>
           <p className="text-cocoa-500 max-w-xl mx-auto">

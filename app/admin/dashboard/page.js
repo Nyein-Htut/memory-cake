@@ -74,7 +74,7 @@ export default function AdminDashboardPage() {
       <AdminHeader />
 
       <main className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="font-serif text-3xl text-cocoa-900 mb-6">Your Albums</h1>
+        <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-6">Your Albums</h1>
 
         <form onSubmit={handleCreate} className="flex gap-3 mb-10">
           <input
