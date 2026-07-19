@@ -6,6 +6,8 @@ import PublicHeader from "@/components/PublicHeader";
 export const dynamic = "force-dynamic";
 
 async function getFolders() {
+  console.log("=== getFolders() called ===");
+
   const folders = await sql`
     SELECT f.id, f.name, f.description, f.cover_url,
            COUNT(p.id)::int AS photo_count
@@ -14,12 +16,17 @@ async function getFolders() {
     GROUP BY f.id
     ORDER BY f.created_at DESC
   `;
+
+  console.log("Folders:", folders);
+  console.log("Length:", folders.length);
+
   return folders;
 }
 
 export default async function HomePage() {
   const folders = await getFolders();
-
+  console.log("Rendering with", folders.length, "folders");
+  
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader />
