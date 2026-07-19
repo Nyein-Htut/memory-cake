@@ -1,0 +1,85 @@
+import Link from "next/link";
+import Image from "next/image";
+import { sql } from "@/lib/db";
+import PublicHeader from "@/components/PublicHeader";
+
+export const dynamic = "force-dynamic";
+
+async function getFolders() {
+  const folders = await sql`
+    SELECT f.id, f.name, f.description, f.cover_url,
+           COUNT(p.id)::int AS photo_count
+    FROM folders f
+    LEFT JOIN photos p ON p.folder_id = f.id
+    GROUP BY f.id
+    ORDER BY f.created_at DESC
+  `;
+  return folders;
+}
+
+export default async function HomePage() {
+  const folders = await getFolders();
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <PublicHeader />
+
+      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-14">
+        <div className="mb-12 text-center">
+          <h1 className="font-serif text-4xl md:text-5xl text-cocoa-900 mb-3">
+            Sweet Memories, Beautifully Kept
+          </h1>
+          <p className="text-cocoa-500 max-w-xl mx-auto">
+            Browse through our collection of moments — every cake, every celebration.
+          </p>
+        </div>
+
+        {folders.length === 0 ? (
+          <div className="text-center py-24 text-cocoa-400">
+            <p className="font-serif text-xl">No albums yet.</p>
+            <p className="text-sm mt-2">Check back soon — new memories are on the way.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {folders.map((folder) => (
+              <Link
+                key={folder.id}
+                href={`/folder/${folder.id}`}
+                className="group block rounded-2xl overflow-hidden bg-white shadow-card hover:shadow-soft transition-shadow duration-300 border border-cocoa-100"
+              >
+                <div className="relative aspect-[4/3] bg-cocoa-100">
+                  {folder.cover_url ? (
+                    <Image
+                      src={folder.cover_url}
+                      alt={folder.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-cocoa-300">
+                      <span className="font-serif text-lg">No photos yet</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-cocoa-900/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h2 className="font-serif text-white text-xl drop-shadow-sm">
+                      {folder.name}
+                    </h2>
+                    <p className="text-cream/80 text-xs mt-1">
+                      {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <footer className="border-t border-cocoa-200/60 py-6 text-center text-xs text-cocoa-400">
+        Memory Cake &middot; {new Date().getFullYear()}
+      </footer>
+    </div>
+  );
+}
