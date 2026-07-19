@@ -30,7 +30,7 @@ export default async function FolderPage({ params }) {
     <div className="min-h-screen flex flex-col">
       <PublicHeader />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-10">
         <Link
           href="/"
           className="text-sm text-cocoa-400 hover:text-cocoa-700 transition-colors"
@@ -38,12 +38,12 @@ export default async function FolderPage({ params }) {
           &larr; All albums
         </Link>
 
-        <div className="mt-4 mb-10">
-          <h1 className="font-serif text-3xl md:text-4xl text-cocoa-900">
+        <div className="mt-4 mb-6 sm:mb-10">
+          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-cocoa-900">
             {folder.name}
           </h1>
           {folder.description && (
-            <p className="text-cocoa-500 mt-2 max-w-2xl">{folder.description}</p>
+            <p className="text-cocoa-500 mt-2 max-w-2xl text-sm sm:text-base">{folder.description}</p>
           )}
           <p className="text-cocoa-400 text-xs mt-2 uppercase tracking-wide">
             {photos.length} photo{photos.length === 1 ? "" : "s"}
@@ -51,8 +51,8 @@ export default async function FolderPage({ params }) {
         </div>
 
         {photos.length === 0 ? (
-          <div className="text-center py-24 text-cocoa-400">
-            <p className="font-serif text-xl">No photos in this album yet.</p>
+          <div className="text-center py-16 sm:py-24 text-cocoa-400">
+            <p className="font-serif text-lg sm:text-xl">No photos in this album yet.</p>
           </div>
         ) : (
           <PhotoGallery photos={photos} />
