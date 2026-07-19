@@ -59,6 +59,8 @@ export default function AdminFolderPage({ params }) {
     setUploading(true);
     setError("");
 
+    let failedCount = 0;
+
     try {
       // Get one signature; it's valid for a short window so we reuse it
       // for all files in this batch.
@@ -76,39 +78,64 @@ export default function AdminFolderPage({ params }) {
         const file = files[i];
         setUploadProgress(`Uploading ${i + 1} of ${files.length}...`);
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("api_key", apiKey);
-        formData.append("timestamp", timestamp);
-        formData.append("signature", signature);
-        formData.append("folder", cloudFolder);
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("api_key", apiKey);
+          formData.append("timestamp", timestamp);
+          formData.append("signature", signature);
+          formData.append("folder", cloudFolder);
 
-        const uploadRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-          { method: "POST", body: formData }
-        );
+          const uploadRes = await fetch(
+            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+            { method: "POST", body: formData }
+          );
 
-        if (!uploadRes.ok) {
-          const errData = await uploadRes.json().catch(() => ({}));
-          throw new Error(errData.error?.message || `Upload failed for ${file.name}`);
+          if (!uploadRes.ok) {
+            const errData = await uploadRes.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `Cloudinary upload failed for ${file.name}`);
+          }
+
+          const uploaded = await uploadRes.json();
+
+          // THIS is the step that was silently failing before: saving the
+          // uploaded photo's URL into our own database. If this request
+          // fails, the image sits in Cloudinary but never appears on the
+          // site, because the site reads from the database, not Cloudinary.
+          const saveRes = await fetch("/api/photos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              folderId,
+              url: uploaded.secure_url,
+              publicId: uploaded.public_id,
+              width: uploaded.width,
+              height: uploaded.height,
+            }),
+          });
+
+          if (!saveRes.ok) {
+            const errData = await saveRes.json().catch(() => ({}));
+            throw new Error(
+              errData.error || `Uploaded ${file.name} to Cloudinary, but could not save it to the album (server error).`
+            );
+          }
+        } catch (fileErr) {
+          failedCount += 1;
+          setError((prev) =>
+            prev
+              ? `${prev} | ${fileErr.message}`
+              : fileErr.message || "Something went wrong while uploading"
+          );
+          // Continue to the next file instead of stopping the whole batch.
         }
-
-        const uploaded = await uploadRes.json();
-
-        await fetch("/api/photos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            folderId,
-            url: uploaded.secure_url,
-            publicId: uploaded.public_id,
-            width: uploaded.width,
-            height: uploaded.height,
-          }),
-        });
       }
 
       await loadData();
+
+      if (failedCount === 0) {
+        setError("");
+      }
     } catch (err) {
       setError(err.message || "Something went wrong while uploading");
     } finally {
@@ -119,18 +146,26 @@ export default function AdminFolderPage({ params }) {
   }
 
   async function handleSaveCaption(photoId) {
-    await fetch(`/api/photos/${photoId}`, {
+    const res = await fetch(`/api/photos/${photoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caption: captionDraft }),
     });
+    if (!res.ok) {
+      setError("Could not save caption. Try again.");
+      return;
+    }
     setEditingCaptionId(null);
     loadData();
   }
 
   async function handleDeletePhoto(photoId) {
     if (!confirm("Delete this photo? This cannot be undone.")) return;
-    await fetch(`/api/photos/${photoId}`, { method: "DELETE" });
+    const res = await fetch(`/api/photos/${photoId}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("Could not delete photo. Try again.");
+      return;
+    }
     loadData();
   }
 
@@ -138,7 +173,7 @@ export default function AdminFolderPage({ params }) {
     return (
       <div className="min-h-screen bg-cream">
         <AdminHeader />
-        <p className="max-w-5xl mx-auto px-6 py-10 text-cocoa-400">Loading...</p>
+        <p className="max-w-5xl mx-auto px-4 sm:px-6 py-10 text-cocoa-400">Loading...</p>
       </div>
     );
   }
@@ -147,7 +182,7 @@ export default function AdminFolderPage({ params }) {
     return (
       <div className="min-h-screen bg-cream">
         <AdminHeader />
-        <p className="max-w-5xl mx-auto px-6 py-10 text-cocoa-400">Folder not found.</p>
+        <p className="max-w-5xl mx-auto px-4 sm:px-6 py-10 text-cocoa-400">Folder not found.</p>
       </div>
     );
   }
@@ -156,7 +191,7 @@ export default function AdminFolderPage({ params }) {
     <div className="min-h-screen bg-cream">
       <AdminHeader />
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <Link
           href="/admin/dashboard"
           className="text-sm text-cocoa-400 hover:text-cocoa-700 transition-colors"
@@ -164,13 +199,13 @@ export default function AdminFolderPage({ params }) {
           &larr; All albums
         </Link>
 
-        <div className="mt-4 mb-8">
+        <div className="mt-4 mb-6 sm:mb-8">
           {editingName ? (
             <div className="space-y-2 max-w-lg">
               <input
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
-                className="w-full rounded-lg border border-cocoa-200 px-3 py-2 font-serif text-xl focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                className="w-full rounded-lg border border-cocoa-200 px-3 py-2.5 font-serif text-lg sm:text-xl focus:outline-none focus:ring-2 focus:ring-cocoa-500"
               />
               <textarea
                 value={descDraft}
@@ -182,13 +217,13 @@ export default function AdminFolderPage({ params }) {
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveFolderInfo}
-                  className="rounded-lg bg-cocoa-800 text-cream px-4 py-1.5 text-sm font-medium hover:bg-cocoa-900"
+                  className="rounded-lg bg-cocoa-800 text-cream px-4 py-2 text-sm font-medium hover:bg-cocoa-900"
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setEditingName(false)}
-                  className="text-sm text-cocoa-400"
+                  className="text-sm text-cocoa-400 px-2"
                 >
                   Cancel
                 </button>
@@ -196,15 +231,15 @@ export default function AdminFolderPage({ params }) {
             </div>
           ) : (
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="font-serif font-medium text-3xl text-cocoa-900">{folder.name}</h1>
+              <div className="min-w-0">
+                <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 truncate">{folder.name}</h1>
                 {folder.description && (
-                  <p className="text-cocoa-500 mt-1">{folder.description}</p>
+                  <p className="text-cocoa-500 mt-1 text-sm sm:text-base">{folder.description}</p>
                 )}
               </div>
               <button
                 onClick={() => setEditingName(true)}
-                className="text-sm text-cocoa-500 hover:text-cocoa-800 whitespace-nowrap"
+                className="text-sm text-cocoa-500 hover:text-cocoa-800 whitespace-nowrap shrink-0"
               >
                 Edit info
               </button>
@@ -212,7 +247,7 @@ export default function AdminFolderPage({ params }) {
           )}
         </div>
 
-        <div className="mb-10 border-2 border-dashed border-cocoa-200 rounded-2xl p-8 text-center bg-white">
+        <div className="mb-8 sm:mb-10 border-2 border-dashed border-cocoa-200 rounded-2xl p-5 sm:p-8 text-center bg-white">
           <input
             ref={fileInputRef}
             type="file"
@@ -225,7 +260,7 @@ export default function AdminFolderPage({ params }) {
           />
           <label
             htmlFor="photo-upload"
-            className={`inline-block rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 font-medium cursor-pointer hover:bg-cocoa-900 transition-colors ${
+            className={`inline-flex items-center justify-center min-h-[48px] rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium cursor-pointer hover:bg-cocoa-900 transition-colors ${
               uploading ? "opacity-60 pointer-events-none" : ""
             }`}
           >
@@ -234,13 +269,15 @@ export default function AdminFolderPage({ params }) {
           <p className="text-xs text-cocoa-400 mt-2">
             You can select multiple photos at once.
           </p>
-          {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-600 mt-3 whitespace-pre-wrap break-words">{error}</p>
+          )}
         </div>
 
         {photos.length === 0 ? (
           <p className="text-cocoa-400">No photos in this album yet.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {photos.map((photo) => (
               <div
                 key={photo.id}
@@ -251,7 +288,7 @@ export default function AdminFolderPage({ params }) {
                     src={photo.url}
                     alt={photo.caption || "photo"}
                     fill
-                    sizes="25vw"
+                    sizes="(max-width: 640px) 50vw, 25vw"
                     className="object-cover"
                   />
                 </div>
@@ -263,18 +300,18 @@ export default function AdminFolderPage({ params }) {
                         value={captionDraft}
                         onChange={(e) => setCaptionDraft(e.target.value)}
                         placeholder="Caption (optional)"
-                        className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                        className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                       />
-                      <div className="flex gap-2 text-xs">
+                      <div className="flex gap-3 text-xs">
                         <button
                           onClick={() => handleSaveCaption(photo.id)}
-                          className="text-cocoa-700 font-medium"
+                          className="text-cocoa-700 font-medium py-1"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setEditingCaptionId(null)}
-                          className="text-cocoa-400"
+                          className="text-cocoa-400 py-1"
                         >
                           Cancel
                         </button>
@@ -285,19 +322,19 @@ export default function AdminFolderPage({ params }) {
                       <p className="text-xs text-cocoa-500 truncate">
                         {photo.caption || "No caption"}
                       </p>
-                      <div className="flex gap-2 text-xs shrink-0">
+                      <div className="flex gap-3 text-xs shrink-0">
                         <button
                           onClick={() => {
                             setEditingCaptionId(photo.id);
                             setCaptionDraft(photo.caption || "");
                           }}
-                          className="text-cocoa-500 hover:text-cocoa-800"
+                          className="text-cocoa-500 hover:text-cocoa-800 py-1"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeletePhoto(photo.id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 py-1"
                         >
                           Delete
                         </button>
