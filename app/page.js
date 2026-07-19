@@ -25,7 +25,7 @@ export default async function HomePage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-14">
         <div className="mb-8 sm:mb-12 text-center">
           <h1 className="font-serif font-semibold text-3xl sm:text-4xl md:text-5xl text-cocoa-900 mb-2 sm:mb-3">
-            Sweet Memories, Beautifully Kept
+            Sweet Memories
           </h1>
           <p className="text-cocoa-500 max-w-xl mx-auto text-sm sm:text-base px-2">
             Browse through our collection of moments — every cake, every celebration.
