@@ -6,21 +6,12 @@ import PublicHeader from "@/components/PublicHeader";
 export const dynamic = "force-dynamic";
 
 async function getFolders() {
-  console.log("=== getFolders() called ===");
+  const res = await fetch("https://memory-cake.vercel.app/api/folders", {
+    cache: "no-store",
+  });
 
-  const folders = await sql`
-    SELECT f.id, f.name, f.description, f.cover_url,
-           COUNT(p.id)::int AS photo_count
-    FROM folders f
-    LEFT JOIN photos p ON p.folder_id = f.id
-    GROUP BY f.id
-    ORDER BY f.created_at DESC
-  `;
-
-  console.log("Folders:", folders);
-  console.log("Length:", folders.length);
-
-  return folders;
+  const data = await res.json();
+  return data.folders;
 }
 
 export default async function HomePage() {
