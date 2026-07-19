@@ -76,22 +76,47 @@ export default function AdminDashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-6">Your Albums</h1>
 
-        <form onSubmit={handleCreate} className="flex gap-3 mb-10">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="New folder name"
-            className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-          />
-          <button
-            type="submit"
-            disabled={creating}
-            className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 whitespace-nowrap"
-          >
-            {creating ? "Creating..." : "+ New Folder"}
-          </button>
-        </form>
+        <form
+  onSubmit={handleCreate}
+  className="flex flex-col sm:flex-row gap-3 mb-10"
+>
+  <input
+    type="text"
+    value={newName}
+    onChange={(e) => setNewName(e.target.value)}
+    placeholder="New folder name"
+    className="
+      flex-1 
+      rounded-lg 
+      border border-cocoa-200 
+      bg-white 
+      px-4 py-3
+      text-cocoa-900
+      focus:outline-none 
+      focus:ring-2 
+      focus:ring-cocoa-500
+    "
+  />
+
+  <button
+    type="submit"
+    disabled={creating}
+    className="
+      w-full sm:w-auto
+      rounded-lg 
+      bg-cocoa-800 
+      text-cream 
+      px-5 py-3
+      font-medium
+      hover:bg-cocoa-900
+      transition-colors
+      disabled:opacity-60
+      whitespace-nowrap
+    "
+  >
+    {creating ? "Creating..." : "+ New Folder"}
+  </button>
+</form>
         {error && <p className="text-sm text-red-600 -mt-8 mb-8">{error}</p>}
 
         {loading ? (
