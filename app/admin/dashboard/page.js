@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="New folder name, e.g. Sarah's Birthday Cake"
+            placeholder="New folder name"
             className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
           />
           <button
