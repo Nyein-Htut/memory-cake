@@ -3,16 +3,36 @@ import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
 import cloudinary from "@/lib/cloudinary";
 
+// Now supports ?limit=&offset= so the admin folder page can page through
+// photos instead of loading the entire album at once.
 export async function GET(request, { params }) {
   const id = Number(params.id);
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(Number(searchParams.get("limit")) || 30, 100);
+  const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
+
   const folders = await sql`SELECT * FROM folders WHERE id = ${id}`;
   if (folders.length === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
   const photos = await sql`
-    SELECT * FROM photos WHERE folder_id = ${id} ORDER BY created_at ASC
+    SELECT * FROM photos WHERE folder_id = ${id}
+    ORDER BY created_at ASC
+    LIMIT ${limit} OFFSET ${offset}
   `;
-  return NextResponse.json({ folder: folders[0], photos });
+
+  const totalRows = await sql`
+    SELECT COUNT(*)::int AS count FROM photos WHERE folder_id = ${id}
+  `;
+  const total = totalRows[0].count;
+
+  return NextResponse.json({
+    folder: folders[0],
+    photos,
+    total,
+    hasMore: offset + photos.length < total,
+  });
 }
 
 export async function PATCH(request, { params }) {
