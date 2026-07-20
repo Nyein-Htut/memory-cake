@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { sql } from "@/lib/db";
 import PublicHeader from "@/components/PublicHeader";
 import { cldThumb } from "@/lib/cloudinary-url";
 
@@ -24,7 +23,7 @@ export default async function HomePage() {
   const folders = await getFolders();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#D8D0C7]">
       <PublicHeader />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-14">
@@ -32,6 +31,7 @@ export default async function HomePage() {
           <h1 className="font-serif font-semibold text-3xl sm:text-4xl md:text-5xl text-cocoa-900 mb-2 sm:mb-3">
             Sweet Memories
           </h1>
+
           <p className="text-cocoa-500 max-w-xl mx-auto text-lg sm:text-xl md:text-2xl px-2">
             🌸 欢迎欣赏我们的蛋糕作品 🍰
           </p>
@@ -39,8 +39,12 @@ export default async function HomePage() {
 
         {folders.length === 0 ? (
           <div className="text-center py-16 sm:py-24 text-cocoa-400">
-            <p className="font-serif text-lg sm:text-xl">No albums yet.</p>
-            <p className="text-sm mt-2">Check back soon — new memories are on the way.</p>
+            <p className="font-serif text-lg sm:text-xl">
+              No albums yet.
+            </p>
+            <p className="text-sm mt-2">
+              Check back soon — new memories are on the way.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
@@ -48,7 +52,7 @@ export default async function HomePage() {
               <Link
                 key={folder.id}
                 href={`/folder/${folder.id}`}
-                className="group block rounded-2xl overflow-hidden bg-white shadow-card hover:shadow-soft transition-shadow duration-300 border border-cocoa-100"
+                className="group block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="relative aspect-[4/3] bg-cocoa-100">
                   {folder.cover_url ? (
@@ -61,16 +65,22 @@ export default async function HomePage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-cocoa-300">
-                      <span className="font-serif text-lg">No photos yet</span>
+                      <span className="font-serif text-lg">
+                        No photos yet
+                      </span>
                     </div>
                   )}
+
                   <div className="absolute inset-0 bg-gradient-to-t from-cocoa-900/60 via-transparent to-transparent" />
+
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <h2 className="font-serif text-white text-lg sm:text-xl drop-shadow-sm">
                       {folder.name}
                     </h2>
+
                     <p className="text-cream/80 text-xs mt-1">
-                      {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
+                      {folder.photo_count} photo
+                      {folder.photo_count === 1 ? "" : "s"}
                     </p>
                   </div>
                 </div>
@@ -80,7 +90,7 @@ export default async function HomePage() {
         )}
       </main>
 
-      <footer className="border-t border-cocoa-200/60 py-6 text-center text-xs text-cocoa-400">
+      <footer className="border-t border-cocoa-200/60 py-6 text-center text-xs text-cocoa-500">
         Memory Cake &middot; since 2023
       </footer>
     </div>
