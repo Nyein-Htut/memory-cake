@@ -8,18 +8,18 @@ export const dynamic = "force-dynamic";
 
 async function getFolders() {
   const res = await fetch(
-    "https://memory-cake.vercel.app/api/folders",
+    `${process.env.NEXT_PUBLIC_SITE_URL}/api/folders`,
     {
       cache: "no-store",
     }
   );
 
+  if (!res.ok) return [];
+
   const data = await res.json();
-
-  console.log(data);
-
   return data.folders;
 }
+
 export default async function HomePage() {
   const folders = await getFolders();
 
