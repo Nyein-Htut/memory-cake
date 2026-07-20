@@ -43,7 +43,7 @@ export default async function HomePage() {
             <p className="text-sm mt-2">Check back soon — new memories are on the way.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {folders.map((folder) => (
               <Link
                 key={folder.id}
