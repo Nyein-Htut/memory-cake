@@ -4,6 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AdminHeader from "@/components/AdminHeader";
+import { cldThumb } from "@/lib/cloudinary-url";
+
+const PAGE_SIZE = 30;
 
 export default function AdminFolderPage({ params }) {
   const folderId = Number(params.id);
@@ -11,6 +14,9 @@ export default function AdminFolderPage({ params }) {
 
   const [folder, setFolder] = useState(null);
   const [photos, setPhotos] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
@@ -23,17 +29,37 @@ export default function AdminFolderPage({ params }) {
   const [editingCaptionId, setEditingCaptionId] = useState(null);
   const [captionDraft, setCaptionDraft] = useState("");
 
+  // Loads (or reloads) the first page of photos. Used on mount, after
+  // creating/renaming, and after upload/delete so page 1 stays accurate.
   async function loadData() {
     setLoading(true);
-    const res = await fetch(`/api/folders/${folderId}`);
+    const res = await fetch(`/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`);
     if (res.ok) {
       const data = await res.json();
       setFolder(data.folder);
       setPhotos(data.photos || []);
+      setTotal(data.total || 0);
+      setHasMore(data.hasMore || false);
       setNameDraft(data.folder.name);
       setDescDraft(data.folder.description || "");
     }
     setLoading(false);
+  }
+
+  // Fetches the next page and appends it, instead of reloading everything.
+  async function loadMorePhotos() {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const res = await fetch(
+      `/api/folders/${folderId}/photos?limit=${PAGE_SIZE}&offset=${photos.length}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setPhotos((prev) => [...prev, ...data.photos]);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+    }
+    setLoadingMore(false);
   }
 
   useEffect(() => {
@@ -71,8 +97,14 @@ export default function AdminFolderPage({ params }) {
       });
 
       if (!signRes.ok) throw new Error("Could not get upload permission");
-      const { timestamp, signature, apiKey, cloudName, folder: cloudFolder } =
-        await signRes.json();
+      const {
+        timestamp,
+        signature,
+        apiKey,
+        cloudName,
+        folder: cloudFolder,
+        transformation,
+      } = await signRes.json();
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -85,6 +117,10 @@ export default function AdminFolderPage({ params }) {
           formData.append("timestamp", timestamp);
           formData.append("signature", signature);
           formData.append("folder", cloudFolder);
+          // Must match exactly what was signed in /api/upload-sign, or
+          // Cloudinary will reject the signature. This is what shrinks the
+          // stored original (see lib upload-sign route for details).
+          formData.append("transformation", transformation);
 
           const uploadRes = await fetch(
             `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -277,74 +313,88 @@ export default function AdminFolderPage({ params }) {
         {photos.length === 0 ? (
           <p className="text-cocoa-400">No photos in this album yet.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {photos.map((photo) => (
-              <div
-                key={photo.id}
-                className="rounded-xl overflow-hidden bg-white border border-cocoa-100 shadow-card"
-              >
-                <div className="relative aspect-square bg-cocoa-100">
-                  <Image
-                    src={photo.url}
-                    alt={photo.caption || "photo"}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-2.5">
-                  {editingCaptionId === photo.id ? (
-                    <div className="space-y-1.5">
-                      <input
-                        autoFocus
-                        value={captionDraft}
-                        onChange={(e) => setCaptionDraft(e.target.value)}
-                        placeholder="Caption (optional)"
-                        className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                      />
-                      <div className="flex gap-3 text-xs">
-                        <button
-                          onClick={() => handleSaveCaption(photo.id)}
-                          className="text-cocoa-700 font-medium py-1"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingCaptionId(null)}
-                          className="text-cocoa-400 py-1"
-                        >
-                          Cancel
-                        </button>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              {photos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="rounded-xl overflow-hidden bg-white border border-cocoa-100 shadow-card"
+                >
+                  <div className="relative aspect-square bg-cocoa-100">
+                    <Image
+                      src={cldThumb(photo.url, 400)}
+                      alt={photo.caption || "photo"}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-2.5">
+                    {editingCaptionId === photo.id ? (
+                      <div className="space-y-1.5">
+                        <input
+                          autoFocus
+                          value={captionDraft}
+                          onChange={(e) => setCaptionDraft(e.target.value)}
+                          placeholder="Caption (optional)"
+                          className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                        />
+                        <div className="flex gap-3 text-xs">
+                          <button
+                            onClick={() => handleSaveCaption(photo.id)}
+                            className="text-cocoa-700 font-medium py-1"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingCaptionId(null)}
+                            className="text-cocoa-400 py-1"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs text-cocoa-500 truncate">
-                        {photo.caption || "No caption"}
-                      </p>
-                      <div className="flex gap-3 text-xs shrink-0">
-                        <button
-                          onClick={() => {
-                            setEditingCaptionId(photo.id);
-                            setCaptionDraft(photo.caption || "");
-                          }}
-                          className="text-cocoa-500 hover:text-cocoa-800 py-1"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeletePhoto(photo.id)}
-                          className="text-red-500 hover:text-red-700 py-1"
-                        >
-                          Delete
-                        </button>
+                    ) : (
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs text-cocoa-500 truncate">
+                          {photo.caption || "No caption"}
+                        </p>
+                        <div className="flex gap-3 text-xs shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingCaptionId(photo.id);
+                              setCaptionDraft(photo.caption || "");
+                            }}
+                            className="text-cocoa-500 hover:text-cocoa-800 py-1"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            className="text-red-500 hover:text-red-700 py-1"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={loadMorePhotos}
+                  disabled={loadingMore}
+                  className="rounded-lg border border-cocoa-300 text-cocoa-700 px-5 py-2 text-sm font-medium hover:bg-cocoa-50 disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading..." : `Load more (${photos.length} of ${total})`}
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
     </div>
