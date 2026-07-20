@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
         ) : folders.length === 0 ? (
           <p className="text-cocoa-400">No folders yet. Create your first one above.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {folders.map((folder) => (
               <div
                 key={folder.id}
