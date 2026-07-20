@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AdminHeader from "@/components/AdminHeader";
+import { cldThumb } from "@/lib/cloudinary-url";
 
 export default function AdminDashboardPage() {
   const [folders, setFolders] = useState([]);
@@ -134,7 +135,7 @@ export default function AdminDashboardPage() {
                   <div className="relative aspect-[4/3] bg-cocoa-100">
                     {folder.cover_url ? (
                       <Image
-                        src={folder.cover_url}
+                        src={cldThumb(folder.cover_url, 500)}
                         alt={folder.name}
                         fill
                         sizes="33vw"
