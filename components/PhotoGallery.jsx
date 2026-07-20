@@ -2,10 +2,46 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
+import { cldThumb, cldFull } from "@/lib/cloudinary-url";
 
-export default function PhotoGallery({ photos }) {
+export default function PhotoGallery({ folderId, initialPhotos, total, pageSize = 24 }) {
+  const [photos, setPhotos] = useState(initialPhotos);
   const [activeIndex, setActiveIndex] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const touchStartX = useRef(null);
+  const sentinelRef = useRef(null);
+
+  const hasMore = photos.length < total;
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/folders/${folderId}/photos?limit=${pageSize}&offset=${photos.length}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setPhotos((prev) => [...prev, ...data.photos]);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [folderId, photos.length, pageSize, loadingMore, hasMore]);
+
+  // Infinite scroll: watch a sentinel div near the bottom of the grid and
+  // fetch the next page automatically when it scrolls into view.
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "600px" } // start loading before the user hits bottom
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [loadMore, hasMore]);
 
   const close = useCallback(() => setActiveIndex(null), []);
   const showPrev = useCallback(
@@ -55,7 +91,7 @@ export default function PhotoGallery({ photos }) {
             className="relative aspect-square rounded-lg sm:rounded-xl overflow-hidden bg-cocoa-100 group focus:outline-none focus:ring-2 focus:ring-cocoa-500"
           >
             <Image
-              src={photo.url}
+              src={cldThumb(photo.url, 400)}
               alt={photo.caption || "Memory Cake photo"}
               fill
               sizes="(max-width: 640px) 50vw, 25vw"
@@ -64,6 +100,12 @@ export default function PhotoGallery({ photos }) {
           </button>
         ))}
       </div>
+
+      {hasMore && (
+        <div ref={sentinelRef} className="py-8 text-center text-cocoa-300 text-xs">
+          {loadingMore ? "Loading more photos..." : ""}
+        </div>
+      )}
 
       {activeIndex !== null && (
         <div
@@ -99,7 +141,7 @@ export default function PhotoGallery({ photos }) {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={photos[activeIndex].url}
+              src={cldFull(photos[activeIndex].url, 1600)}
               alt={photos[activeIndex].caption || "Memory Cake photo"}
               fill
               sizes="100vw"
