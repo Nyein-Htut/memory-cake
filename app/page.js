@@ -7,20 +7,19 @@ import { cldThumb } from "@/lib/cloudinary-url";
 export const dynamic = "force-dynamic";
 
 async function getFolders() {
-  // Queries the database directly instead of fetching a hardcoded absolute
-  // URL. The old version pointed at https://memory-cake.vercel.app, which
-  // silently breaks in local dev and preview deployments.
-  const folders = await sql`
-    SELECT f.id, f.name, f.description, f.cover_url, f.created_at,
-           COUNT(p.id)::int AS photo_count
-    FROM folders f
-    LEFT JOIN photos p ON p.folder_id = f.id
-    GROUP BY f.id
-    ORDER BY f.created_at DESC
-  `;
-  return folders;
-}
+  const res = await fetch(
+    "https://memory-cake.vercel.app/api/folders",
+    {
+      cache: "no-store",
+    }
+  );
 
+  const data = await res.json();
+
+  console.log(data);
+
+  return data.folders;
+}
 export default async function HomePage() {
   const folders = await getFolders();
 
