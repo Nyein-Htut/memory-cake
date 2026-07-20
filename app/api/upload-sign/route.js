@@ -15,9 +15,16 @@ export async function POST(request) {
   const timestamp = Math.round(Date.now() / 1000);
   const cloudinaryFolder = `memory-cake/${folderId || "misc"}`;
 
+  // Applied to the file as it's stored in Cloudinary (not just on delivery).
+  // Caps the original at 2500px wide and lets Cloudinary auto-pick a good
+  // quality level — an 8MB phone photo typically comes out a few hundred KB,
+  // and every thumbnail/derived version generated from it is smaller too.
+  const transformation = "c_limit,w_2500,q_auto:good";
+
   const paramsToSign = {
     timestamp,
     folder: cloudinaryFolder,
+    transformation,
   };
 
   const signature = cloudinary.utils.api_sign_request(
@@ -31,5 +38,6 @@ export async function POST(request) {
     apiKey: process.env.CLOUDINARY_API_KEY,
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     folder: cloudinaryFolder,
+    transformation,
   });
 }
