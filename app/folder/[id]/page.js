@@ -6,15 +6,23 @@ import PhotoGallery from "@/components/PhotoGallery";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 24;
+
 async function getFolder(id) {
   const rows = await sql`SELECT * FROM folders WHERE id = ${id}`;
   return rows[0] || null;
 }
 
-async function getPhotos(id) {
-  return await sql`
-    SELECT * FROM photos WHERE folder_id = ${id} ORDER BY created_at ASC
+async function getFirstPagePhotos(id) {
+  const photos = await sql`
+    SELECT * FROM photos WHERE folder_id = ${id}
+    ORDER BY created_at ASC
+    LIMIT ${PAGE_SIZE}
   `;
+  const totalRows = await sql`
+    SELECT COUNT(*)::int AS count FROM photos WHERE folder_id = ${id}
+  `;
+  return { photos, total: totalRows[0].count };
 }
 
 export default async function FolderPage({ params }) {
@@ -24,7 +32,7 @@ export default async function FolderPage({ params }) {
   const folder = await getFolder(folderId);
   if (!folder) notFound();
 
-  const photos = await getPhotos(folderId);
+  const { photos, total } = await getFirstPagePhotos(folderId);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -46,16 +54,21 @@ export default async function FolderPage({ params }) {
             <p className="text-cocoa-500 mt-2 max-w-2xl text-sm sm:text-base">{folder.description}</p>
           )}
           <p className="text-cocoa-400 text-xs mt-2 uppercase tracking-wide">
-            {photos.length} photo{photos.length === 1 ? "" : "s"}
+            {total} photo{total === 1 ? "" : "s"}
           </p>
         </div>
 
-        {photos.length === 0 ? (
+        {total === 0 ? (
           <div className="text-center py-16 sm:py-24 text-cocoa-400">
             <p className="font-serif text-lg sm:text-xl">No photos in this album yet.</p>
           </div>
         ) : (
-          <PhotoGallery photos={photos} />
+          <PhotoGallery
+            folderId={folderId}
+            initialPhotos={photos}
+            total={total}
+            pageSize={PAGE_SIZE}
+          />
         )}
       </main>
 
