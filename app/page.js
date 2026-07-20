@@ -32,7 +32,7 @@ export default async function HomePage() {
           <h1 className="font-serif font-semibold text-3xl sm:text-4xl md:text-5xl text-cocoa-900 mb-2 sm:mb-3">
             Sweet Memories
           </h1>
-          <p className="text-cocoa-500 max-w-xl text-2xl mx-auto text-sm sm:text-base px-2">
+          <p className="text-cocoa-500 max-w-xl text-4xl mx-auto text-sm sm:text-base px-2">
             🌸 欢迎欣赏我们的蛋糕作品 🍰
           </p>
         </div>
