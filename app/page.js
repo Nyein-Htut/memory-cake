@@ -2,22 +2,28 @@ import Link from "next/link";
 import Image from "next/image";
 import { sql } from "@/lib/db";
 import PublicHeader from "@/components/PublicHeader";
+import { cldThumb } from "@/lib/cloudinary-url";
 
 export const dynamic = "force-dynamic";
 
 async function getFolders() {
-  const res = await fetch("https://memory-cake.vercel.app/api/folders", {
-    cache: "no-store",
-  });
-
-  const data = await res.json();
-  return data.folders;
+  // Queries the database directly instead of fetching a hardcoded absolute
+  // URL. The old version pointed at https://memory-cake.vercel.app, which
+  // silently breaks in local dev and preview deployments.
+  const folders = await sql`
+    SELECT f.id, f.name, f.description, f.cover_url, f.created_at,
+           COUNT(p.id)::int AS photo_count
+    FROM folders f
+    LEFT JOIN photos p ON p.folder_id = f.id
+    GROUP BY f.id
+    ORDER BY f.created_at DESC
+  `;
+  return folders;
 }
 
 export default async function HomePage() {
   const folders = await getFolders();
-  console.log("Rendering with", folders.length, "folders");
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader />
@@ -48,7 +54,7 @@ export default async function HomePage() {
                 <div className="relative aspect-[4/3] bg-cocoa-100">
                   {folder.cover_url ? (
                     <Image
-                      src={folder.cover_url}
+                      src={cldThumb(folder.cover_url, 500)}
                       alt={folder.name}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
