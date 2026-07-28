@@ -16,9 +16,15 @@ export async function POST(request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
+  // New photos go to the end of the folder's order.
+  const posRows = await sql`
+    SELECT COALESCE(MAX(position), -1) + 1 AS next FROM photos WHERE folder_id = ${folderId}
+  `;
+  const nextPosition = posRows[0].next;
+
   const rows = await sql`
-    INSERT INTO photos (folder_id, url, public_id, width, height, caption)
-    VALUES (${folderId}, ${url}, ${publicId}, ${width || null}, ${height || null}, ${caption || null})
+    INSERT INTO photos (folder_id, url, public_id, width, height, caption, position)
+    VALUES (${folderId}, ${url}, ${publicId}, ${width || null}, ${height || null}, ${caption || null}, ${nextPosition})
     RETURNING *
   `;
 
