@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
 
-  const { draggingId, overId, handlePointerDown, registerItemRef } =
+  const { draggingId, handlePointerDown, registerItemRef, wasDragRef } =
     useDragReorder(folders, setFolders, async (orderedIds) => {
       await fetch("/api/folders/reorder", {
         method: "PATCH",
@@ -87,43 +87,19 @@ export default function AdminDashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-6">Your Albums</h1>
 
-        <form
-          onSubmit={handleCreate}
-          className="flex flex-col sm:flex-row gap-3 mb-10"
-        >
+        <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3 mb-10">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="New folder name"
-            className="
-              flex-1 
-              rounded-lg 
-              border border-cocoa-200 
-              bg-white 
-              px-4 py-3
-              text-cocoa-900
-              focus:outline-none 
-              focus:ring-2 
-              focus:ring-cocoa-500
-            "
+            className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-3 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
           />
 
           <button
             type="submit"
             disabled={creating}
-            className="
-              w-full sm:w-auto
-              rounded-lg 
-              bg-cocoa-800 
-              text-cream 
-              px-5 py-3
-              font-medium
-              hover:bg-cocoa-900
-              transition-colors
-              disabled:opacity-60
-              whitespace-nowrap
-            "
+            className="w-full sm:w-auto rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 whitespace-nowrap"
           >
             {creating ? "Creating..." : "+ New Folder"}
           </button>
@@ -138,7 +114,7 @@ export default function AdminDashboardPage() {
           <>
             {folders.length > 1 && (
               <p className="text-xs text-cocoa-400 mb-3">
-                Press and drag the ⠿ handle to reorder albums.
+                Press and hold a card, then drag to reorder albums.
               </p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -146,23 +122,22 @@ export default function AdminDashboardPage() {
                 <div
                   key={folder.id}
                   ref={registerItemRef(folder.id)}
-                  className={`relative rounded-2xl overflow-hidden bg-white shadow-card border transition-colors ${
-                    draggingId === folder.id
-                      ? "opacity-60 scale-[0.98]"
-                      : overId === folder.id
-                      ? "border-cocoa-500"
-                      : "border-cocoa-100"
+                  onPointerDown={handlePointerDown(folder.id)}
+                  style={{ touchAction: "pan-y" }}
+                  className={`relative rounded-2xl overflow-hidden bg-white shadow-card border select-none cursor-grab active:cursor-grabbing ${
+                    draggingId === folder.id ? "border-cocoa-500" : "border-cocoa-100"
                   }`}
                 >
-                  <div
-                    onPointerDown={handlePointerDown(folder.id)}
-                    style={{ touchAction: "none" }}
-                    className="absolute top-2 left-2 z-10 w-9 h-9 rounded-md bg-black/40 text-white flex items-center justify-center text-lg cursor-grab active:cursor-grabbing select-none"
+                  <Link
+                    href={`/admin/folder/${folder.id}`}
+                    className="block"
+                    onClick={(e) => {
+                      if (wasDragRef.current) {
+                        e.preventDefault();
+                        wasDragRef.current = false;
+                      }
+                    }}
                   >
-                    ⠿
-                  </div>
-
-                  <Link href={`/admin/folder/${folder.id}`} className="block">
                     <div className="relative aspect-[4/3] bg-cocoa-100">
                       {folder.cover_url ? (
                         <Image
@@ -170,7 +145,7 @@ export default function AdminDashboardPage() {
                           alt={folder.name}
                           fill
                           sizes="33vw"
-                          className="object-cover"
+                          className="object-cover pointer-events-none"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-sm">
@@ -196,10 +171,7 @@ export default function AdminDashboardPage() {
                         >
                           Save
                         </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="text-xs text-cocoa-400"
-                        >
+                        <button onClick={() => setEditingId(null)} className="text-xs text-cocoa-400">
                           Cancel
                         </button>
                       </div>
