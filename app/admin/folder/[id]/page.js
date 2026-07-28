@@ -29,6 +29,10 @@ export default function AdminFolderPage({ params }) {
   const [editingCaptionId, setEditingCaptionId] = useState(null);
   const [captionDraft, setCaptionDraft] = useState("");
 
+  const [dragOverId, setDragOverId] = useState(null);
+  const [settingCoverId, setSettingCoverId] = useState(null);
+  const dragPhotoId = useRef(null);
+
   // Loads (or reloads) the first page of photos. Used on mount, after
   // creating/renaming, and after upload/delete so page 1 stays accurate.
   async function loadData() {
@@ -88,8 +92,6 @@ export default function AdminFolderPage({ params }) {
     let failedCount = 0;
 
     try {
-      // Get one signature; it's valid for a short window so we reuse it
-      // for all files in this batch.
       const signRes = await fetch("/api/upload-sign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,9 +119,6 @@ export default function AdminFolderPage({ params }) {
           formData.append("timestamp", timestamp);
           formData.append("signature", signature);
           formData.append("folder", cloudFolder);
-          // Must match exactly what was signed in /api/upload-sign, or
-          // Cloudinary will reject the signature. This is what shrinks the
-          // stored original (see lib upload-sign route for details).
           formData.append("transformation", transformation);
 
           const uploadRes = await fetch(
@@ -134,10 +133,6 @@ export default function AdminFolderPage({ params }) {
 
           const uploaded = await uploadRes.json();
 
-          // THIS is the step that was silently failing before: saving the
-          // uploaded photo's URL into our own database. If this request
-          // fails, the image sits in Cloudinary but never appears on the
-          // site, because the site reads from the database, not Cloudinary.
           const saveRes = await fetch("/api/photos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -163,7 +158,6 @@ export default function AdminFolderPage({ params }) {
               ? `${prev} | ${fileErr.message}`
               : fileErr.message || "Something went wrong while uploading"
           );
-          // Continue to the next file instead of stopping the whole batch.
         }
       }
 
@@ -203,6 +197,61 @@ export default function AdminFolderPage({ params }) {
       return;
     }
     loadData();
+  }
+
+  async function handleSetCover(photo) {
+    setSettingCoverId(photo.id);
+    const res = await fetch(`/api/folders/${folderId}/cover`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: photo.url }),
+    });
+    setSettingCoverId(null);
+
+    if (!res.ok) {
+      setError("Could not set cover photo. Try again.");
+      return;
+    }
+    setFolder((prev) => (prev ? { ...prev, cover_url: photo.url } : prev));
+  }
+
+  // --- Drag to reorder ---
+  // Reorders within whatever page(s) of photos are currently loaded. If you
+  // have more photos than fit on one page, load them all first (or drag in
+  // batches) so the saved order reflects what you see.
+
+  function handlePhotoDragStart(id) {
+    dragPhotoId.current = id;
+  }
+
+  function handlePhotoDragOver(e, overId) {
+    e.preventDefault();
+    setDragOverId(overId);
+
+    const draggedId = dragPhotoId.current;
+    if (draggedId === null || draggedId === overId) return;
+
+    setPhotos((prev) => {
+      const fromIndex = prev.findIndex((p) => p.id === draggedId);
+      const toIndex = prev.findIndex((p) => p.id === overId);
+      if (fromIndex === -1 || toIndex === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }
+
+  async function handlePhotoDragEnd() {
+    dragPhotoId.current = null;
+    setDragOverId(null);
+
+    const orderedIds = photos.map((p) => p.id);
+    await fetch(`/api/folders/${folderId}/photos/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds }),
+    });
   }
 
   if (loading) {
@@ -314,73 +363,105 @@ export default function AdminFolderPage({ params }) {
           <p className="text-cocoa-400">No photos in this album yet.</p>
         ) : (
           <>
+            {photos.length > 1 && (
+              <p className="text-xs text-cocoa-400 mb-3">
+                Drag the ⠿ handle to reorder photos. Use "Set as cover" to choose the album thumbnail.
+              </p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {photos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className="rounded-xl overflow-hidden bg-white border border-cocoa-100 shadow-card"
-                >
-                  <div className="relative aspect-square bg-cocoa-100">
-                    <Image
-                      src={cldThumb(photo.url, 400)}
-                      alt={photo.caption || "photo"}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 25vw"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="p-2.5">
-                    {editingCaptionId === photo.id ? (
-                      <div className="space-y-1.5">
-                        <input
-                          autoFocus
-                          value={captionDraft}
-                          onChange={(e) => setCaptionDraft(e.target.value)}
-                          placeholder="Caption (optional)"
-                          className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                        />
-                        <div className="flex gap-3 text-xs">
-                          <button
-                            onClick={() => handleSaveCaption(photo.id)}
-                            className="text-cocoa-700 font-medium py-1"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingCaptionId(null)}
-                            className="text-cocoa-400 py-1"
-                          >
-                            Cancel
-                          </button>
-                        </div>
+              {photos.map((photo) => {
+                const isCover = folder.cover_url === photo.url;
+                return (
+                  <div
+                    key={photo.id}
+                    draggable
+                    onDragStart={() => handlePhotoDragStart(photo.id)}
+                    onDragOver={(e) => handlePhotoDragOver(e, photo.id)}
+                    onDrop={(e) => e.preventDefault()}
+                    onDragEnd={handlePhotoDragEnd}
+                    className={`rounded-xl overflow-hidden bg-white border shadow-card transition-colors ${
+                      dragOverId === photo.id ? "border-cocoa-500" : "border-cocoa-100"
+                    }`}
+                  >
+                    <div className="relative aspect-square bg-cocoa-100">
+                      <div className="absolute top-2 left-2 z-10 w-7 h-7 rounded-md bg-black/40 text-white flex items-center justify-center text-sm cursor-grab active:cursor-grabbing select-none">
+                        ⠿
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs text-cocoa-500 truncate">
-                          {photo.caption || "No caption"}
-                        </p>
-                        <div className="flex gap-3 text-xs shrink-0">
-                          <button
-                            onClick={() => {
-                              setEditingCaptionId(photo.id);
-                              setCaptionDraft(photo.caption || "");
-                            }}
-                            className="text-cocoa-500 hover:text-cocoa-800 py-1"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeletePhoto(photo.id)}
-                            className="text-red-500 hover:text-red-700 py-1"
-                          >
-                            Delete
-                          </button>
+                      {isCover && (
+                        <div className="absolute top-2 right-2 z-10 rounded-full bg-cocoa-800 text-cream text-[10px] uppercase tracking-wide px-2 py-1">
+                          Cover
                         </div>
-                      </div>
-                    )}
+                      )}
+                      <Image
+                        src={cldThumb(photo.url, 400)}
+                        alt={photo.caption || "photo"}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-2.5">
+                      {editingCaptionId === photo.id ? (
+                        <div className="space-y-1.5">
+                          <input
+                            autoFocus
+                            value={captionDraft}
+                            onChange={(e) => setCaptionDraft(e.target.value)}
+                            placeholder="Caption (optional)"
+                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          />
+                          <div className="flex gap-3 text-xs">
+                            <button
+                              onClick={() => handleSaveCaption(photo.id)}
+                              className="text-cocoa-700 font-medium py-1"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingCaptionId(null)}
+                              className="text-cocoa-400 py-1"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <p className="text-xs text-cocoa-500 truncate">
+                            {photo.caption || "No caption"}
+                          </p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                            <button
+                              onClick={() => {
+                                setEditingCaptionId(photo.id);
+                                setCaptionDraft(photo.caption || "");
+                              }}
+                              className="text-cocoa-500 hover:text-cocoa-800 py-1"
+                            >
+                              Edit
+                            </button>
+                            {!isCover && (
+                              <button
+                                onClick={() => handleSetCover(photo)}
+                                disabled={settingCoverId === photo.id}
+                                className="text-cocoa-500 hover:text-cocoa-800 py-1 disabled:opacity-60"
+                              >
+                                {settingCoverId === photo.id ? "Setting..." : "Set as cover"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeletePhoto(photo.id)}
+                              className="text-red-500 hover:text-red-700 py-1"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {hasMore && (
