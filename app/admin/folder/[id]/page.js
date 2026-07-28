@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import AdminHeader from "@/components/AdminHeader";
 import { cldThumb } from "@/lib/cloudinary-url";
+import { useDragReorder } from "@/lib/useDragReorder";
 
 const PAGE_SIZE = 30;
 
@@ -29,12 +30,17 @@ export default function AdminFolderPage({ params }) {
   const [editingCaptionId, setEditingCaptionId] = useState(null);
   const [captionDraft, setCaptionDraft] = useState("");
 
-  const [dragOverId, setDragOverId] = useState(null);
   const [settingCoverId, setSettingCoverId] = useState(null);
-  const dragPhotoId = useRef(null);
 
-  // Loads (or reloads) the first page of photos. Used on mount, after
-  // creating/renaming, and after upload/delete so page 1 stays accurate.
+  const { draggingId, overId, handlePointerDown, registerItemRef } =
+    useDragReorder(photos, setPhotos, async (orderedIds) => {
+      await fetch(`/api/folders/${folderId}/photos/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds }),
+      });
+    });
+
   async function loadData() {
     setLoading(true);
     const res = await fetch(`/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`);
@@ -50,7 +56,6 @@ export default function AdminFolderPage({ params }) {
     setLoading(false);
   }
 
-  // Fetches the next page and appends it, instead of reloading everything.
   async function loadMorePhotos() {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
@@ -215,45 +220,6 @@ export default function AdminFolderPage({ params }) {
     setFolder((prev) => (prev ? { ...prev, cover_url: photo.url } : prev));
   }
 
-  // --- Drag to reorder ---
-  // Reorders within whatever page(s) of photos are currently loaded. If you
-  // have more photos than fit on one page, load them all first (or drag in
-  // batches) so the saved order reflects what you see.
-
-  function handlePhotoDragStart(id) {
-    dragPhotoId.current = id;
-  }
-
-  function handlePhotoDragOver(e, overId) {
-    e.preventDefault();
-    setDragOverId(overId);
-
-    const draggedId = dragPhotoId.current;
-    if (draggedId === null || draggedId === overId) return;
-
-    setPhotos((prev) => {
-      const fromIndex = prev.findIndex((p) => p.id === draggedId);
-      const toIndex = prev.findIndex((p) => p.id === overId);
-      if (fromIndex === -1 || toIndex === -1) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      return next;
-    });
-  }
-
-  async function handlePhotoDragEnd() {
-    dragPhotoId.current = null;
-    setDragOverId(null);
-
-    const orderedIds = photos.map((p) => p.id);
-    await fetch(`/api/folders/${folderId}/photos/reorder`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedIds }),
-    });
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
@@ -365,7 +331,7 @@ export default function AdminFolderPage({ params }) {
           <>
             {photos.length > 1 && (
               <p className="text-xs text-cocoa-400 mb-3">
-                Drag the ⠿ handle to reorder photos. Use "Set as cover" to choose the album thumbnail.
+                Press and drag the ⠿ handle to reorder photos. Use "Set as cover" to choose the album thumbnail.
               </p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
@@ -374,17 +340,21 @@ export default function AdminFolderPage({ params }) {
                 return (
                   <div
                     key={photo.id}
-                    draggable
-                    onDragStart={() => handlePhotoDragStart(photo.id)}
-                    onDragOver={(e) => handlePhotoDragOver(e, photo.id)}
-                    onDrop={(e) => e.preventDefault()}
-                    onDragEnd={handlePhotoDragEnd}
+                    ref={registerItemRef(photo.id)}
                     className={`rounded-xl overflow-hidden bg-white border shadow-card transition-colors ${
-                      dragOverId === photo.id ? "border-cocoa-500" : "border-cocoa-100"
+                      draggingId === photo.id
+                        ? "opacity-60 scale-[0.98]"
+                        : overId === photo.id
+                        ? "border-cocoa-500"
+                        : "border-cocoa-100"
                     }`}
                   >
                     <div className="relative aspect-square bg-cocoa-100">
-                      <div className="absolute top-2 left-2 z-10 w-7 h-7 rounded-md bg-black/40 text-white flex items-center justify-center text-sm cursor-grab active:cursor-grabbing select-none">
+                      <div
+                        onPointerDown={handlePointerDown(photo.id)}
+                        style={{ touchAction: "none" }}
+                        className="absolute top-2 left-2 z-10 w-9 h-9 rounded-md bg-black/40 text-white flex items-center justify-center text-lg cursor-grab active:cursor-grabbing select-none"
+                      >
                         ⠿
                       </div>
                       {isCover && (
