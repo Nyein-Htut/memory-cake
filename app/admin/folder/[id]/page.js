@@ -335,7 +335,12 @@ export default function AdminFolderPage({ params }) {
                     key={photo.id}
                     ref={registerItemRef(photo.id)}
                     onPointerDown={handlePointerDown(photo.id)}
-                    style={{ touchAction: "pan-y" }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{
+                      touchAction: "pan-y",
+                      WebkitTouchCallout: "none",
+                      WebkitUserSelect: "none",
+                    }}
                     className={`rounded-xl overflow-hidden bg-white border shadow-card select-none cursor-grab active:cursor-grabbing ${
                       draggingId === photo.id ? "border-cocoa-500" : "border-cocoa-100"
                     }`}
