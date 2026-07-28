@@ -123,7 +123,12 @@ export default function AdminDashboardPage() {
                   key={folder.id}
                   ref={registerItemRef(folder.id)}
                   onPointerDown={handlePointerDown(folder.id)}
-                  style={{ touchAction: "pan-y" }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  style={{
+                    touchAction: "pan-y",
+                    WebkitTouchCallout: "none",
+                    WebkitUserSelect: "none",
+                  }}
                   className={`relative rounded-2xl overflow-hidden bg-white shadow-card border select-none cursor-grab active:cursor-grabbing ${
                     draggingId === folder.id ? "border-cocoa-500" : "border-cocoa-100"
                   }`}
