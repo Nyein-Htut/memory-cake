@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
 
   const photos = await sql`
     SELECT * FROM photos WHERE folder_id = ${id}
-    ORDER BY created_at ASC
+    ORDER BY position ASC, created_at ASC
     LIMIT ${limit} OFFSET ${offset}
   `;
 
