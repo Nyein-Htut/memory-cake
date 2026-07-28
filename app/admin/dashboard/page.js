@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AdminHeader from "@/components/AdminHeader";
 import { cldThumb } from "@/lib/cloudinary-url";
+import { useDragReorder } from "@/lib/useDragReorder";
 
 export default function AdminDashboardPage() {
   const [folders, setFolders] = useState([]);
@@ -14,11 +15,15 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
-  const [dragOverId, setDragOverId] = useState(null);
 
-  // Holds the id of the folder currently being dragged. A ref (not state)
-  // because it doesn't need to trigger re-renders on its own.
-  const dragFolderId = useRef(null);
+  const { draggingId, overId, handlePointerDown, registerItemRef } =
+    useDragReorder(folders, setFolders, async (orderedIds) => {
+      await fetch("/api/folders/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds }),
+      });
+    });
 
   async function loadFolders() {
     setLoading(true);
@@ -73,42 +78,6 @@ export default function AdminDashboardPage() {
     }
     await fetch(`/api/folders/${id}`, { method: "DELETE" });
     loadFolders();
-  }
-
-  // --- Drag to reorder ---
-
-  function handleDragStart(id) {
-    dragFolderId.current = id;
-  }
-
-  function handleDragOver(e, overId) {
-    e.preventDefault(); // required for onDrop to fire
-    setDragOverId(overId);
-
-    const draggedId = dragFolderId.current;
-    if (draggedId === null || draggedId === overId) return;
-
-    setFolders((prev) => {
-      const fromIndex = prev.findIndex((f) => f.id === draggedId);
-      const toIndex = prev.findIndex((f) => f.id === overId);
-      if (fromIndex === -1 || toIndex === -1) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      return next;
-    });
-  }
-
-  async function handleDragEnd() {
-    dragFolderId.current = null;
-    setDragOverId(null);
-
-    const orderedIds = folders.map((f) => f.id);
-    await fetch("/api/folders/reorder", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedIds }),
-    });
   }
 
   return (
@@ -169,25 +138,27 @@ export default function AdminDashboardPage() {
           <>
             {folders.length > 1 && (
               <p className="text-xs text-cocoa-400 mb-3">
-                Drag the ⠿ handle to reorder albums.
+                Press and drag the ⠿ handle to reorder albums.
               </p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  draggable
-                  onDragStart={() => handleDragStart(folder.id)}
-                  onDragOver={(e) => handleDragOver(e, folder.id)}
-                  onDrop={(e) => e.preventDefault()}
-                  onDragEnd={handleDragEnd}
+                  ref={registerItemRef(folder.id)}
                   className={`relative rounded-2xl overflow-hidden bg-white shadow-card border transition-colors ${
-                    dragOverId === folder.id
+                    draggingId === folder.id
+                      ? "opacity-60 scale-[0.98]"
+                      : overId === folder.id
                       ? "border-cocoa-500"
                       : "border-cocoa-100"
                   }`}
                 >
-                  <div className="absolute top-2 left-2 z-10 w-7 h-7 rounded-md bg-black/40 text-white flex items-center justify-center text-sm cursor-grab active:cursor-grabbing select-none">
+                  <div
+                    onPointerDown={handlePointerDown(folder.id)}
+                    style={{ touchAction: "none" }}
+                    className="absolute top-2 left-2 z-10 w-9 h-9 rounded-md bg-black/40 text-white flex items-center justify-center text-lg cursor-grab active:cursor-grabbing select-none"
+                  >
                     ⠿
                   </div>
 
