@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import AdminHeader from "@/components/AdminHeader";
@@ -14,6 +14,11 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [dragOverId, setDragOverId] = useState(null);
+
+  // Holds the id of the folder currently being dragged. A ref (not state)
+  // because it doesn't need to trigger re-renders on its own.
+  const dragFolderId = useRef(null);
 
   async function loadFolders() {
     setLoading(true);
@@ -70,6 +75,42 @@ export default function AdminDashboardPage() {
     loadFolders();
   }
 
+  // --- Drag to reorder ---
+
+  function handleDragStart(id) {
+    dragFolderId.current = id;
+  }
+
+  function handleDragOver(e, overId) {
+    e.preventDefault(); // required for onDrop to fire
+    setDragOverId(overId);
+
+    const draggedId = dragFolderId.current;
+    if (draggedId === null || draggedId === overId) return;
+
+    setFolders((prev) => {
+      const fromIndex = prev.findIndex((f) => f.id === draggedId);
+      const toIndex = prev.findIndex((f) => f.id === overId);
+      if (fromIndex === -1 || toIndex === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }
+
+  async function handleDragEnd() {
+    dragFolderId.current = null;
+    setDragOverId(null);
+
+    const orderedIds = folders.map((f) => f.id);
+    await fetch("/api/folders/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds }),
+    });
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       <AdminHeader />
@@ -78,46 +119,46 @@ export default function AdminDashboardPage() {
         <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-6">Your Albums</h1>
 
         <form
-  onSubmit={handleCreate}
-  className="flex flex-col sm:flex-row gap-3 mb-10"
->
-  <input
-    type="text"
-    value={newName}
-    onChange={(e) => setNewName(e.target.value)}
-    placeholder="New folder name"
-    className="
-      flex-1 
-      rounded-lg 
-      border border-cocoa-200 
-      bg-white 
-      px-4 py-3
-      text-cocoa-900
-      focus:outline-none 
-      focus:ring-2 
-      focus:ring-cocoa-500
-    "
-  />
+          onSubmit={handleCreate}
+          className="flex flex-col sm:flex-row gap-3 mb-10"
+        >
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="New folder name"
+            className="
+              flex-1 
+              rounded-lg 
+              border border-cocoa-200 
+              bg-white 
+              px-4 py-3
+              text-cocoa-900
+              focus:outline-none 
+              focus:ring-2 
+              focus:ring-cocoa-500
+            "
+          />
 
-  <button
-    type="submit"
-    disabled={creating}
-    className="
-      w-full sm:w-auto
-      rounded-lg 
-      bg-cocoa-800 
-      text-cream 
-      px-5 py-3
-      font-medium
-      hover:bg-cocoa-900
-      transition-colors
-      disabled:opacity-60
-      whitespace-nowrap
-    "
-  >
-    {creating ? "Creating..." : "+ New Folder"}
-  </button>
-</form>
+          <button
+            type="submit"
+            disabled={creating}
+            className="
+              w-full sm:w-auto
+              rounded-lg 
+              bg-cocoa-800 
+              text-cream 
+              px-5 py-3
+              font-medium
+              hover:bg-cocoa-900
+              transition-colors
+              disabled:opacity-60
+              whitespace-nowrap
+            "
+          >
+            {creating ? "Creating..." : "+ New Folder"}
+          </button>
+        </form>
         {error && <p className="text-sm text-red-600 -mt-8 mb-8">{error}</p>}
 
         {loading ? (
@@ -125,88 +166,108 @@ export default function AdminDashboardPage() {
         ) : folders.length === 0 ? (
           <p className="text-cocoa-400">No folders yet. Create your first one above.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {folders.map((folder) => (
-              <div
-                key={folder.id}
-                className="rounded-2xl overflow-hidden bg-white shadow-card border border-cocoa-100"
-              >
-                <Link href={`/admin/folder/${folder.id}`} className="block">
-                  <div className="relative aspect-[4/3] bg-cocoa-100">
-                    {folder.cover_url ? (
-                      <Image
-                        src={cldThumb(folder.cover_url, 500)}
-                        alt={folder.name}
-                        fill
-                        sizes="33vw"
-                        className="object-cover"
-                      />
+          <>
+            {folders.length > 1 && (
+              <p className="text-xs text-cocoa-400 mb-3">
+                Drag the ⠿ handle to reorder albums.
+              </p>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {folders.map((folder) => (
+                <div
+                  key={folder.id}
+                  draggable
+                  onDragStart={() => handleDragStart(folder.id)}
+                  onDragOver={(e) => handleDragOver(e, folder.id)}
+                  onDrop={(e) => e.preventDefault()}
+                  onDragEnd={handleDragEnd}
+                  className={`relative rounded-2xl overflow-hidden bg-white shadow-card border transition-colors ${
+                    dragOverId === folder.id
+                      ? "border-cocoa-500"
+                      : "border-cocoa-100"
+                  }`}
+                >
+                  <div className="absolute top-2 left-2 z-10 w-7 h-7 rounded-md bg-black/40 text-white flex items-center justify-center text-sm cursor-grab active:cursor-grabbing select-none">
+                    ⠿
+                  </div>
+
+                  <Link href={`/admin/folder/${folder.id}`} className="block">
+                    <div className="relative aspect-[4/3] bg-cocoa-100">
+                      {folder.cover_url ? (
+                        <Image
+                          src={cldThumb(folder.cover_url, 500)}
+                          alt={folder.name}
+                          fill
+                          sizes="33vw"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-sm">
+                          No photos yet
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+
+                  <div className="p-4">
+                    {editingId === folder.id ? (
+                      <div className="flex gap-2">
+                        <input
+                          autoFocus
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleRename(folder.id)}
+                          className="flex-1 rounded-md border border-cocoa-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                        />
+                        <button
+                          onClick={() => handleRename(folder.id)}
+                          className="text-xs text-cocoa-700 font-medium"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-xs text-cocoa-400"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-sm">
-                        No photos yet
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <Link href={`/admin/folder/${folder.id}`}>
+                            <h2 className="font-serif text-lg text-cocoa-900 hover:underline">
+                              {folder.name}
+                            </h2>
+                          </Link>
+                          <p className="text-xs text-cocoa-400 mt-0.5">
+                            {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 text-xs shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingId(folder.id);
+                              setEditName(folder.name);
+                            }}
+                            className="text-cocoa-500 hover:text-cocoa-800"
+                          >
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => handleDelete(folder.id, folder.name)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
-                </Link>
-
-                <div className="p-4">
-                  {editingId === folder.id ? (
-                    <div className="flex gap-2">
-                      <input
-                        autoFocus
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleRename(folder.id)}
-                        className="flex-1 rounded-md border border-cocoa-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                      />
-                      <button
-                        onClick={() => handleRename(folder.id)}
-                        className="text-xs text-cocoa-700 font-medium"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="text-xs text-cocoa-400"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <Link href={`/admin/folder/${folder.id}`}>
-                          <h2 className="font-serif text-lg text-cocoa-900 hover:underline">
-                            {folder.name}
-                          </h2>
-                        </Link>
-                        <p className="text-xs text-cocoa-400 mt-0.5">
-                          {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 text-xs shrink-0">
-                        <button
-                          onClick={() => {
-                            setEditingId(folder.id);
-                            setEditName(folder.name);
-                          }}
-                          className="text-cocoa-500 hover:text-cocoa-800"
-                        >
-                          Rename
-                        </button>
-                        <button
-                          onClick={() => handleDelete(folder.id, folder.name)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>
