@@ -32,14 +32,17 @@ export default function AdminFolderPage({ params }) {
 
   const [settingCoverId, setSettingCoverId] = useState(null);
 
-  const { draggingId, overId, handlePointerDown, registerItemRef } =
-    useDragReorder(photos, setPhotos, async (orderedIds) => {
+  const { draggingId, handlePointerDown, registerItemRef } = useDragReorder(
+    photos,
+    setPhotos,
+    async (orderedIds) => {
       await fetch(`/api/folders/${folderId}/photos/reorder`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderedIds }),
       });
-    });
+    }
+  );
 
   async function loadData() {
     setLoading(true);
@@ -159,9 +162,7 @@ export default function AdminFolderPage({ params }) {
         } catch (fileErr) {
           failedCount += 1;
           setError((prev) =>
-            prev
-              ? `${prev} | ${fileErr.message}`
-              : fileErr.message || "Something went wrong while uploading"
+            prev ? `${prev} | ${fileErr.message}` : fileErr.message || "Something went wrong while uploading"
           );
         }
       }
@@ -243,10 +244,7 @@ export default function AdminFolderPage({ params }) {
       <AdminHeader />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <Link
-          href="/admin/dashboard"
-          className="text-sm text-cocoa-400 hover:text-cocoa-700 transition-colors"
-        >
+        <Link href="/admin/dashboard" className="text-sm text-cocoa-400 hover:text-cocoa-700 transition-colors">
           &larr; All albums
         </Link>
 
@@ -272,10 +270,7 @@ export default function AdminFolderPage({ params }) {
                 >
                   Save
                 </button>
-                <button
-                  onClick={() => setEditingName(false)}
-                  className="text-sm text-cocoa-400 px-2"
-                >
+                <button onClick={() => setEditingName(false)} className="text-sm text-cocoa-400 px-2">
                   Cancel
                 </button>
               </div>
@@ -283,7 +278,9 @@ export default function AdminFolderPage({ params }) {
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 truncate">{folder.name}</h1>
+                <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 truncate">
+                  {folder.name}
+                </h1>
                 {folder.description && (
                   <p className="text-cocoa-500 mt-1 text-sm sm:text-base">{folder.description}</p>
                 )}
@@ -317,12 +314,8 @@ export default function AdminFolderPage({ params }) {
           >
             {uploading ? uploadProgress || "Uploading..." : "Upload Photos"}
           </label>
-          <p className="text-xs text-cocoa-400 mt-2">
-            You can select multiple photos at once.
-          </p>
-          {error && (
-            <p className="text-sm text-red-600 mt-3 whitespace-pre-wrap break-words">{error}</p>
-          )}
+          <p className="text-xs text-cocoa-400 mt-2">You can select multiple photos at once.</p>
+          {error && <p className="text-sm text-red-600 mt-3 whitespace-pre-wrap break-words">{error}</p>}
         </div>
 
         {photos.length === 0 ? (
@@ -331,7 +324,7 @@ export default function AdminFolderPage({ params }) {
           <>
             {photos.length > 1 && (
               <p className="text-xs text-cocoa-400 mb-3">
-                Press and drag the ⠿ handle to reorder photos. Use "Set as cover" to choose the album thumbnail.
+                Press and hold a photo, then drag to reorder. Use "Set as cover" to choose the album thumbnail.
               </p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
@@ -341,22 +334,13 @@ export default function AdminFolderPage({ params }) {
                   <div
                     key={photo.id}
                     ref={registerItemRef(photo.id)}
-                    className={`rounded-xl overflow-hidden bg-white border shadow-card transition-colors ${
-                      draggingId === photo.id
-                        ? "opacity-60 scale-[0.98]"
-                        : overId === photo.id
-                        ? "border-cocoa-500"
-                        : "border-cocoa-100"
+                    onPointerDown={handlePointerDown(photo.id)}
+                    style={{ touchAction: "pan-y" }}
+                    className={`rounded-xl overflow-hidden bg-white border shadow-card select-none cursor-grab active:cursor-grabbing ${
+                      draggingId === photo.id ? "border-cocoa-500" : "border-cocoa-100"
                     }`}
                   >
                     <div className="relative aspect-square bg-cocoa-100">
-                      <div
-                        onPointerDown={handlePointerDown(photo.id)}
-                        style={{ touchAction: "none" }}
-                        className="absolute top-2 left-2 z-10 w-9 h-9 rounded-md bg-black/40 text-white flex items-center justify-center text-lg cursor-grab active:cursor-grabbing select-none"
-                      >
-                        ⠿
-                      </div>
                       {isCover && (
                         <div className="absolute top-2 right-2 z-10 rounded-full bg-cocoa-800 text-cream text-[10px] uppercase tracking-wide px-2 py-1">
                           Cover
@@ -367,7 +351,7 @@ export default function AdminFolderPage({ params }) {
                         alt={photo.caption || "photo"}
                         fill
                         sizes="(max-width: 640px) 50vw, 25vw"
-                        className="object-cover"
+                        className="object-cover pointer-events-none"
                       />
                     </div>
                     <div className="p-2.5">
@@ -381,25 +365,17 @@ export default function AdminFolderPage({ params }) {
                             className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                           />
                           <div className="flex gap-3 text-xs">
-                            <button
-                              onClick={() => handleSaveCaption(photo.id)}
-                              className="text-cocoa-700 font-medium py-1"
-                            >
+                            <button onClick={() => handleSaveCaption(photo.id)} className="text-cocoa-700 font-medium py-1">
                               Save
                             </button>
-                            <button
-                              onClick={() => setEditingCaptionId(null)}
-                              className="text-cocoa-400 py-1"
-                            >
+                            <button onClick={() => setEditingCaptionId(null)} className="text-cocoa-400 py-1">
                               Cancel
                             </button>
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-1.5">
-                          <p className="text-xs text-cocoa-500 truncate">
-                            {photo.caption || "No caption"}
-                          </p>
+                          <p className="text-xs text-cocoa-500 truncate">{photo.caption || "No caption"}</p>
                           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
                             <button
                               onClick={() => {
