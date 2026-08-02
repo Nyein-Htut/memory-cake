@@ -16,7 +16,7 @@ function shuffle(arr) {
 // Drop your 8 cake photos in /public/hero/ using these filenames
 // (or edit this list to match whatever names you actually use).
 const HERO_IMAGES = [
-  "/hero/cake 1.jpg",
+  "/hero/cake 1.png",
   "/hero/cake 2.jpg",
   "/hero/cake 3.jpg",
   "/hero/cake 4.jpg",
