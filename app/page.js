@@ -3,6 +3,7 @@ import Image from "next/image";
 import PublicHeader from "@/components/PublicHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import { cldThumb } from "@/lib/cloudinary-url";
+import Footer from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -84,9 +85,7 @@ export default async function HomePage() {
         )}
       </main>
 
-      <footer className="border-t border-cocoa-200/60 py-6 text-center text-xs text-cocoa-500">
-        Memory Cake &middot; since 2023
-      </footer>
+     <Footer />
     </div>
   );
 }
