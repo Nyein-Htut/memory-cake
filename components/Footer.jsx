@@ -101,7 +101,7 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
-                
+                <a
                   href="https://www.facebook.com/share/1BcMCykvYP/"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -114,7 +114,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                
+                <a
                   href="https://www.instagram.com/memory_cake_2024?igsh=MW15eGExdjM4NWdwYg=="
                   target="_blank"
                   rel="noopener noreferrer"
