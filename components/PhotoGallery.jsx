@@ -3,9 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { cldThumb, cldFull } from "@/lib/cloudinary-url";
+import OrderModal from "@/components/OrderModal";
 
 export default function PhotoGallery({
   folderId,
+  folderName,
   initialPhotos,
   total,
   pageSize = 24,
@@ -13,6 +15,7 @@ export default function PhotoGallery({
   const [photos, setPhotos] = useState(initialPhotos);
   const [activeIndex, setActiveIndex] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [orderingPhoto, setOrderingPhoto] = useState(null);
 
   const touchStartX = useRef(null);
   const sentinelRef = useRef(null);
@@ -45,9 +48,7 @@ export default function PhotoGallery({
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
-      {
-        rootMargin: "600px",
-      }
+      { rootMargin: "600px" }
     );
 
     observer.observe(sentinelRef.current);
@@ -97,11 +98,8 @@ export default function PhotoGallery({
     const delta = e.changedTouches[0].clientX - touchStartX.current;
 
     if (Math.abs(delta) > 50) {
-      if (delta > 0) {
-        showPrev();
-      } else {
-        showNext();
-      }
+      if (delta > 0) showPrev();
+      else showNext();
     }
 
     touchStartX.current = null;
@@ -111,27 +109,37 @@ export default function PhotoGallery({
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
         {photos.map((photo, i) => (
-          <button
+          <div
             key={photo.id}
-            onClick={() => setActiveIndex(i)}
-            className="relative aspect-square overflow-hidden rounded-2xl bg-white border border-cocoa-200 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+            className="group rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
           >
-            <Image
-              src={cldThumb(photo.url, 400)}
-              alt={photo.caption || "Memory Cake photo"}
-              fill
-              sizes="(max-width:640px) 50vw, 25vw"
-              className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-            />
-          </button>
+            <button
+              onClick={() => setActiveIndex(i)}
+              className="relative aspect-square w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+            >
+              <Image
+                src={cldThumb(photo.url, 400)}
+                alt={photo.caption || "Memory Cake photo"}
+                fill
+                sizes="(max-width:640px) 50vw, 25vw"
+                className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+              />
+            </button>
+
+            <div className="p-2.5 sm:p-3">
+              <button
+                onClick={() => setOrderingPhoto(photo)}
+                className="w-full rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm py-2 font-medium hover:bg-cocoa-900 transition-colors"
+              >
+                🎂 订购此蛋糕
+              </button>
+            </div>
+          </div>
         ))}
       </div>
 
       {hasMore && (
-        <div
-          ref={sentinelRef}
-          className="py-10 text-center text-cocoa-400 text-sm"
-        >
+        <div ref={sentinelRef} className="py-10 text-center text-cocoa-400 text-sm">
           {loadingMore ? "Loading more photos..." : ""}
         </div>
       )}
@@ -143,31 +151,22 @@ export default function PhotoGallery({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Close */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              close();
-            }}
+            onClick={(e) => { e.stopPropagation(); close(); }}
             className="absolute top-5 right-5 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-3xl transition z-10"
             aria-label="Close"
           >
             &times;
           </button>
 
-          {/* Previous */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              showPrev();
-            }}
+            onClick={(e) => { e.stopPropagation(); showPrev(); }}
             className="absolute left-4 sm:left-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
             aria-label="Previous"
           >
             &#8249;
           </button>
 
-          {/* Image */}
           <div
             className="relative w-full max-w-5xl h-[65vh] sm:h-[75vh]"
             onClick={(e) => e.stopPropagation()}
@@ -182,25 +181,40 @@ export default function PhotoGallery({
             />
           </div>
 
-          {/* Next */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              showNext();
-            }}
+            onClick={(e) => { e.stopPropagation(); showNext(); }}
             className="absolute right-4 sm:right-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
             aria-label="Next"
           >
             &#8250;
           </button>
 
-          {/* Caption */}
-          {photos[activeIndex].caption && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 max-w-3xl px-6 py-3 rounded-full bg-black/40 backdrop-blur text-white text-sm text-center">
-              {photos[activeIndex].caption}
-            </div>
-          )}
+          <div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {photos[activeIndex].caption && (
+              <div className="max-w-3xl px-6 py-3 rounded-full bg-black/40 backdrop-blur text-white text-sm text-center">
+                {photos[activeIndex].caption}
+              </div>
+            )}
+            <button
+              onClick={() => setOrderingPhoto(photos[activeIndex])}
+              className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
+            >
+              🎂 订购此蛋糕
+            </button>
+          </div>
         </div>
+      )}
+
+      {orderingPhoto && (
+        <OrderModal
+          photo={orderingPhoto}
+          folderId={folderId}
+          folderName={folderName}
+          onClose={() => setOrderingPhoto(null)}
+        />
       )}
     </>
   );
