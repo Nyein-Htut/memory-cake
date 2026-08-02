@@ -18,7 +18,7 @@ export default function PublicHeader() {
           />
 
           <span className="font-serif font-semibold text-2xl sm:text-3xl text-cocoa-900 tracking-wide truncate">
-            Memory Cake
+            Memory Cake (记忆蛋糕坊)
           </span>
         </Link>
 
