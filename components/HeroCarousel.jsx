@@ -46,7 +46,19 @@ export default function HeroCarousel() {
   }, [slides.length]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl shadow-soft h-[380px] sm:h-[440px] md:h-[480px] lg:h-[540px]">
+    <div className="
+relative
+w-full
+overflow-hidden
+rounded-2xl
+sm:rounded-3xl
+shadow-soft
+
+aspect-[16/9]
+sm:aspect-[16/9]
+lg:h-[540px]
+lg:aspect-auto
+">
       {/* Soft fallback backdrop so uneven/odd-shaped photos never show a hard edge */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#f7e3d7] via-[#f0d9cf] to-[#e9cfc9]" />
 
