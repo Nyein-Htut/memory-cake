@@ -45,6 +45,20 @@ export default function AdminHeader() {
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
+            href="/admin/orders"
+            className="text-xs sm:text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
+          >
+            订购信息
+          </Link>
+
+          <Link
+            href="/admin/settings"
+            className="text-xs sm:text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
+          >
+            设置
+          </Link>
+
+          <Link
             href="/"
             target="_blank"
             className="text-xs sm:text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
@@ -60,7 +74,6 @@ export default function AdminHeader() {
             Log out
           </button>
         </div>
-
       </div>
     </header>
   );
