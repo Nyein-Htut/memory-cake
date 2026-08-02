@@ -85,6 +85,7 @@ export default async function FolderPage({ params }) {
         ) : (
           <PhotoGallery
             folderId={folderId}
+            folderName={folder.name}
             initialPhotos={photos}
             total={total}
             pageSize={PAGE_SIZE}
