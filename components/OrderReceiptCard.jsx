@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1450; // Increased height to comfortably accommodate larger typography
+const CARD_HEIGHT = 1350;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -42,8 +42,8 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
     try {
       await Promise.all([
-        document.fonts.load("600 40px 'Cormorant Garamond'").catch(() => {}),
-        document.fonts.load("italic 400 24px 'Cormorant Garamond'").catch(() => {}),
+        document.fonts.load("700 42px 'Cormorant Garamond'").catch(() => {}),
+        document.fonts.load("600 24px 'Inter'").catch(() => {}),
       ]);
 
       const canvas = canvasRef.current;
@@ -51,85 +51,82 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       canvas.height = CARD_HEIGHT;
       const ctx = canvas.getContext("2d");
 
-      // Bright, Luxurious Light Beige Gradient Background
+      // Bright Soft Warm Beige Background
       const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
-      bgGrad.addColorStop(0, "#fffcf8");
-      bgGrad.addColorStop(0.5, "#faf3ea");
-      bgGrad.addColorStop(1, "#f7ede2");
+      bgGrad.addColorStop(0, "#fffdfa");
+      bgGrad.addColorStop(0.6, "#fdf8f0");
+      bgGrad.addColorStop(1, "#f9f1e4");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-      // Gold Elegant Borders
-      ctx.strokeStyle = "#e2c4a6";
-      ctx.lineWidth = 3;
-      roundRect(ctx, 24, 24, CARD_WIDTH - 48, CARD_HEIGHT - 48, 28);
+      // Outer Elegant Frame
+      ctx.strokeStyle = "#e2cbaf";
+      ctx.lineWidth = 2.5;
+      roundRect(ctx, 30, 30, CARD_WIDTH - 60, CARD_HEIGHT - 60, 24);
       ctx.stroke();
 
-      ctx.strokeStyle = "rgba(226, 196, 166, 0.4)";
-      ctx.lineWidth = 1.5;
-      roundRect(ctx, 40, 40, CARD_WIDTH - 80, CARD_HEIGHT - 80, 22);
-      ctx.stroke();
-
-      // Header Section
+      // Top Header Block
       ctx.textAlign = "center";
-      ctx.fillStyle = "#2c1e16";
-      ctx.font = "700 38px 'Cormorant Garamond', Georgia, serif";
-      ctx.fillText("MEMORY CAKE 记忆蛋糕坊", CARD_WIDTH / 2, 98);
+      ctx.fillStyle = "#1f1610";
+      ctx.font = "700 42px 'Cormorant Garamond', Georgia, serif";
+      ctx.fillText("MEMORY CAKE", CARD_WIDTH / 2, 90);
 
-      ctx.font = "italic 500 22px Georgia, serif";
-      ctx.fillStyle = "#8c5e34";
-      ctx.fillText("— 蛋糕订购确认 Order Confirmation —", CARD_WIDTH / 2, 134);
+      ctx.font = "600 22px Inter, sans-serif";
+      ctx.fillStyle = "#8a5c32";
+      ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 126);
 
-      ctx.strokeStyle = "#e2c4a6";
+      // Decorative Top Divider
+      ctx.strokeStyle = "#d8ba96";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(CARD_WIDTH / 2 - 90, 156);
-      ctx.lineTo(CARD_WIDTH / 2 + 90, 156);
+      ctx.moveTo(CARD_WIDTH / 2 - 80, 148);
+      ctx.lineTo(CARD_WIDTH / 2 + 80, 148);
       ctx.stroke();
 
-      // Photo Frame
-      const photoTop = 180;
-      const photoSize = CARD_WIDTH - 160; // 740px
-      const photoX = (CARD_WIDTH - photoSize) / 2;
+      // Compact Photo Showcase
+      const photoHeight = 380;
+      const photoWidth = CARD_WIDTH - 160; // 740px
+      const photoX = (CARD_WIDTH - photoWidth) / 2;
+      const photoY = 175;
 
       try {
         const img = await loadImage(photoUrl);
         ctx.save();
-        roundRect(ctx, photoX, photoTop, photoSize, photoSize, 24);
+        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
         ctx.clip();
 
-        const scale = Math.max(photoSize / img.width, photoSize / img.height);
+        const scale = Math.max(photoWidth / img.width, photoHeight / img.height);
         const dw = img.width * scale;
         const dh = img.height * scale;
-        const dx = photoX + (photoSize - dw) / 2;
-        const dy = photoTop + (photoSize - dh) / 2;
+        const dx = photoX + (photoWidth - dw) / 2;
+        const dy = photoY + (photoHeight - dh) / 2;
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.restore();
 
-        // Photo border highlights
+        // Photo Outer Border & Shadow Simulation
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 8;
-        roundRect(ctx, photoX, photoTop, photoSize, photoSize, 24);
+        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
         ctx.stroke();
 
-        ctx.strokeStyle = "rgba(140, 94, 52, 0.2)";
+        ctx.strokeStyle = "rgba(110, 74, 44, 0.25)";
         ctx.lineWidth = 1.5;
-        roundRect(ctx, photoX, photoTop, photoSize, photoSize, 24);
+        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
         ctx.stroke();
       } catch {
-        ctx.fillStyle = "#f5ebd9";
-        roundRect(ctx, photoX, photoTop, photoSize, photoSize, 24);
+        ctx.fillStyle = "#f3e7d7";
+        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
         ctx.fill();
-        ctx.fillStyle = "#8c5e34";
-        ctx.font = "500 48px sans-serif";
+        ctx.fillStyle = "#8a5c32";
+        ctx.font = "500 52px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🎂", CARD_WIDTH / 2, photoTop + photoSize / 2 + 16);
+        ctx.fillText("🎂", CARD_WIDTH / 2, photoY + photoHeight / 2 + 18);
       }
 
-      // Details Table Area
-      let y = photoTop + photoSize + 55;
+      // Details Card Section
+      let currentY = photoY + photoHeight + 50;
 
-      function wrapRight(text, rightX, startY, maxWidth, lineHeight) {
+      function wrapRightText(text, rightX, startY, maxWidth, lineHeight) {
         const chars = String(text).split("");
         let line = "";
         const lines = [];
@@ -147,66 +144,67 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         return lines.length;
       }
 
-      function row(label, value, isHighlight = false) {
+      function renderDetailRow(label, value, options = {}) {
         if (!value) return;
 
+        const { isPrice = false } = options;
         const leftX = 65;
         const rightX = CARD_WIDTH - 65;
-        const maxValWidth = CARD_WIDTH - 320;
+        const maxValWidth = CARD_WIDTH - 300;
 
-        // Label Styling (Bigger & Darker)
+        // Big Label (Left)
         ctx.textAlign = "left";
-        ctx.font = "600 20px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "#7c532d";
-        ctx.fillText(label, leftX, y);
+        ctx.font = "700 22px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "#6e4a2c";
+        ctx.fillText(label, leftX, currentY);
 
-        // Value Styling (Bigger & Clearer)
+        // Extra-Large Value (Right)
         ctx.textAlign = "right";
-        ctx.font = isHighlight
-          ? "700 34px 'Cormorant Garamond', Georgia, serif"
-          : "600 26px Inter, system-ui, sans-serif";
-        ctx.fillStyle = isHighlight ? "#a33b11" : "#2c1e16";
+        ctx.font = isPrice
+          ? "700 38px 'Cormorant Garamond', Georgia, serif"
+          : "700 30px Inter, system-ui, sans-serif";
+        ctx.fillStyle = isPrice ? "#9a3311" : "#1f1610";
 
-        const lineHeight = isHighlight ? 40 : 34;
-        const lineCount = wrapRight(value, rightX, y, maxValWidth, lineHeight);
+        const lineHeight = isPrice ? 44 : 38;
+        const lineCount = wrapRightText(value, rightX, currentY, maxValWidth, lineHeight);
 
-        y += Math.max(lineCount * lineHeight, 32) + 14;
+        currentY += Math.max(lineCount * lineHeight, 36) + 16;
 
-        // Separator Line
-        ctx.strokeStyle = "rgba(124, 83, 45, 0.12)";
-        ctx.lineWidth = 1;
+        // Subtle Row Separator
+        ctx.strokeStyle = "rgba(110, 74, 44, 0.12)";
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(leftX, y - 6);
-        ctx.lineTo(rightX, y - 6);
+        ctx.moveTo(leftX, currentY - 8);
+        ctx.lineTo(rightX, currentY - 8);
         ctx.stroke();
 
-        y += 12; // Gap for next line
+        currentY += 12;
       }
 
       const priceText = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
-      row("尺寸 SIZE", `${order.sizeLabel}${priceText}`, true);
-      row("口味 FLAVOR", order.flavor);
-      row("夹心 FILLING", order.filling);
-      row("日期 DATE", [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
-      row("地址 ADDRESS", order.deliveryPlace);
-      row("电话 PHONE", order.phone);
-      if (order.remark) row("备注 NOTE", order.remark);
+      renderDetailRow("尺寸 SIZE", `${order.sizeLabel}${priceText}`, { isPrice: true });
+      renderDetailRow("口味 FLAVOR", order.flavor);
+      renderDetailRow("夹心 FILLING", order.filling);
+      renderDetailRow("日期 DATE", [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
+      renderDetailRow("地址 ADDRESS", order.deliveryPlace);
+      renderDetailRow("电话 PHONE", order.phone);
+      if (order.remark) renderDetailRow("备注 NOTE", order.remark);
 
-      // Footer
+      // Footer Info
       const orderDate = new Date(order.createdAt || Date.now());
 
       ctx.textAlign = "center";
-      ctx.font = "500 18px Inter, sans-serif";
-      ctx.fillStyle = "#8c5e34";
+      ctx.font = "600 20px Inter, sans-serif";
+      ctx.fillStyle = "#8a5c32";
       ctx.fillText(
-        `订单编号 #${order.id || "—"} · ${orderDate.toLocaleDateString("zh-CN")}`,
+        `订单编号 #${order.id || "—"}  ·  ${orderDate.toLocaleDateString("zh-CN")}`,
         CARD_WIDTH / 2,
-        CARD_HEIGHT - 85
+        CARD_HEIGHT - 80
       );
 
-      ctx.font = "italic 500 20px Georgia, serif";
-      ctx.fillStyle = "#634223";
-      ctx.fillText("感谢您的订购，我们将尽快与您联系确认 🎂", CARD_WIDTH / 2, CARD_HEIGHT - 50);
+      ctx.font = "600 22px 'Cormorant Garamond', Georgia, serif";
+      ctx.fillStyle = "#5c3d22";
+      ctx.fillText("— 感谢您的订购，期待为您制作 🎂 —", CARD_WIDTH / 2, CARD_HEIGHT - 46);
 
       const url = canvas.toDataURL("image/png");
       setDataUrl(url);
@@ -249,17 +247,21 @@ export default function OrderReceiptCard({ order, photoUrl }) {
   }
 
   return (
-    <div className="text-center max-w-lg mx-auto">
+    <div className="text-center max-w-md mx-auto px-2">
       <canvas ref={canvasRef} className="hidden" />
 
-      {generating && <div className="py-16 text-cocoa-400 text-base font-medium">生成订单卡片中...</div>}
+      {generating && (
+        <div className="py-20 text-amber-900/60 text-base font-semibold animate-pulse">
+          正在生成清晰订单卡片...
+        </div>
+      )}
 
       {!generating && failed && (
-        <div className="py-10">
-          <p className="text-base text-cocoa-500 mb-4">卡片生成失败，请重试。</p>
+        <div className="py-12">
+          <p className="text-base text-amber-950 font-medium mb-4">卡片生成失败，请重试。</p>
           <button
             onClick={generate}
-            className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 text-base font-medium hover:bg-cocoa-900"
+            className="rounded-xl bg-amber-900 text-amber-50 px-6 py-3 text-base font-semibold shadow-md active:scale-95 transition-transform"
           >
             重新生成
           </button>
@@ -268,19 +270,21 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       {!generating && !failed && dataUrl && (
         <>
-          <img src={dataUrl} alt="订单卡片" className="w-full rounded-xl shadow-lg mb-5" />
-          <div className="flex gap-3 justify-center">
+          <div className="overflow-hidden rounded-2xl shadow-2xl border border-amber-200/50 mb-6">
+            <img src={dataUrl} alt="订单卡片" className="w-full block" />
+          </div>
+          <div className="flex gap-3 justify-center pb-4">
             <button
               onClick={handleSave}
-              className="flex-1 rounded-xl bg-cocoa-800 text-cream py-3 text-base font-medium hover:bg-cocoa-900 transition-colors shadow-sm"
+              className="flex-1 rounded-xl bg-amber-900 text-amber-50 py-3.5 text-base font-semibold hover:bg-amber-950 active:scale-98 transition-all shadow-md"
             >
               💾 保存图片
             </button>
             <button
               onClick={handleShare}
-              className="flex-1 rounded-xl border-2 border-cocoa-300 text-cocoa-700 py-3 text-base font-medium hover:bg-cocoa-50 transition-colors"
+              className="flex-1 rounded-xl border-2 border-amber-800/20 text-amber-950 py-3.5 text-base font-semibold hover:bg-amber-100/50 active:scale-98 transition-all"
             >
-              📤 分享
+              📤 分享卡片
             </button>
           </div>
         </>
