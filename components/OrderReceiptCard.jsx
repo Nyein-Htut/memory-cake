@@ -166,7 +166,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         ctx.stroke();
       }
 
-      const priceText = order.sizePrice ? `  ¥${order.sizePrice}` : "";
+      const priceText = order.sizePrice ? `  MMK${order.sizePrice}` : "";
       row("尺寸 SIZE", `${order.sizeLabel}${priceText}`, true);
       row("口味 FLAVOR", order.flavor);
       row("夹心/水果 FILLING", order.filling);
