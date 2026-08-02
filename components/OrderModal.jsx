@@ -1,0 +1,281 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { cldThumb } from "@/lib/cloudinary-url";
+
+export default function OrderModal({ photo, folderId, folderName, onClose }) {
+  const [options, setOptions] = useState(null);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  const [sizeLabel, setSizeLabel] = useState("");
+  const [flavor, setFlavor] = useState("");
+  const [filling, setFilling] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
+  const [deliveryPlace, setDeliveryPlace] = useState("");
+  const [phone, setPhone] = useState("");
+  const [remark, setRemark] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/order-options")
+      .then((res) => res.json())
+      .then((data) => {
+        setOptions(data.options);
+        if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
+        if (data.options?.flavors?.length) setFlavor(data.options.flavors[0]);
+        if (data.options?.fillings?.length) setFilling(data.options.fillings[0]);
+      })
+      .finally(() => setLoadingOptions(false));
+  }, []);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const selectedSize = options?.sizes?.find((s) => s.label === sizeLabel);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!deliveryPlace.trim() || !phone.trim()) {
+      setError("请填写配送地址和联系电话");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photoId: photo.id,
+          folderId,
+          photoUrl: photo.url,
+          folderName,
+          sizeLabel,
+          sizePrice: selectedSize?.price,
+          flavor,
+          filling,
+          deliveryDate,
+          deliveryTime,
+          deliveryPlace: deliveryPlace.trim(),
+          phone: phone.trim(),
+          remark: remark.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "提交失败，请稍后重试");
+      }
+
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-3 py-6"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-cream rounded-2xl shadow-soft max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative">
+          <div className="relative w-full aspect-[4/3] bg-cocoa-100 rounded-t-2xl overflow-hidden">
+            <Image
+              src={cldThumb(photo.url, 600)}
+              alt={photo.caption || "蛋糕图片"}
+              fill
+              sizes="500px"
+              className="object-cover"
+            />
+          </div>
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center text-xl"
+            aria-label="关闭"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          <h2 className="font-serif font-medium text-2xl text-cocoa-900 mb-1">订购这款蛋糕</h2>
+          <p className="text-xs text-cocoa-400 mb-5">
+            填写以下信息，我们会尽快与您联系确认订单
+          </p>
+
+          {success ? (
+            <div className="text-center py-8">
+              <p className="text-3xl mb-3">🎂</p>
+              <p className="font-serif text-lg text-cocoa-900 mb-1">订购信息已提交！</p>
+              <p className="text-sm text-cocoa-500 mb-6">我们会尽快通过您留下的电话与您联系。</p>
+              <button
+                onClick={onClose}
+                className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 text-sm font-medium hover:bg-cocoa-900"
+              >
+                关闭
+              </button>
+            </div>
+          ) : loadingOptions ? (
+            <p className="text-cocoa-400 text-sm py-8 text-center">加载中...</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                  尺寸 *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(options?.sizes || []).map((s) => (
+                    <button
+                      type="button"
+                      key={s.label}
+                      onClick={() => setSizeLabel(s.label)}
+                      className={`rounded-lg border px-2 py-2.5 text-sm text-center transition-colors ${
+                        sizeLabel === s.label
+                          ? "border-cocoa-800 bg-cocoa-800 text-cream"
+                          : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"
+                      }`}
+                    >
+                      <div className="font-medium">{s.label}</div>
+                      <div className={`text-[11px] mt-0.5 ${sizeLabel === s.label ? "text-cream/80" : "text-cocoa-400"}`}>
+                        ¥{s.price}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {options?.flavors?.length > 0 && (
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                    口味
+                  </label>
+                  <select
+                    value={flavor}
+                    onChange={(e) => setFlavor(e.target.value)}
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  >
+                    {options.flavors.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {options?.fillings?.length > 0 && (
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                    夹心 / 水果
+                  </label>
+                  <select
+                    value={filling}
+                    onChange={(e) => setFilling(e.target.value)}
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  >
+                    {options.fillings.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                    取货/配送日期
+                  </label>
+                  <input
+                    type="date"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                    期望时间
+                  </label>
+                  <input
+                    type="time"
+                    value={deliveryTime}
+                    onChange={(e) => setDeliveryTime(e.target.value)}
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  配送地址 *
+                </label>
+                <input
+                  type="text"
+                  value={deliveryPlace}
+                  onChange={(e) => setDeliveryPlace(e.target.value)}
+                  placeholder="请输入配送地址或到店自取"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  联系电话 *
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="请输入手机号码"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  备注
+                </label>
+                <textarea
+                  value={remark}
+                  onChange={(e) => setRemark(e.target.value)}
+                  placeholder="如有蛋糕上的文字、特殊要求等，请在此说明"
+                  rows={3}
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-lg bg-cocoa-800 text-cream py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60"
+              >
+                {submitting ? "提交中..." : "提交订购"}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
