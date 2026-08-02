@@ -83,14 +83,6 @@ export default function Footer() {
                   Our Work
                 </a>
               </li>
-              <li>
-                <Link
-                  href="/admin/login"
-                  className="text-cream/60 hover:text-[#e8d1b8] transition-colors"
-                >
-                  Admin
-                </Link>
-              </li>
             </ul>
           </div>
 
