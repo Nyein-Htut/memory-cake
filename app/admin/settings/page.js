@@ -101,7 +101,7 @@ export default function AdminSettingsPage() {
                   className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
                 <div className="flex items-center gap-1">
-                  <span className="text-cocoa-400 text-sm">¥</span>
+                  <span className="text-cocoa-400 text-sm">MMK</span>
                   <input
                     type="number"
                     value={s.price}
