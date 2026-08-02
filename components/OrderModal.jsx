@@ -183,7 +183,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                     >
                       <div className="font-medium">{s.label}</div>
                       <div className={`text-[11px] mt-0.5 ${sizeLabel === s.label ? "text-cream/80" : "text-cocoa-400"}`}>
-                        ¥{s.price}
+                        MMK{s.price}
                       </div>
                     </button>
                   ))}
