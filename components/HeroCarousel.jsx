@@ -91,7 +91,7 @@ export default function HeroCarousel() {
             欢迎欣赏我们的蛋糕作品 🎂
           </p>
 
-          
+          <a
             href="#albums"
             className="inline-flex items-center gap-2 mt-6 rounded-full bg-cocoa-800 text-cream px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-medium hover:bg-cocoa-900 transition-colors shadow-md"
           >
