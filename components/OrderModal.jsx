@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { cldThumb } from "@/lib/cloudinary-url";
+import OrderReceiptCard from "@/components/OrderReceiptCard";
 
 export default function OrderModal({ photo, folderId, folderName, onClose }) {
   const [options, setOptions] = useState(null);
@@ -19,7 +20,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [submittedOrder, setSubmittedOrder] = useState(null);
 
   useEffect(() => {
     fetch("/api/order-options")
@@ -80,7 +81,21 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         throw new Error(data.error || "提交失败，请稍后重试");
       }
 
-      setSuccess(true);
+      const data = await res.json();
+
+      setSubmittedOrder({
+        id: data.order.id,
+        createdAt: data.order.created_at,
+        sizeLabel,
+        sizePrice: selectedSize?.price,
+        flavor,
+        filling,
+        deliveryDate,
+        deliveryTime,
+        deliveryPlace: deliveryPlace.trim(),
+        phone: phone.trim(),
+        remark: remark.trim(),
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -97,39 +112,51 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         className="w-full max-w-md bg-cream rounded-2xl shadow-soft max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative">
-          <div className="relative w-full aspect-[4/3] bg-cocoa-100 rounded-t-2xl overflow-hidden">
-            <Image
-              src={cldThumb(photo.url, 600)}
-              alt={photo.caption || "蛋糕图片"}
-              fill
-              sizes="500px"
-              className="object-cover"
-            />
+        {!submittedOrder && (
+          <div className="relative">
+            <div className="relative w-full aspect-[4/3] bg-cocoa-100 rounded-t-2xl overflow-hidden">
+              <Image
+                src={cldThumb(photo.url, 600)}
+                alt={photo.caption || "蛋糕图片"}
+                fill
+                sizes="500px"
+                className="object-cover"
+              />
+            </div>
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center text-xl"
+              aria-label="关闭"
+            >
+              &times;
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center text-xl"
-            aria-label="关闭"
-          >
-            &times;
-          </button>
-        </div>
+        )}
 
         <div className="p-5 sm:p-6">
-          <h2 className="font-serif font-medium text-2xl text-cocoa-900 mb-1">订购这款蛋糕</h2>
-          <p className="text-xs text-cocoa-400 mb-5">
-            填写以下信息，我们会尽快与您联系确认订单
-          </p>
+          {!submittedOrder && (
+            <>
+              <h2 className="font-serif font-medium text-2xl text-cocoa-900 mb-1">订购这款蛋糕</h2>
+              <p className="text-xs text-cocoa-400 mb-5">
+                填写以下信息，我们会尽快与您联系确认订单
+              </p>
+            </>
+          )}
 
-          {success ? (
-            <div className="text-center py-8">
-              <p className="text-3xl mb-3">🎂</p>
-              <p className="font-serif text-lg text-cocoa-900 mb-1">订购信息已提交！</p>
-              <p className="text-sm text-cocoa-500 mb-6">我们会尽快通过您留下的电话与您联系。</p>
+          {submittedOrder ? (
+            <div>
+              <div className="text-center mb-4">
+                <p className="font-serif text-lg text-cocoa-900 mb-1">订购信息已提交！🎂</p>
+                <p className="text-xs text-cocoa-500">
+                  我们会尽快通过您留下的电话与您联系。这是您的订购卡片：
+                </p>
+              </div>
+
+              <OrderReceiptCard order={submittedOrder} photoUrl={photo.url} />
+
               <button
                 onClick={onClose}
-                className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 text-sm font-medium hover:bg-cocoa-900"
+                className="w-full mt-4 rounded-lg border border-cocoa-200 text-cocoa-500 py-2.5 text-sm hover:bg-cocoa-50 transition-colors"
               >
                 关闭
               </button>
