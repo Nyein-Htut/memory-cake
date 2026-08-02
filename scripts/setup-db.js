@@ -1,4 +1,41 @@
-// ---- Cake ordering ----
+require("dotenv").config({ path: ".env.local" });
+const { neon } = require("@neondatabase/serverless");
+
+const sql = neon(process.env.DATABASE_URL);
+
+async function main() {
+  // ---- Folders & photos ----
+  console.log("Setting up folders + photos tables...");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS folders (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      cover_url TEXT,
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS photos (
+      id SERIAL PRIMARY KEY,
+      folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      public_id TEXT NOT NULL,
+      width INTEGER,
+      height INTEGER,
+      caption TEXT,
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_photos_folder_id ON photos(folder_id);`;
+
+  // ---- Cake ordering ----
   console.log("Setting up order options + orders tables...");
 
   await sql`
@@ -45,7 +82,8 @@
   `;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);`;
-  console.log("Done! Tables 'folders' and 'photos' are ready in your Neon database.");
+
+  console.log("Done! All tables ('folders', 'photos', 'order_options', 'orders') are ready.");
 }
 
 main().catch((err) => {
