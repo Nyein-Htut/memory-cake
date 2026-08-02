@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 
 // Shuffle once per page load
-function shuffle(arr: string[]) {
+function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -31,8 +31,9 @@ export default function HeroCarousel() {
   const [index, setIndex] = useState(0);
 
   const goTo = useCallback(
-    (i: number) =>
-      setIndex(((i % slides.length) + slides.length) % slides.length),
+    (i) => {
+      setIndex(((i % slides.length) + slides.length) % slides.length);
+    },
     [slides.length]
   );
 
@@ -40,22 +41,28 @@ export default function HeroCarousel() {
   const prev = useCallback(() => goTo(index - 1), [goTo, index]);
 
   useEffect(() => {
-    const t = setInterval(
-      () => setIndex((i) => (i + 1) % slides.length),
-      AUTOPLAY_MS
-    );
+    const t = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, AUTOPLAY_MS);
+
     return () => clearInterval(t);
   }, [slides.length]);
 
   return (
     <div
       className="
-        relative w-full overflow-hidden rounded-[28px] shadow-xl
-        aspect-[16/9] sm:aspect-[16/9]
-        lg:h-[540px] lg:aspect-auto
+        relative
+        w-full
+        overflow-hidden
+        rounded-[28px]
+        shadow-xl
+        aspect-[16/9]
+        sm:aspect-[16/9]
+        lg:h-[540px]
+        lg:aspect-auto
       "
     >
-      {/* Soft pink backdrop */}
+      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#fff6f8] via-[#ffeef3] to-[#f8e7ef]" />
 
       {/* Slides */}
@@ -75,36 +82,63 @@ export default function HeroCarousel() {
             className="object-cover object-center"
           />
 
-          {/* Gentle darkening so text stays readable */}
+          {/* Slight overlay */}
           <div className="absolute inset-0 bg-black/10" />
         </div>
       ))}
 
-      {/* Elegant floating card - MUCH SMALLER on mobile */}
+      {/* Floating Card */}
       <div
         className="
-          absolute left-3 top-1/2 -translate-y-1/2 z-10
-          w-[58%] max-w-[240px]
-          sm:left-8 sm:w-[50%] sm:max-w-[360px]
-          lg:left-10 lg:w-[42%] lg:max-w-[460px]
+          absolute
+          left-3
+          top-1/2
+          -translate-y-1/2
+          z-10
+
+          w-[58%]
+          max-w-[240px]
+
+          sm:left-8
+          sm:w-[50%]
+          sm:max-w-[360px]
+
+          lg:left-10
+          lg:w-[42%]
+          lg:max-w-[460px]
         "
       >
         <div
           className="
-            rounded-2xl border border-white/50
-            bg-white/55 backdrop-blur-xl
+            rounded-2xl
+            border
+            border-white/50
+            bg-white/55
+            backdrop-blur-xl
             shadow-[0_12px_40px_rgba(0,0,0,0.12)]
-            px-4 py-4
-            sm:px-6 sm:py-6
-            lg:px-8 lg:py-8
+
+            px-4
+            py-4
+
+            sm:px-6
+            sm:py-6
+
+            lg:px-8
+            lg:py-8
           "
         >
           <p
             className="
-              flex items-center gap-2
-              text-[9px] sm:text-[11px]
-              uppercase tracking-[0.28em]
-              text-[#7a5a4f] mb-2 sm:mb-3
+              flex
+              items-center
+              gap-2
+              text-[9px]
+              sm:text-[11px]
+              uppercase
+              tracking-[0.28em]
+              text-[#7a5a4f]
+              mb-2
+              sm:mb-3
             "
           >
             <span className="inline-block h-px w-4 sm:w-5 bg-[#c9a58f]" />
@@ -114,9 +148,13 @@ export default function HeroCarousel() {
 
           <h1
             className="
-              font-serif font-semibold leading-[1.05]
+              font-serif
+              font-semibold
+              leading-[1.05]
               text-[#3f2a22]
-              text-xl sm:text-3xl lg:text-5xl
+              text-xl
+              sm:text-3xl
+              lg:text-5xl
             "
           >
             记忆蛋糕坊
@@ -124,9 +162,13 @@ export default function HeroCarousel() {
 
           <p
             className="
-              mt-2 sm:mt-3
-              text-[11px] sm:text-sm lg:text-lg
-              leading-snug text-[#5a463f]
+              mt-2
+              sm:mt-3
+              text-[11px]
+              sm:text-sm
+              lg:text-lg
+              leading-snug
+              text-[#5a463f]
             "
           >
             用心制作每一份甜蜜回忆
@@ -136,8 +178,11 @@ export default function HeroCarousel() {
 
           <p
             className="
-              mt-3 sm:mt-4
-              text-[11px] sm:text-sm lg:text-base
+              mt-3
+              sm:mt-4
+              text-[11px]
+              sm:text-sm
+              lg:text-base
               text-[#6b5248]
             "
           >
@@ -147,13 +192,23 @@ export default function HeroCarousel() {
           <a
             href="#albums"
             className="
-              inline-flex items-center gap-2
-              mt-4 sm:mt-6
+              inline-flex
+              items-center
+              gap-2
+              mt-4
+              sm:mt-6
               rounded-full
-              bg-[#5a3d34] text-white
-              px-4 py-2 text-[11px]
-              sm:px-5 sm:py-2.5 sm:text-sm
-              lg:px-6 lg:py-3 lg:text-base
+              bg-[#5a3d34]
+              text-white
+              px-4
+              py-2
+              text-[11px]
+              sm:px-5
+              sm:py-2.5
+              sm:text-sm
+              lg:px-6
+              lg:py-3
+              lg:text-base
               font-medium
               hover:bg-[#4a3129]
               transition-colors
@@ -166,18 +221,38 @@ export default function HeroCarousel() {
         </div>
       </div>
 
-      {/* Prev */}
+      {/* Previous */}
       <button
         onClick={prev}
         aria-label="Previous"
         className="
-          absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20
-          flex items-center justify-center
-          w-8 h-8 sm:w-10 sm:h-10
+          absolute
+          left-2
+          sm:left-4
+          top-1/2
+          -translate-y-1/2
+          z-20
+
+          flex
+          items-center
+          justify-center
+
+          w-8
+          h-8
+          sm:w-10
+          sm:h-10
+
           rounded-full
-          bg-white/70 backdrop-blur-md
-          text-[#5a3d34] text-lg sm:text-xl
-          shadow-md hover:bg-white/90 transition
+          bg-white/70
+          backdrop-blur-md
+
+          text-[#5a3d34]
+          text-lg
+          sm:text-xl
+
+          shadow-md
+          hover:bg-white/90
+          transition
         "
       >
         ‹
@@ -188,13 +263,33 @@ export default function HeroCarousel() {
         onClick={next}
         aria-label="Next"
         className="
-          absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20
-          flex items-center justify-center
-          w-8 h-8 sm:w-10 sm:h-10
+          absolute
+          right-2
+          sm:right-4
+          top-1/2
+          -translate-y-1/2
+          z-20
+
+          flex
+          items-center
+          justify-center
+
+          w-8
+          h-8
+          sm:w-10
+          sm:h-10
+
           rounded-full
-          bg-white/70 backdrop-blur-md
-          text-[#5a3d34] text-lg sm:text-xl
-          shadow-md hover:bg-white/90 transition
+          bg-white/70
+          backdrop-blur-md
+
+          text-[#5a3d34]
+          text-lg
+          sm:text-xl
+
+          shadow-md
+          hover:bg-white/90
+          transition
         "
       >
         ›
