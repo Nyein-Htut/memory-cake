@@ -32,6 +32,9 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         if (data.options?.fillings?.length) setFilling(data.options.fillings[0]);
       })
       .finally(() => setLoadingOptions(false));
+
+    const savedPhone = localStorage.getItem("memory_cake_phone");
+    if (savedPhone) setPhone(savedPhone);
   }, []);
 
   useEffect(() => {
@@ -75,6 +78,10 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
           remark: remark.trim(),
         }),
       });
+
+      // Remember this device's phone number so "My Orders", the chat
+      // bubble, and the notification bell all auto-recognize this customer.
+      localStorage.setItem("memory_cake_phone", phone.trim());
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
