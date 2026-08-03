@@ -156,7 +156,7 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
                 </div>
               </div>
             );
-          })
+          })}
 
         <form onSubmit={handleSend} className="p-3 border-t border-cocoa-200/60 flex gap-2 items-center">
           <input
