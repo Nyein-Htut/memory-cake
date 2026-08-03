@@ -21,15 +21,13 @@ export default function PublicHeader() {
             Memory Cake (记忆蛋糕坊)
           </span>
         </Link>
-        
+
         <Link
           href="/orders"
           className="text-xs sm:text-sm text-cocoa-600 hover:text-cocoa-900 transition-colors shrink-0"
         >
           My Orders
         </Link>
-      </div>
-    </header>
       </div>
     </header>
   );
