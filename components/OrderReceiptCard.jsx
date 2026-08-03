@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1350;
+const CARD_HEIGHT = 1400;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -51,7 +51,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       canvas.height = CARD_HEIGHT;
       const ctx = canvas.getContext("2d");
 
-      // Bright Soft Warm Beige Background
+      // Soft Light Cream Gradient Background
       const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
       bgGrad.addColorStop(0, "#fffdfa");
       bgGrad.addColorStop(0.6, "#fdf8f0");
@@ -59,35 +59,27 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-      // Outer Elegant Frame
+      // Simple Outer Frame (No inner nested border lines)
       ctx.strokeStyle = "#e2cbaf";
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3;
       roundRect(ctx, 30, 30, CARD_WIDTH - 60, CARD_HEIGHT - 60, 24);
       ctx.stroke();
 
       // Top Header Block
       ctx.textAlign = "center";
       ctx.fillStyle = "#1f1610";
-      ctx.font = "700 42px 'Cormorant Garamond', Georgia, serif";
-      ctx.fillText("MEMORY CAKE", CARD_WIDTH / 2, 90);
+      ctx.font = "700 44px 'Cormorant Garamond', Georgia, serif";
+      ctx.fillText("MEMORY CAKE", CARD_WIDTH / 2, 95);
 
       ctx.font = "600 22px Inter, sans-serif";
       ctx.fillStyle = "#8a5c32";
-      ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 126);
-
-      // Decorative Top Divider
-      ctx.strokeStyle = "#d8ba96";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(CARD_WIDTH / 2 - 80, 148);
-      ctx.lineTo(CARD_WIDTH / 2 + 80, 148);
-      ctx.stroke();
+      ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 132);
 
       // Compact Photo Showcase
       const photoHeight = 380;
       const photoWidth = CARD_WIDTH - 160; // 740px
       const photoX = (CARD_WIDTH - photoWidth) / 2;
-      const photoY = 175;
+      const photoY = 165;
 
       try {
         const img = await loadImage(photoUrl);
@@ -102,17 +94,6 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         const dy = photoY + (photoHeight - dh) / 2;
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.restore();
-
-        // Photo Outer Border & Shadow Simulation
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 8;
-        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
-        ctx.stroke();
-
-        ctx.strokeStyle = "rgba(110, 74, 44, 0.25)";
-        ctx.lineWidth = 1.5;
-        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
-        ctx.stroke();
       } catch {
         ctx.fillStyle = "#f3e7d7";
         roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
@@ -123,8 +104,8 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         ctx.fillText("🎂", CARD_WIDTH / 2, photoY + photoHeight / 2 + 18);
       }
 
-      // Details Card Section
-      let currentY = photoY + photoHeight + 50;
+      // Details Card Section — Moved down to give clear separation from photo
+      let currentY = photoY + photoHeight + 85;
 
       function wrapRightText(text, rightX, startY, maxWidth, lineHeight) {
         const chars = String(text).split("");
@@ -148,37 +129,28 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         if (!value) return;
 
         const { isPrice = false } = options;
-        const leftX = 65;
-        const rightX = CARD_WIDTH - 65;
-        const maxValWidth = CARD_WIDTH - 300;
+        const leftX = 75;
+        const rightX = CARD_WIDTH - 75;
+        const maxValWidth = CARD_WIDTH - 320;
 
-        // Big Label (Left)
+        // Label (Left)
         ctx.textAlign = "left";
         ctx.font = "700 22px Inter, system-ui, sans-serif";
         ctx.fillStyle = "#6e4a2c";
         ctx.fillText(label, leftX, currentY);
 
-        // Extra-Large Value (Right)
+        // Value (Right)
         ctx.textAlign = "right";
         ctx.font = isPrice
           ? "700 38px 'Cormorant Garamond', Georgia, serif"
-          : "700 30px Inter, system-ui, sans-serif";
+          : "700 28px Inter, system-ui, sans-serif";
         ctx.fillStyle = isPrice ? "#9a3311" : "#1f1610";
 
         const lineHeight = isPrice ? 44 : 38;
         const lineCount = wrapRightText(value, rightX, currentY, maxValWidth, lineHeight);
 
-        currentY += Math.max(lineCount * lineHeight, 36) + 16;
-
-        // Subtle Row Separator
-        ctx.strokeStyle = "rgba(110, 74, 44, 0.12)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(leftX, currentY - 8);
-        ctx.lineTo(rightX, currentY - 8);
-        ctx.stroke();
-
-        currentY += 12;
+        // Extra row spacing without horizontal divider lines
+        currentY += Math.max(lineCount * lineHeight, 36) + 22;
       }
 
       const priceText = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
@@ -199,12 +171,12 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillText(
         `订单编号 #${order.id || "—"}  ·  ${orderDate.toLocaleDateString("zh-CN")}`,
         CARD_WIDTH / 2,
-        CARD_HEIGHT - 80
+        CARD_HEIGHT - 90
       );
 
       ctx.font = "600 22px 'Cormorant Garamond', Georgia, serif";
       ctx.fillStyle = "#5c3d22";
-      ctx.fillText("— 感谢您的订购，期待为您制作 🎂 —", CARD_WIDTH / 2, CARD_HEIGHT - 46);
+      ctx.fillText("— 感谢您的订购，期待为您制作 🎂 —", CARD_WIDTH / 2, CARD_HEIGHT - 55);
 
       const url = canvas.toDataURL("image/png");
       setDataUrl(url);
