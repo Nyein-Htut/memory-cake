@@ -11,7 +11,8 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
 
   const [sizeLabel, setSizeLabel] = useState("");
   const [flavor, setFlavor] = useState("");
-  const [filling, setFilling] = useState("");
+  const [filling1, setFilling1] = useState("");
+  const [filling2, setFilling2] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryPlace, setDeliveryPlace] = useState("");
@@ -28,8 +29,11 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
       .then((data) => {
         setOptions(data.options);
         if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
-        if (data.options?.flavors?.length) setFlavor(data.options.flavors[0]);
-        if (data.options?.fillings?.length) setFilling(data.options.fillings[0]);
+        if (data.options?.flavors?.length) setFlavor(data.options.flavors[0].label);
+        if (data.options?.fillings?.length) {
+          setFilling1(data.options.fillings[0].label);
+          setFilling2((data.options.fillings[1] || data.options.fillings[0]).label);
+        }
       })
       .finally(() => setLoadingOptions(false));
 
@@ -46,6 +50,10 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
   }, [onClose]);
 
   const selectedSize = options?.sizes?.find((s) => s.label === sizeLabel);
+
+  function imageForLabel(list, label) {
+    return list?.find((item) => item.label === label)?.imageUrl || null;
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -70,7 +78,11 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
           sizeLabel,
           sizePrice: selectedSize?.price,
           flavor,
-          filling,
+          flavorImageUrl: imageForLabel(options?.flavors, flavor),
+          filling1,
+          filling1ImageUrl: imageForLabel(options?.fillings, filling1),
+          filling2,
+          filling2ImageUrl: imageForLabel(options?.fillings, filling2),
           deliveryDate,
           deliveryTime,
           deliveryPlace: deliveryPlace.trim(),
@@ -96,7 +108,11 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         sizeLabel,
         sizePrice: selectedSize?.price,
         flavor,
-        filling,
+        flavorImageUrl: imageForLabel(options?.flavors, flavor),
+        filling1,
+        filling1ImageUrl: imageForLabel(options?.fillings, filling1),
+        filling2,
+        filling2ImageUrl: imageForLabel(options?.fillings, filling2),
         deliveryDate,
         deliveryTime,
         deliveryPlace: deliveryPlace.trim(),
@@ -197,20 +213,103 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                 </div>
               </div>
 
+              // after
               {options?.flavors?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     口味
                   </label>
-                  <select
-                    value={flavor}
-                    onChange={(e) => setFlavor(e.target.value)}
-                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                  >
+                  <div className="grid grid-cols-3 gap-2">
                     {options.flavors.map((f) => (
-                      <option key={f} value={f}>{f}</option>
+                      <button
+                        type="button"
+                        key={f.label}
+                        onClick={() => setFlavor(f.label)}
+                        className={`rounded-lg border overflow-hidden text-center transition-colors ${
+                          flavor === f.label
+                            ? "border-cocoa-800 ring-2 ring-cocoa-800"
+                            : "border-cocoa-200 hover:border-cocoa-400"
+                        }`}
+                      >
+                        {f.imageUrl ? (
+                          <div className="relative w-full aspect-square bg-cocoa-100">
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-full aspect-square bg-cocoa-100 flex items-center justify-center text-2xl">🎂</div>
+                        )}
+                        <div className={`py-1.5 text-xs font-medium ${flavor === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
+                          {f.label}
+                        </div>
+                      </button>
                     ))}
-                  </select>
+                  </div>
+                </div>
+              )}
+
+              {options?.fillings?.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                      夹心 / 水果 1
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {options.fillings.map((f) => (
+                        <button
+                          type="button"
+                          key={f.label}
+                          onClick={() => setFilling1(f.label)}
+                          className={`rounded-lg border overflow-hidden text-center transition-colors ${
+                            filling1 === f.label
+                              ? "border-cocoa-800 ring-2 ring-cocoa-800"
+                              : "border-cocoa-200 hover:border-cocoa-400"
+                          }`}
+                        >
+                          {f.imageUrl ? (
+                            <div className="relative w-full aspect-square bg-cocoa-100">
+                              <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-square bg-cocoa-100 flex items-center justify-center text-2xl">🍓</div>
+                          )}
+                          <div className={`py-1.5 text-xs font-medium ${filling1 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
+                            {f.label}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                      夹心 / 水果 2
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {options.fillings.map((f) => (
+                        <button
+                          type="button"
+                          key={f.label}
+                          onClick={() => setFilling2(f.label)}
+                          className={`rounded-lg border overflow-hidden text-center transition-colors ${
+                            filling2 === f.label
+                              ? "border-cocoa-800 ring-2 ring-cocoa-800"
+                              : "border-cocoa-200 hover:border-cocoa-400"
+                          }`}
+                        >
+                          {f.imageUrl ? (
+                            <div className="relative w-full aspect-square bg-cocoa-100">
+                              <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-square bg-cocoa-100 flex items-center justify-center text-2xl">🍓</div>
+                          )}
+                          <div className={`py-1.5 text-xs font-medium ${filling2 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
+                            {f.label}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
