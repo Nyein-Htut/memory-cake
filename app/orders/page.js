@@ -30,6 +30,7 @@ export default function MyOrdersPage() {
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
   const [chatOrderId, setChatOrderId] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const lookup = useCallback(async (phoneToLookup) => {
     const p = (phoneToLookup ?? phone).trim();
@@ -122,58 +123,105 @@ export default function MyOrdersPage() {
         <div className="space-y-4">
           {orders.map((order) => {
             const cancellable = canCancel(order);
+            const cakeImage = order.photo_url;
+
             return (
               <div key={order.id} className="bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs text-cocoa-400">
-                      {new Date(order.created_at).toLocaleString()}
-                      {order.folder_name ? ` · ${order.folder_name}` : ""}
-                    </p>
-                    <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
-                      {order.size_label} {order.size_price ? `· MMK ${order.size_price}` : ""}
-                    </p>
-                    <p className="text-sm text-cocoa-700 mt-1">
-                      {[order.flavor, order.filling].filter(Boolean).join(" · ") || "No flavor specified"}
-                    </p>
-                  </div>
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[order.status] || "bg-cocoa-100 text-cocoa-700"}`}>
-                    {STATUS_LABELS[order.status] || order.status}
-                  </span>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-cocoa-100/60 text-sm text-cocoa-700 space-y-1">
-                  <p><span className="text-cocoa-400">Delivery:</span> {order.delivery_date || "Not set"} {order.delivery_time || ""}</p>
-                  <p><span className="text-cocoa-400">Address:</span> {order.delivery_place}</p>
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => setChatOrderId(order.id)}
-                    className="text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1.5"
-                  >
-                    💬 Message us
-                  </button>
-
-                  {order.status !== "cancelled" && order.status !== "done" && (
-                    <button
-                      onClick={() => handleCancel(order)}
-                      disabled={!cancellable || cancellingId === order.id}
-                      title={!cancellable ? "Orders can't be cancelled within 24 hours of delivery" : ""}
-                      className="text-sm text-red-500 hover:text-red-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                <div className="flex gap-4">
+                  {cakeImage ? (
+                    <div
+                      onClick={() => setPreviewImage(cakeImage)}
+                      className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-cocoa-100 bg-cocoa-50 cursor-pointer group shadow-sm"
                     >
-                      {cancellingId === order.id ? "Cancelling..." : "Cancel order"}
-                    </button>
+                      <img
+                        src={cakeImage}
+                        alt="Cake"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-medium">
+                        放大查看
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl bg-cocoa-50 border border-cocoa-100 flex items-center justify-center text-2xl">
+                      🎂
+                    </div>
                   )}
-                  {!cancellable && order.status !== "cancelled" && order.status !== "done" && (
-                    <span className="text-xs text-cocoa-400">Can't cancel within 24h of delivery — message us instead</span>
-                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-cocoa-400">
+                          {new Date(order.created_at).toLocaleString()}
+                          {order.folder_name ? ` · ${order.folder_name}` : ""}
+                        </p>
+                        <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
+                          {order.size_label} {order.size_price ? `· MMK ${order.size_price}` : ""}
+                        </p>
+                        <p className="text-sm text-cocoa-700 mt-1">
+                          {[order.flavor, order.filling].filter(Boolean).join(" · ") || "No flavor specified"}
+                        </p>
+                      </div>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[order.status] || "bg-cocoa-100 text-cocoa-700"}`}>
+                        {STATUS_LABELS[order.status] || order.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-cocoa-100/60 text-sm text-cocoa-700 space-y-1">
+                      <p><span className="text-cocoa-400">Delivery:</span> {order.delivery_date || "Not set"} {order.delivery_time || ""}</p>
+                      <p><span className="text-cocoa-400">Address:</span> {order.delivery_place}</p>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={() => setChatOrderId(order.id)}
+                        className="text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1.5"
+                      >
+                        💬 Message us
+                      </button>
+
+                      {order.status !== "cancelled" && order.status !== "done" && (
+                        <button
+                          onClick={() => handleCancel(order)}
+                          disabled={!cancellable || cancellingId === order.id}
+                          title={!cancellable ? "Orders can't be cancelled within 24 hours of delivery" : ""}
+                          className="text-sm text-red-500 hover:text-red-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {cancellingId === order.id ? "Cancelling..." : "Cancel order"}
+                        </button>
+                      )}
+                      {!cancellable && order.status !== "cancelled" && order.status !== "done" && (
+                        <span className="text-xs text-cocoa-400">Can't cancel within 24h of delivery — message us instead</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       </main>
+
+      {previewImage && (
+        <div
+          onClick={() => setPreviewImage(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+        >
+          <div className="relative max-w-3xl max-h-[90vh] w-full flex items-center justify-center">
+            <img
+              src={previewImage}
+              alt="Enlarged Cake View"
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            />
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full"
+            >
+              ✕ 关闭
+            </button>
+          </div>
+        </div>
+      )}
 
       {chatOrderId && (
         <OrderChatPanel orderId={chatOrderId} role="customer" phone={submittedPhone} onClose={() => setChatOrderId(null)} />
