@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
+import { uploadOptionImage } from "@/lib/uploadOptionImage";
 
 export default function AdminSettingsPage() {
   const [sizes, setSizes] = useState([]);
