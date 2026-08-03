@@ -16,6 +16,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
+  const [chatOrderId, setChatOrderId] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -164,7 +165,18 @@ export default function AdminOrdersPage() {
                         </p>
                       )}
 
-                      <div className="mt-3 text-right">
+                      <div className="mt-3 flex items-center justify-end gap-4">
+                        <button
+                          onClick={() => setChatOrderId(o.id)}
+                          className="relative text-xs text-cocoa-600 hover:text-cocoa-900 font-medium flex items-center gap-1"
+                        >
+                          💬 联系客户
+                          {o.unread_messages > 0 && (
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                              {o.unread_messages}
+                            </span>
+                          )}
+                        </button>
                         <button onClick={() => deleteOrder(o.id)} className="text-xs text-red-500 hover:text-red-700 font-medium">
                           删除订单
                         </button>
@@ -198,6 +210,10 @@ export default function AdminOrdersPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {chatOrderId && (
+        <OrderChatPanel orderId={chatOrderId} role="admin" onClose={() => setChatOrderId(null)} />
       )}
     </div>
   );
