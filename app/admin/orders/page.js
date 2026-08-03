@@ -163,7 +163,7 @@ export default function AdminOrdersPage() {
                             {o.size_label || o.sizeLabel} {o.size_price || o.sizePrice ? `· MMK ${o.size_price || o.sizePrice}` : ""}
                           </p>
                           <p className="text-sm font-medium text-cocoa-700 mt-1">
-                            {[o.flavor, o.filling].filter(Boolean).join(" · ") || "未指定口味/夹心"}
+                            {[o.flavor, o.filling1, o.filling2].filter(Boolean).join(" · ") || "未指定口味/夹心"}
                           </p>
                         </div>
 
