@@ -4,7 +4,7 @@ import { isAdminAuthed } from "@/lib/require-auth";
 
 // GET  /api/orders/123/messages?phone=...   (customer)
 // GET  /api/orders/123/messages              (admin, cookie)
-// POST /api/orders/123/messages  body: { phone?, message }
+// POST /api/orders/123/messages  body: { phone?, message?, attachmentUrl?, attachmentType? }
 export async function GET(request, { params }) {
   const id = Number(params.id);
   const admin = await isAdminAuthed();
@@ -26,7 +26,6 @@ export async function GET(request, { params }) {
     SELECT * FROM order_messages WHERE order_id = ${id} ORDER BY created_at ASC
   `;
 
-  // Mark the other side's messages as read now that this side has fetched them.
   if (admin) {
     await sql`UPDATE order_messages SET read_by_admin = TRUE WHERE order_id = ${id} AND sender = 'customer'`;
   } else {
@@ -39,9 +38,9 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   const id = Number(params.id);
   const admin = await isAdminAuthed();
-  const { phone, message } = await request.json();
+  const { phone, message, attachmentUrl, attachmentType } = await request.json();
 
-  if (!message || !message.trim()) {
+  if (!message?.trim() && !attachmentUrl) {
     return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
   }
 
@@ -58,8 +57,11 @@ export async function POST(request, { params }) {
   }
 
   const rows = await sql`
-    INSERT INTO order_messages (order_id, sender, message, read_by_admin, read_by_customer)
-    VALUES (${id}, ${sender}, ${message.trim()}, ${sender === "admin"}, ${sender === "customer"})
+    INSERT INTO order_messages (order_id, sender, message, attachment_url, attachment_type, read_by_admin, read_by_customer)
+    VALUES (
+      ${id}, ${sender}, ${message?.trim() || null}, ${attachmentUrl || null}, ${attachmentType || null},
+      ${sender === "admin"}, ${sender === "customer"}
+    )
     RETURNING *
   `;
 
