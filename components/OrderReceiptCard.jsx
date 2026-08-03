@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1500;
+const CARD_HEIGHT = 1550;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -51,7 +51,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
     try {
       await Promise.all([
-        document.fonts.load("700 42px 'Cormorant Garamond'").catch(() => {}),
+        document.fonts.load("700 44px 'Cormorant Garamond'").catch(() => {}),
         document.fonts.load("600 24px 'Inter'").catch(() => {}),
       ]);
 
@@ -60,102 +60,115 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       canvas.height = CARD_HEIGHT;
       const ctx = canvas.getContext("2d");
 
-      // Soft Light Cream Gradient Background
+      // Soft Light Cream Background
       const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
-      bgGrad.addColorStop(0, "#fffdfa");
-      bgGrad.addColorStop(0.6, "#fdf8f0");
-      bgGrad.addColorStop(1, "#f9f1e4");
+      bgGrad.addColorStop(0, "#ffffff");
+      bgGrad.addColorStop(0.5, "#faf5ee");
+      bgGrad.addColorStop(1, "#f6ede1");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-      // Outer Frame
-      ctx.strokeStyle = "#e2cbaf";
+      // Delicate Outer Golden Line Border
+      ctx.strokeStyle = "#e5d7c5";
       ctx.lineWidth = 3;
-      roundRect(ctx, 30, 30, CARD_WIDTH - 60, CARD_HEIGHT - 60, 24);
+      roundRect(ctx, 35, 35, CARD_WIDTH - 70, CARD_HEIGHT - 70, 28);
       ctx.stroke();
 
       // Header Block
       ctx.textAlign = "center";
-      ctx.fillStyle = "#1f1610";
-      ctx.font = "700 44px 'Cormorant Garamond', Georgia, serif";
-      ctx.fillText("MEMORY CAKE", CARD_WIDTH / 2, 95);
+      ctx.fillStyle = "#1a130e";
+      ctx.font = "700 48px 'Cormorant Garamond', Georgia, serif";
+      ctx.fillText("MEMORY CAKE", CARD_WIDTH / 2, 105);
 
       ctx.font = "600 22px Inter, sans-serif";
-      ctx.fillStyle = "#8a5c32";
-      ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 132);
+      ctx.fillStyle = "#7a5738";
+      ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 142);
 
-      // ---- Side-by-Side Top Section Layout ----
-      const leftMargin = 75;
-      const topSectionY = 165;
+      // ==========================================
+      // TOP SECTION: Cake Photo (Left) + Options (Right)
+      // ==========================================
+      const photoX = 70;
+      const photoY = 185;
+      const photoWidth = 520;
+      const photoHeight = 520;
 
-      // Left: Main Cake Photo
-      const photoWidth = 470;
-      const photoHeight = 480;
-
-      ctx.fillStyle = "#f3e7d7";
-      roundRect(ctx, leftMargin, topSectionY, photoWidth, photoHeight, 20);
+      // Draw Main Cake Box Background
+      ctx.fillStyle = "#f2e7d8";
+      roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 24);
       ctx.fill();
 
+      // Main Cake Image Render
       const cakeImg = await loadImageSafe(photoUrl);
       if (cakeImg) {
         ctx.save();
-        roundRect(ctx, leftMargin, topSectionY, photoWidth, photoHeight, 20);
+        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 24);
         ctx.clip();
+        
+        // Scale and center without clipping key areas
         const scale = Math.min(photoWidth / cakeImg.width, photoHeight / cakeImg.height);
         const dw = cakeImg.width * scale;
         const dh = cakeImg.height * scale;
-        const dx = leftMargin + (photoWidth - dw) / 2;
-        const dy = topSectionY + (photoHeight - dh) / 2;
+        const dx = photoX + (photoWidth - dw) / 2;
+        const dy = photoY + (photoHeight - dh) / 2;
+
         ctx.drawImage(cakeImg, dx, dy, dw, dh);
         ctx.restore();
       } else {
-        ctx.fillStyle = "#8a5c32";
-        ctx.font = "500 52px sans-serif";
+        ctx.fillStyle = "#7a5738";
+        ctx.font = "500 64px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🎂", leftMargin + photoWidth / 2, topSectionY + photoHeight / 2 + 18);
+        ctx.fillText("🎂", photoX + photoWidth / 2, photoY + photoHeight / 2 + 20);
       }
 
-      // Right: 3 Vertical Option Chips (Flavor & Fillings)
-      const rightX = 580;
-      const chipWidth = 245;
-      const chipHeight = 120;
-      const chipGap = 20;
+      // Vertical Right Option Column Setup
+      const chipX = 630;
+      const chipWidth = 195;
+      const chipHeight = 135;
+      const chipGap = 42;
 
-      function drawChip(x, y, label, img, fallbackEmoji) {
-        // Soft rounded card box
-        ctx.fillStyle = "#fdf5ea";
-        roundRect(ctx, x, y, chipWidth, chipHeight, 18);
+      function drawOptionChip(yPos, label, img, fallbackEmoji) {
+        ctx.save();
+        
+        // Subtle Drop Shadow Behind Option Chips
+        ctx.shadowColor = "rgba(110, 85, 60, 0.08)";
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
+
+        ctx.fillStyle = "#faf3e8";
+        roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
         ctx.fill();
+        ctx.restore();
 
-        ctx.strokeStyle = "#eedbc5";
+        // Border Line for Chip
+        ctx.strokeStyle = "#eee1d1";
         ctx.lineWidth = 1.5;
-        roundRect(ctx, x, y, chipWidth, chipHeight, 18);
+        roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
         ctx.stroke();
 
-        // Image / Emoji
+        // Fill Image / Fallback Emoji
         if (img) {
           ctx.save();
-          roundRect(ctx, x, y, chipWidth, chipHeight, 18);
+          roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
           ctx.clip();
           const scale = Math.max(chipWidth / img.width, chipHeight / img.height);
           const dw = img.width * scale;
           const dh = img.height * scale;
-          const dx = x + (chipWidth - dw) / 2;
-          const dy = y + (chipHeight - dh) / 2;
+          const dx = chipX + (chipWidth - dw) / 2;
+          const dy = yPos + (chipHeight - dh) / 2;
           ctx.drawImage(img, dx, dy, dw, dh);
           ctx.restore();
         } else {
-          ctx.fillStyle = "#8a5c32";
-          ctx.font = "500 36px sans-serif";
+          ctx.fillStyle = "#7a5738";
+          ctx.font = "500 42px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(fallbackEmoji, x + chipWidth / 2, y + chipHeight / 2 - 4);
+          ctx.fillText(fallbackEmoji, chipX + chipWidth / 2, yPos + chipHeight / 2 + 14);
         }
 
-        // Label below each box
+        // Label Underneath Box
         ctx.textAlign = "center";
         ctx.font = "700 22px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "#1f1610";
-        ctx.fillText(label || "—", x + chipWidth / 2, y + chipHeight + 28);
+        ctx.fillStyle = "#221912";
+        ctx.fillText(label || "—", chipX + chipWidth / 2, yPos + chipHeight + 30);
       }
 
       const [flavorImg, filling1Img, filling2Img] = await Promise.all([
@@ -164,12 +177,15 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         loadImageSafe(order.filling2ImageUrl),
       ]);
 
-      drawChip(rightX, topSectionY, order.flavor, flavorImg, "🍫");
-      drawChip(rightX, topSectionY + (chipHeight + chipGap + 20), order.filling1, filling1Img, "🍓");
-      drawChip(rightX, topSectionY + (chipHeight + chipGap + 20) * 2, order.filling2, filling2Img, "🫐");
+      // Render 3 Option Chips Vertically
+      drawOptionChip(photoY, order.flavor, flavorImg, "🍫");
+      drawOptionChip(photoY + chipHeight + chipGap, order.filling1, filling1Img, "🍓");
+      drawOptionChip(photoY + (chipHeight + chipGap) * 2, order.filling2, filling2Img, "🫐");
 
-      // ---- Text Details Table ----
-      let currentY = topSectionY + photoHeight + 80;
+      // ==========================================
+      // BOTTOM SECTION: Order Details
+      // ==========================================
+      let currentY = photoY + photoHeight + 110;
 
       function wrapRightText(text, rightXPos, startY, maxWidth, lineHeight) {
         const chars = String(text).split("");
@@ -192,52 +208,78 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       function renderDetailRow(label, value, options = {}) {
         if (!value) return;
 
-        const { isPrice = false } = options;
+        const { isSizePrice = false } = options;
         const leftX = 75;
         const rightXPos = CARD_WIDTH - 75;
         const maxValWidth = CARD_WIDTH - 320;
 
-        // Label (Left)
+        // Label Text (Left)
         ctx.textAlign = "left";
-        ctx.font = "700 22px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "#6e4a2c";
+        ctx.font = "700 23px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "#63472d";
         ctx.fillText(label, leftX, currentY);
 
-        // Value (Right)
-        ctx.textAlign = "right";
-        ctx.font = isPrice
-          ? "700 38px 'Cormorant Garamond', Georgia, serif"
-          : "700 28px Inter, system-ui, sans-serif";
-        ctx.fillStyle = isPrice ? "#9a3311" : "#1f1610";
+        // Value Text (Right)
+        if (isSizePrice) {
+          ctx.textAlign = "right";
+          
+          // Size part
+          ctx.font = "700 36px 'Cormorant Garamond', Georgia, serif";
+          ctx.fillStyle = "#221912";
+          
+          const pricePart = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
+          const fullText = `${order.sizeLabel}${pricePart}`;
 
-        const lineHeight = isPrice ? 44 : 38;
-        const lineCount = wrapRightText(value, rightXPos, currentY, maxValWidth, lineHeight);
+          // Highlight MMK Price in Warm Burgundy/Gold Accent
+          const parts = fullText.split("MMK");
+          if (parts.length > 1) {
+            ctx.fillStyle = "#221912";
+            ctx.font = "700 38px 'Cormorant Garamond', Georgia, serif";
+            ctx.fillText(parts[0], rightXPos - ctx.measureText(`MMK ${parts[1]}`).width, currentY);
 
-        currentY += Math.max(lineCount * lineHeight, 36) + 22;
+            ctx.fillStyle = "#7a2a16";
+            ctx.font = "700 34px 'Cormorant Garamond', Georgia, serif";
+            ctx.fillText(`MMK ${parts[1]}`, rightXPos, currentY);
+          } else {
+            ctx.fillText(fullText, rightXPos, currentY);
+          }
+
+          currentY += 56;
+        } else {
+          ctx.textAlign = "right";
+          ctx.font = "700 26px Inter, system-ui, sans-serif";
+          ctx.fillStyle = "#1e1610";
+
+          const lineHeight = 38;
+          const lineCount = wrapRightText(value, rightXPos, currentY, maxValWidth, lineHeight);
+          currentY += Math.max(lineCount * lineHeight, 36) + 24;
+        }
       }
 
-      const priceText = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
-      renderDetailRow("尺寸 SIZE", `${order.sizeLabel}${priceText}`, { isPrice: true });
+      // Render Order Detail Rows
+      renderDetailRow("尺寸 SIZE", order.sizeLabel, { isSizePrice: true });
       renderDetailRow("日期 DATE", [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
       renderDetailRow("地址 ADDRESS", order.deliveryPlace);
       renderDetailRow("电话 PHONE", order.phone);
       if (order.remark) renderDetailRow("备注 NOTE", order.remark);
 
-      // Footer Info
+      // ==========================================
+      // FOOTER SECTION
+      // ==========================================
       const orderDate = new Date(order.createdAt || Date.now());
 
       ctx.textAlign = "center";
       ctx.font = "600 20px Inter, sans-serif";
-      ctx.fillStyle = "#8a5c32";
+      ctx.fillStyle = "#7a5738";
       ctx.fillText(
-        `订单编号 #${order.id || "—"}  ·  ${orderDate.toLocaleDateString("zh-CN")}`,
+        `订单编号 #${order.id || "8"} · ${orderDate.toLocaleDateString("zh-CN")}`,
         CARD_WIDTH / 2,
-        CARD_HEIGHT - 90
+        CARD_HEIGHT - 95
       );
 
       ctx.font = "600 22px 'Cormorant Garamond', Georgia, serif";
-      ctx.fillStyle = "#5c3d22";
-      ctx.fillText("— 感谢您的订购，期待为您制作 🎂 —", CARD_WIDTH / 2, CARD_HEIGHT - 55);
+      ctx.fillStyle = "#593d24";
+      ctx.fillText("— 感谢您的订购，期待为您制作 🎂 —", CARD_WIDTH / 2, CARD_HEIGHT - 60);
 
       const url = canvas.toDataURL("image/png");
       setDataUrl(url);
@@ -274,7 +316,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         return;
       }
     } catch {
-      // fall through
+      // Fallback to save if Web Share API is unavailable
     }
     handleSave();
   }
@@ -285,7 +327,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       {generating && (
         <div className="py-20 text-amber-900/60 text-base font-semibold animate-pulse">
-          正在生成清晰订单卡片...
+          正在生成订单卡片...
         </div>
       )}
 
