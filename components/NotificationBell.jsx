@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import NotificationsPanel from "./NotificationsPanel";
 
 function BellIcon(props) {
   return (
@@ -15,7 +15,6 @@ function BellIcon(props) {
 export default function NotificationBell() {
   const [phone, setPhone] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
-  const [open, setOpen] = useState(false);
 
   const refresh = useCallback(
     async (p) => {
@@ -47,31 +46,15 @@ export default function NotificationBell() {
   }, [phone]);
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Notifications"
-        className="relative flex items-center justify-center shrink-0 rounded-full border border-cocoa-200 bg-white/70 w-9 h-9 sm:w-10 sm:h-10 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
-      >
-        <BellIcon className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
-        )}
-      </button>
-
-      {open && (
-        <NotificationsPanel
-          phone={phone}
-          onPhoneChange={(p) => {
-            setPhone(p);
-            refresh(p);
-          }}
-          onClose={() => {
-            setOpen(false);
-            refresh();
-          }}
-        />
+    <Link
+      href="/notifications"
+      aria-label="Notifications"
+      className="relative flex items-center justify-center shrink-0 rounded-full border border-cocoa-200 bg-white/70 w-9 h-9 sm:w-10 sm:h-10 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
+    >
+      <BellIcon className="w-5 h-5" />
+      {unreadCount > 0 && (
+        <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
       )}
-    </>
+    </Link>
   );
 }
