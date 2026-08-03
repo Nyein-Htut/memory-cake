@@ -53,9 +53,9 @@ async function main() {
     INSERT INTO order_options (id, sizes, flavors, fillings)
     VALUES (
       1,
-      '[{"label":"4寸","price":98},{"label":"6寸","price":138},{"label":"8寸","price":188},{"label":"10寸","price":268},{"label":"12寸","price":368}]',
-      '["原味","巧克力","抹茶","红丝绒","芝士"]',
-      '["草莓","蓝莓酱","芒果","什锦水果","无水果"]'
+      '[{"label":"4寸","price":120000},{"label":"6寸","price":160000},{"label":"8寸","price":220000},{"label":"10寸","price":260000},{"label":"12寸","price":320000}]',
+      '[{"label":"原味","imageUrl":null},{"label":"巧克力","imageUrl":null},{"label":"抹茶","imageUrl":null},{"label":"红丝绒","imageUrl":null},{"label":"芝士","imageUrl":null}]',
+      '[{"label":"草莓","imageUrl":null},{"label":"蓝莓酱","imageUrl":null},{"label":"芒果","imageUrl":null},{"label":"什锦水果","imageUrl":null},{"label":"无水果","imageUrl":null}]'
     )
     ON CONFLICT (id) DO NOTHING;
   `;
@@ -70,7 +70,12 @@ async function main() {
       size_label TEXT NOT NULL,
       size_price NUMERIC,
       flavor TEXT,
+      flavor_image_url TEXT,
       filling TEXT,
+      filling1 TEXT,
+      filling1_image_url TEXT,
+      filling2 TEXT,
+      filling2_image_url TEXT,
       delivery_date TEXT,
       delivery_time TEXT,
       delivery_place TEXT NOT NULL,
@@ -80,8 +85,8 @@ async function main() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `;
-
-  await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);`;
+  
+await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);`;
 await sql`
     CREATE TABLE IF NOT EXISTS order_messages (
       id SERIAL PRIMARY KEY,
