@@ -19,6 +19,10 @@ function SendIcon(props) {
   );
 }
 
+function senderLabel(senderRole, viewerRole) {
+  if (senderRole === viewerRole) return "You";
+  return viewerRole === "admin" ? "Customer" : "Memory Cake";
+}
 // `embedded`: when true, renders just the panel contents (header/messages/
 // input) so a parent (like ChatWidget's floating popup) can control the
 // outer frame/positioning. When false (default), renders its own centered
@@ -125,39 +129,42 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
         ) : (
           messages.map((m) => {
             const mine = m.sender === role;
+            const label = senderLabel(m.sender, role);
             return (
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[80%] rounded-3xl px-4 py-2.5 text-sm shadow-sm ${
-                    mine
-                      ? "bg-cocoa-800 text-cream rounded-br-md"
-                      : "bg-white border border-cocoa-200 text-cocoa-900 rounded-bl-md"
-                  }`}
-                >
-                  {m.attachment_url && m.attachment_type === "image" && (
-                    <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
-                      <img src={m.attachment_url} alt="Attachment" className="rounded-2xl mb-1.5 max-h-48 object-cover" />
-                    </a>
-                  )}
-                  {m.attachment_url && m.attachment_type === "file" && (
-                    <a
-                      href={m.attachment_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`block mb-1.5 underline text-xs ${mine ? "text-cream" : "text-cocoa-700"}`}
-                    >
-                      📎 View attachment
-                    </a>
-                  )}
-                  {m.message && <p className="whitespace-pre-wrap break-words">{m.message}</p>}
-                  <p className={`text-[10px] mt-1 ${mine ? "text-cream/60" : "text-cocoa-400"}`}>
-                    {new Date(m.created_at).toLocaleString()}
-                  </p>
+                <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                  <span className="text-[10px] font-medium text-cocoa-400 mb-1 px-1">{label}</span>
+                  <div
+                    className={`rounded-3xl px-4 py-2.5 text-sm shadow-sm ${
+                      mine
+                        ? "bg-cocoa-800 text-cream rounded-br-md"
+                        : "bg-white border border-cocoa-200 text-cocoa-900 rounded-bl-md"
+                    }`}
+                  >
+                    {m.attachment_url && m.attachment_type === "image" && (
+                      <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
+                        <img src={m.attachment_url} alt="Attachment" className="rounded-2xl mb-1.5 max-h-48 object-cover" />
+                      </a>
+                    )}
+                    {m.attachment_url && m.attachment_type === "file" && (
+                      
+                        href={m.attachment_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block mb-1.5 underline text-xs ${mine ? "text-cream" : "text-cocoa-700"}`}
+                      >
+                        📎 View attachment
+                      </a>
+                    )}
+                    {m.message && <p className="whitespace-pre-wrap break-words">{m.message}</p>}
+                    <p className={`text-[10px] mt-1 ${mine ? "text-cream/60" : "text-cocoa-400"}`}>
+                      {new Date(m.created_at).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
           })
-        )}
         <div ref={bottomRef} />
       </div>
 
