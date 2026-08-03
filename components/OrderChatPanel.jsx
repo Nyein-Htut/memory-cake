@@ -10,6 +10,10 @@ function PaperclipIcon(props) {
     </svg>
   );
 }
+function senderLabel(senderRole, viewerRole) {
+  if (senderRole === viewerRole) return "You";
+  return viewerRole === "admin" ? "Customer" : "Memory Cake";
+}
 
 export default function OrderChatPanel({ orderId, role, phone, onClose }) {
   const [messages, setMessages] = useState([]);
@@ -116,11 +120,14 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
             </p>
           ) : (
             messages.map((m) => {
-              const mine = m.sender === role;
-              return (
-                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+            const mine = m.sender === role;
+            const label = senderLabel(m.sender, role);
+            return (
+              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                  <span className="text-[10px] font-medium text-cocoa-400 mb-1 px-1">{label}</span>
                   <div
-                    className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
+                    className={`rounded-2xl px-3.5 py-2 text-sm ${
                       mine
                         ? "bg-cocoa-800 text-cream rounded-br-sm"
                         : "bg-white border border-cocoa-200 text-cocoa-900 rounded-bl-sm"
@@ -132,7 +139,7 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
                       </a>
                     )}
                     {m.attachment_url && m.attachment_type === "file" && (
-                      <a
+                      
                         href={m.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -147,11 +154,9 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
                     </p>
                   </div>
                 </div>
-              );
-            })
-          )}
-          <div ref={bottomRef} />
-        </div>
+              </div>
+            );
+          })
 
         <form onSubmit={handleSend} className="p-3 border-t border-cocoa-200/60 flex gap-2 items-center">
           <input
