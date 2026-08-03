@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
+    // after
     const body = await request.json();
     const {
       photoId,
@@ -15,7 +16,11 @@ export async function POST(request) {
       sizeLabel,
       sizePrice,
       flavor,
-      filling,
+      flavorImageUrl,
+      filling1,
+      filling1ImageUrl,
+      filling2,
+      filling2ImageUrl,
       deliveryDate,
       deliveryTime,
       deliveryPlace,
@@ -30,11 +35,13 @@ export async function POST(request) {
     const rows = await sql`
       INSERT INTO orders (
         photo_id, folder_id, photo_url, folder_name,
-        size_label, size_price, flavor, filling,
+        size_label, size_price, flavor, flavor_image_url,
+        filling1, filling1_image_url, filling2, filling2_image_url,
         delivery_date, delivery_time, delivery_place, phone, remark
       ) VALUES (
         ${photoId || null}, ${folderId || null}, ${photoUrl || null}, ${folderName || null},
-        ${sizeLabel}, ${sizePrice || null}, ${flavor || null}, ${filling || null},
+        ${sizeLabel}, ${sizePrice || null}, ${flavor || null}, ${flavorImageUrl || null},
+        ${filling1 || null}, ${filling1ImageUrl || null}, ${filling2 || null}, ${filling2ImageUrl || null},
         ${deliveryDate || null}, ${deliveryTime || null}, ${deliveryPlace}, ${phone}, ${remark || null}
       )
       RETURNING *
