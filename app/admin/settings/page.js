@@ -92,8 +92,8 @@ export default function AdminSettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sizes: sizes.filter((s) => s.label.trim()),
-        flavors: flavors.filter((f) => f.trim()),
-        fillings: fillings.filter((f) => f.trim()),
+        flavors: flavors.filter((f) => f.label.trim()),
+        fillings: fillings.filter((f) => f.label.trim()),
       }),
     });
 
