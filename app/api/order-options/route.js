@@ -24,8 +24,12 @@ export async function PATCH(request) {
   const cleanSizes = sizes
     .map((s) => ({ label: String(s.label || "").trim(), price: Number(s.price) || 0 }))
     .filter((s) => s.label);
-  const cleanFlavors = flavors.map((f) => String(f).trim()).filter(Boolean);
-  const cleanFillings = fillings.map((f) => String(f).trim()).filter(Boolean);
+  const cleanFlavors = flavors
+    .map((f) => ({ label: String(f.label || "").trim(), imageUrl: f.imageUrl || null }))
+    .filter((f) => f.label);
+  const cleanFillings = fillings
+    .map((f) => ({ label: String(f.label || "").trim(), imageUrl: f.imageUrl || null }))
+    .filter((f) => f.label);
 
   const rows = await sql`
     INSERT INTO order_options (id, sizes, flavors, fillings, updated_at)
