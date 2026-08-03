@@ -165,7 +165,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
               </div>
             );
           })
-      }
+      )}
         <div ref={bottomRef} />
       </div>
 
