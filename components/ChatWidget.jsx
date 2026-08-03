@@ -11,6 +11,14 @@ function ChatBubbleIcon(props) {
   );
 }
 
+function CloseIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" {...props}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 export default function ChatWidget() {
   const [phone, setPhone] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -30,49 +38,79 @@ export default function ChatWidget() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Chat with us"
-        className="fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-cocoa-800 text-cream shadow-xl hover:bg-cocoa-900 hover:scale-105 transition-all"
-      >
-        <ChatBubbleIcon className="w-6 h-6" />
-      </button>
+      {/* Floating launcher button */}
+      <div className="fixed bottom-5 right-5 z-40">
+        {!open && (
+          <span className="absolute inset-0 rounded-full bg-cocoa-700 opacity-30 animate-ping pointer-events-none" />
+        )}
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? "Close chat" : "Chat with us"}
+          className="relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-cocoa-700 to-cocoa-900 text-cream shadow-2xl hover:scale-110 active:scale-95 transition-transform duration-300"
+        >
+          {open ? <CloseIcon className="w-5 h-5" /> : <ChatBubbleIcon className="w-6 h-6" />}
+        </button>
+      </div>
 
-      {open &&
-        (phone ? (
-          <SupportChatPanel phone={phone} role="customer" onClose={() => setOpen(false)} />
-        ) : (
+      {/* Popup: full-screen on mobile, floating card bottom-right on desktop */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center sm:inset-auto sm:bottom-24 sm:right-5 sm:bg-transparent sm:block"
+          onClick={() => setOpen(false)}
+        >
           <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center px-0 sm:px-4"
-            onClick={() => setOpen(false)}
+            className="w-full h-full sm:w-[380px] sm:h-[600px] bg-cream sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full sm:max-w-sm bg-cream rounded-t-2xl sm:rounded-2xl shadow-soft p-5 sm:p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="font-serif text-lg text-cocoa-900 mb-1">Chat with us</h2>
-              <p className="text-xs text-cocoa-400 mb-4">
-                Enter your phone number so we know who we're chatting with.
-              </p>
-              <form onSubmit={handleStartChat} className="space-y-3">
-                <input
-                  type="tel"
-                  autoFocus
-                  value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="Your phone number"
-                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                />
-                <button type="submit" className="w-full rounded-lg bg-cocoa-800 text-cream py-2.5 text-sm font-medium hover:bg-cocoa-900">
-                  Start chat
-                </button>
-              </form>
-              <button onClick={() => setOpen(false)} className="w-full mt-2 text-xs text-cocoa-400 py-1">
-                Cancel
-              </button>
-            </div>
+            {phone ? (
+              <SupportChatPanel
+                phone={phone}
+                role="customer"
+                embedded
+                onClose={() => setOpen(false)}
+              />
+            ) : (
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between px-5 py-4 bg-cocoa-900 text-cream shrink-0">
+                  <div>
+                    <h2 className="font-serif text-lg leading-none">Chat with us</h2>
+                    <p className="text-xs text-cream/60 mt-1">We usually reply within a few hours</p>
+                  </div>
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="text-cream/70 hover:text-cream text-xl leading-none"
+                    aria-label="Close"
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                <div className="flex-1 flex flex-col justify-center px-6 py-6 bg-[#faf6f0]">
+                  <p className="text-sm text-cocoa-500 mb-4">
+                    Enter your phone number so we know who we're chatting with.
+                  </p>
+                  <form onSubmit={handleStartChat} className="space-y-3">
+                    <input
+                      type="tel"
+                      autoFocus
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      placeholder="Your phone number"
+                      className="w-full rounded-full border border-cocoa-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                    />
+                    <button
+                      type="submit"
+                      className="w-full rounded-full bg-cocoa-800 text-cream py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
+                    >
+                      Start chat
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
-        ))}
+        </div>
+      )}
     </>
   );
 }
