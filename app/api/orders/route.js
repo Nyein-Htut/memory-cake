@@ -51,8 +51,23 @@ export async function GET(request) {
   const status = searchParams.get("status");
 
   const orders = status
-    ? await sql`SELECT * FROM orders WHERE status = ${status} ORDER BY created_at DESC`
-    : await sql`SELECT * FROM orders ORDER BY created_at DESC`;
+    ? await sql`
+        SELECT o.*,
+               COUNT(m.id) FILTER (WHERE m.sender = 'customer' AND m.read_by_admin = FALSE)::int AS unread_messages
+        FROM orders o
+        LEFT JOIN order_messages m ON m.order_id = o.id
+        WHERE o.status = ${status}
+        GROUP BY o.id
+        ORDER BY o.created_at DESC
+      `
+    : await sql`
+        SELECT o.*,
+               COUNT(m.id) FILTER (WHERE m.sender = 'customer' AND m.read_by_admin = FALSE)::int AS unread_messages
+        FROM orders o
+        LEFT JOIN order_messages m ON m.order_id = o.id
+        GROUP BY o.id
+        ORDER BY o.created_at DESC
+      `;
 
   return NextResponse.json({ orders });
 }
