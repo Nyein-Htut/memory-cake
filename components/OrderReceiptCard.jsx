@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1400;
+const CARD_HEIGHT = 1450;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -59,7 +59,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-      // Simple Outer Frame (No inner nested border lines)
+      // Simple Outer Frame
       ctx.strokeStyle = "#e2cbaf";
       ctx.lineWidth = 3;
       roundRect(ctx, 30, 30, CARD_WIDTH - 60, CARD_HEIGHT - 60, 24);
@@ -75,23 +75,31 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillStyle = "#8a5c32";
       ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 132);
 
-      // Compact Photo Showcase
-      const photoHeight = 380;
+      // Expanded Photo Container with Full Fit (No Cropping)
+      const photoHeight = 480; // Increased height
       const photoWidth = CARD_WIDTH - 160; // 740px
       const photoX = (CARD_WIDTH - photoWidth) / 2;
       const photoY = 165;
 
       try {
         const img = await loadImage(photoUrl);
+
+        // Fill subtle photo background box for non-square photos
+        ctx.fillStyle = "#f3e7d7";
+        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
+        ctx.fill();
+
         ctx.save();
         roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
         ctx.clip();
 
-        const scale = Math.max(photoWidth / img.width, photoHeight / img.height);
+        // Use Math.min to scale and contain full image without cutting off edges
+        const scale = Math.min(photoWidth / img.width, photoHeight / img.height);
         const dw = img.width * scale;
         const dh = img.height * scale;
         const dx = photoX + (photoWidth - dw) / 2;
         const dy = photoY + (photoHeight - dh) / 2;
+
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.restore();
       } catch {
@@ -104,7 +112,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         ctx.fillText("🎂", CARD_WIDTH / 2, photoY + photoHeight / 2 + 18);
       }
 
-      // Details Card Section — Moved down to give clear separation from photo
+      // Details Section with Generous Top Gap Below Photo
       let currentY = photoY + photoHeight + 85;
 
       function wrapRightText(text, rightX, startY, maxWidth, lineHeight) {
@@ -149,8 +157,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         const lineHeight = isPrice ? 44 : 38;
         const lineCount = wrapRightText(value, rightX, currentY, maxValWidth, lineHeight);
 
-        // Extra row spacing without horizontal divider lines
-        currentY += Math.max(lineCount * lineHeight, 36) + 22;
+        currentY += Math.max(lineCount * lineHeight, 36) + 20;
       }
 
       const priceText = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
