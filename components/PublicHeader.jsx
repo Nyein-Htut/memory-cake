@@ -1,5 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
+import NotificationBell from "./NotificationBell";
+import ChatWidget from "./ChatWidget";
 
 function ShoppingBagIcon(props) {
   return (
@@ -21,11 +23,8 @@ function ShoppingBagIcon(props) {
 export default function PublicHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-cocoa-200/50 bg-[#F0E6DA]/95 backdrop-blur-md">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
-        <Link
-          href="/"
-          className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1"
-        >
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-3">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <Image
             src="/logo.jpg"
             alt="Memory Cake logo"
@@ -39,17 +38,21 @@ export default function PublicHeader() {
           </span>
         </Link>
 
-        <Link
-          href="/orders"
-          aria-label="My Orders"
-          className="flex items-center gap-1.5 shrink-0 rounded-full border border-cocoa-200 bg-white/70 px-2.5 sm:px-3.5 py-2 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
-        >
-          <ShoppingBagIcon className="w-5 h-5 shrink-0" />
-          <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">
-            My Orders
-          </span>
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <NotificationBell />
+
+          <Link
+            href="/orders"
+            aria-label="My Orders"
+            className="flex items-center gap-1.5 shrink-0 rounded-full border border-cocoa-200 bg-white/70 px-2.5 sm:px-3.5 py-2 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
+          >
+            <ShoppingBagIcon className="w-5 h-5 shrink-0" />
+            <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">My Orders</span>
+          </Link>
+        </div>
       </div>
+
+      <ChatWidget />
     </header>
   );
 }
