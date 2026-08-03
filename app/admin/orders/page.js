@@ -17,16 +17,34 @@ export default function AdminOrdersPage() {
   const [filter, setFilter] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
   const [chatOrderId, setChatOrderId] = useState(null);
+  const [error, setError] = useState("");
 
   async function load() {
     setLoading(true);
-    const url = filter ? `/api/orders?status=${filter}` : "/api/orders";
-    const res = await fetch(url);
-    if (res.ok) {
+    setError("");
+    try {
+      const url = filter ? `/api/orders?status=${filter}` : "/api/orders";
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(
+          data.error
+            ? `${data.error}${data.details ? " — " + data.details : ""}`
+            : `Failed to load orders (HTTP ${res.status})`
+        );
+        setOrders([]);
+        return;
+      }
+
       const data = await res.json();
       setOrders(data.orders || []);
+    } catch (err) {
+      setError("Network error while loading orders.");
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -73,11 +91,24 @@ export default function AdminOrdersPage() {
           ))}
         </div>
 
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p className="font-medium">Could not load orders</p>
+            <p className="mt-0.5 text-red-600">{error}</p>
+            <button
+              onClick={load}
+              className="mt-2 text-xs font-medium text-red-700 underline hover:text-red-900"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {/* Orders List */}
         {loading ? (
           <p className="text-cocoa-400">Loading...</p>
         ) : orders.length === 0 ? (
-          <p className="text-cocoa-400">暂无订购信息。</p>
+          !error && <p className="text-cocoa-400">暂无订购信息。</p>
         ) : (
           <div className="space-y-4">
             {orders.map((o) => {
@@ -86,7 +117,6 @@ export default function AdminOrdersPage() {
               return (
                 <div key={o.id} className="bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-5">
                   <div className="flex flex-col sm:flex-row gap-4">
-                    {/* Cake Photo Thumbnail */}
                     <div className="shrink-0 flex sm:block items-center justify-between">
                       {cakeImage ? (
                         <div
@@ -109,7 +139,6 @@ export default function AdminOrdersPage() {
                         </div>
                       )}
 
-                      {/* Status Dropdown (Mobile view position) */}
                       <div className="sm:hidden">
                         <select
                           value={o.status}
@@ -123,7 +152,6 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Order Information Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -139,7 +167,6 @@ export default function AdminOrdersPage() {
                           </p>
                         </div>
 
-                        {/* Status Dropdown (Desktop view position) */}
                         <div className="hidden sm:block shrink-0">
                           <select
                             value={o.status}
@@ -190,7 +217,6 @@ export default function AdminOrdersPage() {
         )}
       </main>
 
-      {/* Lightbox Image Preview Modal */}
       {previewImage && (
         <div
           onClick={() => setPreviewImage(null)}
