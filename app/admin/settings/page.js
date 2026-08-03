@@ -173,20 +173,36 @@ export default function AdminSettingsPage() {
           </button>
         </section>
 
+        // after
         {/* 口味 Section */}
         <section className="mb-6 sm:mb-10 bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-6">
           <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-4">口味</h2>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {flavors.map((f, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="flex items-center gap-3 p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
+                <label className="shrink-0 relative w-14 h-14 rounded-lg overflow-hidden border border-cocoa-200 bg-white cursor-pointer flex items-center justify-center text-cocoa-300 text-[10px] text-center">
+                  {f.imageUrl ? (
+                    <img src={f.imageUrl} alt={f.label} className="w-full h-full object-cover" />
+                  ) : uploadingFlavorIdx === i ? (
+                    "上传中"
+                  ) : (
+                    "+ 图片"
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFlavorImage(i, e.target.files?.[0])}
+                  />
+                </label>
                 <input
-                  value={f}
-                  onChange={(e) => updateList(setFlavors, i, e.target.value)}
+                  value={f.label}
+                  onChange={(e) => updateFlavor(i, "label", e.target.value)}
                   placeholder="例如：巧克力"
-                  className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                 />
                 <button
-                  onClick={() => removeFromList(setFlavors, i)}
+                  onClick={() => removeFlavor(i)}
                   className="text-red-500 hover:text-red-700 text-sm px-2 py-1 shrink-0 font-medium"
                 >
                   删除
@@ -195,27 +211,44 @@ export default function AdminSettingsPage() {
             ))}
           </div>
           <button
-            onClick={() => addToList(setFlavors)}
+            onClick={addFlavor}
             className="mt-4 text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
           >
             + 添加口味
           </button>
         </section>
 
+        // after
         {/* 夹心 / 水果 Section */}
         <section className="mb-6 sm:mb-10 bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-6">
           <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-4">夹心 / 水果</h2>
-          <div className="space-y-2">
+          <p className="text-xs text-cocoa-400 mb-3">顾客下单时会从这些选项中选择两种（夹心1 和 夹心2）</p>
+          <div className="space-y-3">
             {fillings.map((f, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="flex items-center gap-3 p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
+                <label className="shrink-0 relative w-14 h-14 rounded-lg overflow-hidden border border-cocoa-200 bg-white cursor-pointer flex items-center justify-center text-cocoa-300 text-[10px] text-center">
+                  {f.imageUrl ? (
+                    <img src={f.imageUrl} alt={f.label} className="w-full h-full object-cover" />
+                  ) : uploadingFillingIdx === i ? (
+                    "上传中"
+                  ) : (
+                    "+ 图片"
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFillingImage(i, e.target.files?.[0])}
+                  />
+                </label>
                 <input
-                  value={f}
-                  onChange={(e) => updateList(setFillings, i, e.target.value)}
+                  value={f.label}
+                  onChange={(e) => updateFilling(i, "label", e.target.value)}
                   placeholder="例如：草莓"
-                  className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                 />
                 <button
-                  onClick={() => removeFromList(setFillings, i)}
+                  onClick={() => removeFilling(i)}
                   className="text-red-500 hover:text-red-700 text-sm px-2 py-1 shrink-0 font-medium"
                 >
                   删除
@@ -224,7 +257,7 @@ export default function AdminSettingsPage() {
             ))}
           </div>
           <button
-            onClick={() => addToList(setFillings)}
+            onClick={addFilling}
             className="mt-4 text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
           >
             + 添加夹心/水果
