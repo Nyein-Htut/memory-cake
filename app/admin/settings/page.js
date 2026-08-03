@@ -35,16 +35,52 @@ export default function AdminSettingsPage() {
     setSizes((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  function updateList(setter, i, value) {
-    setter((prev) => prev.map((v, idx) => (idx === i ? value : v)));
+  // after
+  const [uploadingFlavorIdx, setUploadingFlavorIdx] = useState(null);
+  const [uploadingFillingIdx, setUploadingFillingIdx] = useState(null);
+
+  function updateFlavor(i, field, value) {
+    setFlavors((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)));
+  }
+  function addFlavor() {
+    setFlavors((prev) => [...prev, { label: "", imageUrl: null }]);
+  }
+  function removeFlavor(i) {
+    setFlavors((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  async function handleFlavorImage(i, file) {
+    if (!file) return;
+    setUploadingFlavorIdx(i);
+    try {
+      const url = await uploadOptionImage(file);
+      updateFlavor(i, "imageUrl", url);
+    } catch (err) {
+      setMessage(err.message || "图片上传失败");
+    } finally {
+      setUploadingFlavorIdx(null);
+    }
   }
 
-  function addToList(setter) {
-    setter((prev) => [...prev, ""]);
+  function updateFilling(i, field, value) {
+    setFillings((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)));
   }
-
-  function removeFromList(setter, i) {
-    setter((prev) => prev.filter((_, idx) => idx !== i));
+  function addFilling() {
+    setFillings((prev) => [...prev, { label: "", imageUrl: null }]);
+  }
+  function removeFilling(i) {
+    setFillings((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  async function handleFillingImage(i, file) {
+    if (!file) return;
+    setUploadingFillingIdx(i);
+    try {
+      const url = await uploadOptionImage(file);
+      updateFilling(i, "imageUrl", url);
+    } catch (err) {
+      setMessage(err.message || "图片上传失败");
+    } finally {
+      setUploadingFillingIdx(null);
+    }
   }
 
   async function handleSave() {
