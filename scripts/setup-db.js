@@ -82,7 +82,35 @@ async function main() {
   `;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);`;
+await sql`
+    CREATE TABLE IF NOT EXISTS order_messages (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      sender TEXT NOT NULL CHECK (sender IN ('admin', 'customer')),
+      message TEXT,
+      attachment_url TEXT,
+      attachment_type TEXT,
+      read_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
+      read_by_customer BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_order_messages_order_id ON order_messages(order_id, created_at);`;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id SERIAL PRIMARY KEY,
+      phone TEXT NOT NULL,
+      sender TEXT NOT NULL CHECK (sender IN ('admin', 'customer')),
+      message TEXT,
+      attachment_url TEXT,
+      attachment_type TEXT,
+      read_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
+      read_by_customer BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_phone ON support_messages(phone, created_at);`;
   console.log("Done! All tables ('folders', 'photos', 'order_options', 'orders') are ready.");
 }
 
