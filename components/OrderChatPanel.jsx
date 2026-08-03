@@ -1,14 +1,25 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { uploadChatAttachment } from "@/lib/uploadChatAttachment";
+
+function PaperclipIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
 
 export default function OrderChatPanel({ orderId, role, phone, onClose }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const isAdmin = role === "admin";
 
@@ -24,7 +35,7 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 8000); // light polling for replies
+    const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
   }, [load]);
 
@@ -32,33 +43,53 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  async function sendMessage({ message, attachmentUrl, attachmentType }) {
+    setError("");
+    const res = await fetch(`/api/orders/${orderId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, message, attachmentUrl, attachmentType }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Could not send message");
+    }
+    await load();
+  }
+
   async function handleSend(e) {
     e.preventDefault();
     if (!draft.trim()) return;
     setSending(true);
-    setError("");
-
-    const res = await fetch(`/api/orders/${orderId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, message: draft.trim() }),
-    });
-
-    setSending(false);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || "Could not send message");
-      return;
+    try {
+      await sendMessage({ message: draft.trim() });
+      setDraft("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
     }
+  }
 
-    setDraft("");
-    load();
+  async function handleFileSelected(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const { url, type } = await uploadChatAttachment(file);
+      await sendMessage({ message: null, attachmentUrl: url, attachmentType: type });
+    } catch (err) {
+      setError(err.message || "Could not send attachment");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center px-0 sm:px-4"
+      className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center px-0 sm:px-4"
       onClick={onClose}
     >
       <div
@@ -81,7 +112,7 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
             <p className="text-sm text-cocoa-400 text-center py-6">
               {isAdmin
                 ? "No messages yet. Send a note if you need to confirm anything with the customer."
-                : "No messages yet. Ask us anything about payment or delivery fees."}
+                : "No messages yet. Ask us anything about this order — feel free to attach a receipt or payment QR."}
             </p>
           ) : (
             messages.map((m) => {
@@ -95,7 +126,22 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
                         : "bg-white border border-cocoa-200 text-cocoa-900 rounded-bl-sm"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.message}</p>
+                    {m.attachment_url && m.attachment_type === "image" && (
+                      <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
+                        <img src={m.attachment_url} alt="Attachment" className="rounded-lg mb-1.5 max-h-48 object-cover" />
+                      </a>
+                    )}
+                    {m.attachment_url && m.attachment_type === "file" && (
+                      
+                        href={m.attachment_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block mb-1.5 underline text-xs ${mine ? "text-cream" : "text-cocoa-700"}`}
+                      >
+                        📎 View attachment
+                      </a>
+                    )}
+                    {m.message && <p className="whitespace-pre-wrap break-words">{m.message}</p>}
                     <p className={`text-[10px] mt-1 ${mine ? "text-cream/60" : "text-cocoa-400"}`}>
                       {new Date(m.created_at).toLocaleString()}
                     </p>
@@ -107,7 +153,21 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={handleSend} className="p-3 border-t border-cocoa-200/60 flex gap-2">
+        <form onSubmit={handleSend} className="p-3 border-t border-cocoa-200/60 flex gap-2 items-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf"
+            onChange={handleFileSelected}
+            className="hidden"
+            id={`order-attach-${orderId}-${role}`}
+          />
+          <label
+            htmlFor={`order-attach-${orderId}-${role}`}
+            className={`shrink-0 w-9 h-9 rounded-full border border-cocoa-200 flex items-center justify-center text-cocoa-600 hover:text-cocoa-900 hover:border-cocoa-400 cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+          >
+            <PaperclipIcon className="w-4 h-4" />
+          </label>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -122,6 +182,7 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
             Send
           </button>
         </form>
+        {uploading && <p className="text-xs text-cocoa-400 px-4 pb-2">Uploading attachment...</p>}
         {error && <p className="text-xs text-red-600 px-4 pb-2">{error}</p>}
       </div>
     </div>
