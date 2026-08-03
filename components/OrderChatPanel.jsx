@@ -139,7 +139,7 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
                       </a>
                     )}
                     {m.attachment_url && m.attachment_type === "file" && (
-                      
+                      <a
                         href={m.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer"
