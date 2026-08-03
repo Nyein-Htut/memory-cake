@@ -1,11 +1,24 @@
+// after
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function AdminHeader() {
   const router = useRouter();
+  const [notifs, setNotifs] = useState({ newOrders: 0, unreadSupportMessages: 0, unreadOrderMessages: 0 });
+
+  useEffect(() => {
+    async function load() {
+      const res = await fetch("/api/admin/notifications");
+      if (res.ok) setNotifs(await res.json());
+    }
+    load();
+    const interval = setInterval(load, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -43,12 +56,26 @@ export default function AdminHeader() {
 
 
         {/* Actions */}
+        // after
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
             href="/admin/orders"
-            className="text-xs sm:text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
+            className="relative text-xs sm:text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
           >
             订购信息
+            {notifs.newOrders > 0 && (
+              <span className="absolute -top-1.5 -right-2 w-2.5 h-2.5 rounded-full bg-red-500 border border-cream" />
+            )}
+          </Link>
+
+          <Link
+            href="/admin/support"
+            className="relative text-xs sm:text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
+          >
+            客服聊天
+            {notifs.unreadSupportMessages + notifs.unreadOrderMessages > 0 && (
+              <span className="absolute -top-1.5 -right-2 w-2.5 h-2.5 rounded-full bg-red-500 border border-cream" />
+            )}
           </Link>
 
           <Link
