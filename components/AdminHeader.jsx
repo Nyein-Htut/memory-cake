@@ -1,4 +1,3 @@
-// after
 "use client";
 
 import Link from "next/link";
@@ -56,7 +55,6 @@ export default function AdminHeader() {
 
 
         {/* Actions */}
-        // after
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
             href="/admin/orders"
