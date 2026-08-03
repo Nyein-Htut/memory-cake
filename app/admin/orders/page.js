@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
+import OrderChatPanel from "@/components/OrderChatPanel";
 
 const STATUS_LABELS = {
   new: "新订单",
