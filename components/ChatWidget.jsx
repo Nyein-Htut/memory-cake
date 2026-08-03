@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import SupportChatPanel from "./SupportChatPanel";
 
 function ChatBubbleIcon(props) {
@@ -20,11 +21,13 @@ function CloseIcon(props) {
 }
 
 export default function ChatWidget() {
+  const [mounted, setMounted] = useState(false);
   const [phone, setPhone] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem("memory_cake_phone");
     if (saved) setPhone(saved);
   }, []);
@@ -36,10 +39,13 @@ export default function ChatWidget() {
     setPhone(phoneInput.trim());
   }
 
-  return (
+  // Wait for client mount before portaling — document.body doesn't exist during SSR.
+  if (!mounted) return null;
+
+  return createPortal(
     <>
-      {/* Floating launcher button */}
-      <div className="fixed bottom-5 right-5 z-40">
+      {/* Floating launcher — always pinned to the viewport corner, survives scroll */}
+      <div className="fixed bottom-5 right-5 z-[100]">
         {!open && (
           <span className="absolute inset-0 rounded-full bg-cocoa-700 opacity-30 animate-ping pointer-events-none" />
         )}
@@ -52,23 +58,18 @@ export default function ChatWidget() {
         </button>
       </div>
 
-      {/* Popup: full-screen on mobile, floating card bottom-right on desktop */}
+      {/* Popup — near full-screen sheet on mobile, large floating card on desktop */}
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center sm:inset-auto sm:bottom-24 sm:right-5 sm:bg-transparent sm:block"
+          className="fixed inset-0 z-[110] bg-black/40 flex items-end justify-center sm:items-end sm:justify-end"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full h-full sm:w-[380px] sm:h-[600px] bg-cream sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="w-full h-[94vh] sm:h-[680px] sm:w-[400px] sm:mb-24 sm:mr-6 bg-cream sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {phone ? (
-              <SupportChatPanel
-                phone={phone}
-                role="customer"
-                embedded
-                onClose={() => setOpen(false)}
-              />
+              <SupportChatPanel phone={phone} role="customer" embedded onClose={() => setOpen(false)} />
             ) : (
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-5 py-4 bg-cocoa-900 text-cream shrink-0">
@@ -111,6 +112,7 @@ export default function ChatWidget() {
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }
