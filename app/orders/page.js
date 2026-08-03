@@ -159,7 +159,7 @@ export default function MyOrdersPage() {
                           {order.size_label} {order.size_price ? `· MMK ${order.size_price}` : ""}
                         </p>
                         <p className="text-sm text-cocoa-700 mt-1">
-                          {[order.flavor, order.filling].filter(Boolean).join(" · ") || "No flavor specified"}
+                          {[order.flavor, order.filling1, order.filling2].filter(Boolean).join(" · ") || "No flavor specified"}
                         </p>
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[order.status] || "bg-cocoa-100 text-cocoa-700"}`}>
