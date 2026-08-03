@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1550;
+const CARD_HEIGHT = 1500;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -25,9 +25,6 @@ function loadImage(src) {
   });
 }
 
-// Like loadImage, but resolves to null instead of throwing — used for the
-// flavor/filling chip images, since an admin may not have added a picture
-// for every option yet.
 async function loadImageSafe(src) {
   if (!src) return null;
   try {
@@ -71,13 +68,13 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-      // Simple Outer Frame
+      // Outer Frame
       ctx.strokeStyle = "#e2cbaf";
       ctx.lineWidth = 3;
       roundRect(ctx, 30, 30, CARD_WIDTH - 60, CARD_HEIGHT - 60, 24);
       ctx.stroke();
 
-      // Top Header Block
+      // Header Block
       ctx.textAlign = "center";
       ctx.fillStyle = "#1f1610";
       ctx.font = "700 44px 'Cormorant Garamond', Georgia, serif";
@@ -87,81 +84,78 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillStyle = "#8a5c32";
       ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 132);
 
-      // ---- Cake photo, at the top ----
-      const photoHeight = 420;
-      const photoWidth = CARD_WIDTH - 160;
-      const photoX = (CARD_WIDTH - photoWidth) / 2;
-      const photoY = 165;
+      // ---- Side-by-Side Top Section Layout ----
+      const leftMargin = 75;
+      const topSectionY = 165;
+
+      // Left: Main Cake Photo
+      const photoWidth = 470;
+      const photoHeight = 480;
 
       ctx.fillStyle = "#f3e7d7";
-      roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
+      roundRect(ctx, leftMargin, topSectionY, photoWidth, photoHeight, 20);
       ctx.fill();
 
       const cakeImg = await loadImageSafe(photoUrl);
       if (cakeImg) {
         ctx.save();
-        roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 20);
+        roundRect(ctx, leftMargin, topSectionY, photoWidth, photoHeight, 20);
         ctx.clip();
         const scale = Math.min(photoWidth / cakeImg.width, photoHeight / cakeImg.height);
         const dw = cakeImg.width * scale;
         const dh = cakeImg.height * scale;
-        const dx = photoX + (photoWidth - dw) / 2;
-        const dy = photoY + (photoHeight - dh) / 2;
+        const dx = leftMargin + (photoWidth - dw) / 2;
+        const dy = topSectionY + (photoHeight - dh) / 2;
         ctx.drawImage(cakeImg, dx, dy, dw, dh);
         ctx.restore();
       } else {
         ctx.fillStyle = "#8a5c32";
         ctx.font = "500 52px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("🎂", CARD_WIDTH / 2, photoY + photoHeight / 2 + 18);
+        ctx.fillText("🎂", leftMargin + photoWidth / 2, topSectionY + photoHeight / 2 + 18);
       }
 
-      // ---- Flavor + filling 1 + filling 2 chips, side by side ----
-      let currentY = photoY + photoHeight + 60;
-
-      ctx.textAlign = "left";
-      ctx.font = "700 22px Inter, system-ui, sans-serif";
-      ctx.fillStyle = "#6e4a2c";
-      ctx.fillText("口味与夹心 FLAVOR & FILLING", 75, currentY);
-
-      currentY += 30;
-
-      const chipSize = 200;
-      const chipGap = 27;
-      const chipsStartX = (CARD_WIDTH - (chipSize * 3 + chipGap * 2)) / 2;
+      // Right: 3 Vertical Option Chips (Flavor & Fillings)
+      const rightX = 580;
+      const chipWidth = 245;
+      const chipHeight = 120;
+      const chipGap = 20;
 
       function drawChip(x, y, label, img, fallbackEmoji) {
-        ctx.fillStyle = "#f3e7d7";
-        roundRect(ctx, x, y, chipSize, chipSize, 18);
+        // Soft rounded card box
+        ctx.fillStyle = "#fdf5ea";
+        roundRect(ctx, x, y, chipWidth, chipHeight, 18);
         ctx.fill();
 
+        ctx.strokeStyle = "#eedbc5";
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, x, y, chipWidth, chipHeight, 18);
+        ctx.stroke();
+
+        // Image / Emoji
         if (img) {
           ctx.save();
-          roundRect(ctx, x, y, chipSize, chipSize, 18);
+          roundRect(ctx, x, y, chipWidth, chipHeight, 18);
           ctx.clip();
-          const scale = Math.max(chipSize / img.width, chipSize / img.height);
+          const scale = Math.max(chipWidth / img.width, chipHeight / img.height);
           const dw = img.width * scale;
           const dh = img.height * scale;
-          const dx = x + (chipSize - dw) / 2;
-          const dy = y + (chipSize - dh) / 2;
+          const dx = x + (chipWidth - dw) / 2;
+          const dy = y + (chipHeight - dh) / 2;
           ctx.drawImage(img, dx, dy, dw, dh);
           ctx.restore();
         } else {
           ctx.fillStyle = "#8a5c32";
-          ctx.font = "500 48px sans-serif";
+          ctx.font = "500 36px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(fallbackEmoji, x + chipSize / 2, y + chipSize / 2 + 16);
+          ctx.fillText(fallbackEmoji, x + chipWidth / 2, y + chipHeight / 2 - 4);
         }
 
-        ctx.strokeStyle = "#e2cbaf";
-        ctx.lineWidth = 2;
-        roundRect(ctx, x, y, chipSize, chipSize, 18);
-        ctx.stroke();
-
+        // Label below each box
         ctx.textAlign = "center";
-        ctx.font = "700 24px Inter, system-ui, sans-serif";
+        ctx.font = "700 22px Inter, system-ui, sans-serif";
         ctx.fillStyle = "#1f1610";
-        ctx.fillText(label || "—", x + chipSize / 2, y + chipSize + 34);
+        ctx.fillText(label || "—", x + chipWidth / 2, y + chipHeight + 28);
       }
 
       const [flavorImg, filling1Img, filling2Img] = await Promise.all([
@@ -170,14 +164,14 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         loadImageSafe(order.filling2ImageUrl),
       ]);
 
-      drawChip(chipsStartX, currentY, order.flavor, flavorImg, "🎂");
-      drawChip(chipsStartX + chipSize + chipGap, currentY, order.filling1, filling1Img, "🍓");
-      drawChip(chipsStartX + (chipSize + chipGap) * 2, currentY, order.filling2, filling2Img, "🍓");
+      drawChip(rightX, topSectionY, order.flavor, flavorImg, "🍫");
+      drawChip(rightX, topSectionY + (chipHeight + chipGap + 20), order.filling1, filling1Img, "🍓");
+      drawChip(rightX, topSectionY + (chipHeight + chipGap + 20) * 2, order.filling2, filling2Img, "🫐");
 
-      currentY += chipSize + 34 + 55;
+      // ---- Text Details Table ----
+      let currentY = topSectionY + photoHeight + 80;
 
-      // ---- Text details below ----
-      function wrapRightText(text, rightX, startY, maxWidth, lineHeight) {
+      function wrapRightText(text, rightXPos, startY, maxWidth, lineHeight) {
         const chars = String(text).split("");
         let line = "";
         const lines = [];
@@ -191,7 +185,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
           }
         }
         if (line) lines.push(line);
-        lines.forEach((l, idx) => ctx.fillText(l, rightX, startY + idx * lineHeight));
+        lines.forEach((l, idx) => ctx.fillText(l, rightXPos, startY + idx * lineHeight));
         return lines.length;
       }
 
@@ -200,14 +194,16 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
         const { isPrice = false } = options;
         const leftX = 75;
-        const rightX = CARD_WIDTH - 75;
+        const rightXPos = CARD_WIDTH - 75;
         const maxValWidth = CARD_WIDTH - 320;
 
+        // Label (Left)
         ctx.textAlign = "left";
         ctx.font = "700 22px Inter, system-ui, sans-serif";
         ctx.fillStyle = "#6e4a2c";
         ctx.fillText(label, leftX, currentY);
 
+        // Value (Right)
         ctx.textAlign = "right";
         ctx.font = isPrice
           ? "700 38px 'Cormorant Garamond', Georgia, serif"
@@ -215,9 +211,9 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         ctx.fillStyle = isPrice ? "#9a3311" : "#1f1610";
 
         const lineHeight = isPrice ? 44 : 38;
-        const lineCount = wrapRightText(value, rightX, currentY, maxValWidth, lineHeight);
+        const lineCount = wrapRightText(value, rightXPos, currentY, maxValWidth, lineHeight);
 
-        currentY += Math.max(lineCount * lineHeight, 36) + 20;
+        currentY += Math.max(lineCount * lineHeight, 36) + 22;
       }
 
       const priceText = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
