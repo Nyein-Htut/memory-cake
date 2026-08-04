@@ -35,7 +35,6 @@ export default function AdminSettingsPage() {
     setSizes((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // after
   const [uploadingFlavorIdx, setUploadingFlavorIdx] = useState(null);
   const [uploadingFillingIdx, setUploadingFillingIdx] = useState(null);
 
@@ -117,7 +116,7 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream overflow-x-hidden">
+    <div className="min-h-screen bg-cream pb-24 sm:pb-10">
       <AdminHeader />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
@@ -127,60 +126,55 @@ export default function AdminSettingsPage() {
         </p>
 
         {/* 尺寸与价格 Section */}
-        <section className="mb-6 sm:mb-10 bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-6">
+        <section className="mb-6 sm:mb-8 bg-white rounded-2xl border border-cocoa-100 shadow-sm p-4 sm:p-6">
           <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-4">尺寸与价格</h2>
           <div className="space-y-3">
             {sizes.map((s, i) => (
               <div
                 key={i}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 sm:p-0 bg-cocoa-50/30 sm:bg-transparent rounded-xl sm:rounded-none border sm:border-0 border-cocoa-100"
+                className="flex items-center gap-2 p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100"
               >
-                {/* Size Label Input */}
                 <input
                   value={s.label}
                   onChange={(e) => updateSize(i, "label", e.target.value)}
                   placeholder="例如：6寸"
-                  className="flex-1 w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                 />
 
-                {/* Price & Action Control Row */}
-                <div className="flex items-center gap-2 justify-between sm:justify-start">
-                  <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-                    <span className="text-cocoa-500 text-xs sm:text-sm font-medium">MMK</span>
-                    <input
-                      type="number"
-                      value={s.price}
-                      onChange={(e) => updateSize(i, "price", Number(e.target.value))}
-                      className="w-full sm:w-28 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
-                    />
-                  </div>
-
-                  <button
-                    onClick={() => removeSize(i)}
-                    className="text-red-500 hover:text-red-700 text-sm px-2 py-1 shrink-0 font-medium"
-                  >
-                    删除
-                  </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
+                  <input
+                    type="number"
+                    value={s.price}
+                    onChange={(e) => updateSize(i, "price", Number(e.target.value))}
+                    className="w-20 sm:w-28 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  />
                 </div>
+
+                <button
+                  onClick={() => removeSize(i)}
+                  className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
+                >
+                  删除
+                </button>
               </div>
             ))}
           </div>
           <button
             onClick={addSize}
-            className="mt-4 text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
+            className="mt-4 text-xs sm:text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
           >
             + 添加尺寸
           </button>
         </section>
 
-        // after
         {/* 口味 Section */}
-        <section className="mb-6 sm:mb-10 bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-6">
+        <section className="mb-6 sm:mb-8 bg-white rounded-2xl border border-cocoa-100 shadow-sm p-4 sm:p-6">
           <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-4">口味</h2>
           <div className="space-y-3">
             {flavors.map((f, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
-                <label className="shrink-0 relative w-14 h-14 rounded-lg overflow-hidden border border-cocoa-200 bg-white cursor-pointer flex items-center justify-center text-cocoa-300 text-[10px] text-center">
+              <div key={i} className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
+                <label className="shrink-0 relative w-11 h-11 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-cocoa-200 bg-white cursor-pointer flex items-center justify-center text-cocoa-400 text-[10px] text-center">
                   {f.imageUrl ? (
                     <img src={f.imageUrl} alt={f.label} className="w-full h-full object-cover" />
                   ) : uploadingFlavorIdx === i ? (
@@ -199,11 +193,11 @@ export default function AdminSettingsPage() {
                   value={f.label}
                   onChange={(e) => updateFlavor(i, "label", e.target.value)}
                   placeholder="例如：巧克力"
-                  className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                 />
                 <button
                   onClick={() => removeFlavor(i)}
-                  className="text-red-500 hover:text-red-700 text-sm px-2 py-1 shrink-0 font-medium"
+                  className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
                 >
                   删除
                 </button>
@@ -212,21 +206,20 @@ export default function AdminSettingsPage() {
           </div>
           <button
             onClick={addFlavor}
-            className="mt-4 text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
+            className="mt-4 text-xs sm:text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
           >
             + 添加口味
           </button>
         </section>
 
-        // after
         {/* 夹心 / 水果 Section */}
-        <section className="mb-6 sm:mb-10 bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-6">
-          <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-4">夹心 / 水果</h2>
-          <p className="text-xs text-cocoa-400 mb-3">顾客下单时会从这些选项中选择两种（夹心1 和 夹心2）</p>
+        <section className="mb-6 sm:mb-8 bg-white rounded-2xl border border-cocoa-100 shadow-sm p-4 sm:p-6">
+          <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-1">夹心 / 水果</h2>
+          <p className="text-xs text-cocoa-400 mb-4">顾客下单时会从这些选项中选择两种（夹心1 和 夹心2）</p>
           <div className="space-y-3">
             {fillings.map((f, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
-                <label className="shrink-0 relative w-14 h-14 rounded-lg overflow-hidden border border-cocoa-200 bg-white cursor-pointer flex items-center justify-center text-cocoa-300 text-[10px] text-center">
+              <div key={i} className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
+                <label className="shrink-0 relative w-11 h-11 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-cocoa-200 bg-white cursor-pointer flex items-center justify-center text-cocoa-400 text-[10px] text-center">
                   {f.imageUrl ? (
                     <img src={f.imageUrl} alt={f.label} className="w-full h-full object-cover" />
                   ) : uploadingFillingIdx === i ? (
@@ -245,11 +238,11 @@ export default function AdminSettingsPage() {
                   value={f.label}
                   onChange={(e) => updateFilling(i, "label", e.target.value)}
                   placeholder="例如：草莓"
-                  className="flex-1 rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                 />
                 <button
                   onClick={() => removeFilling(i)}
-                  className="text-red-500 hover:text-red-700 text-sm px-2 py-1 shrink-0 font-medium"
+                  className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
                 >
                   删除
                 </button>
@@ -258,22 +251,22 @@ export default function AdminSettingsPage() {
           </div>
           <button
             onClick={addFilling}
-            className="mt-4 text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
+            className="mt-4 text-xs sm:text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1"
           >
             + 添加夹心/水果
           </button>
         </section>
 
-        {/* Save Bar */}
-        <div className="flex items-center gap-4 pt-2">
+        {/* Save Bar (Sticky on Mobile) */}
+        <div className="fixed sm:relative bottom-0 left-0 right-0 p-4 sm:p-0 bg-white/90 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t sm:border-0 border-cocoa-100 flex items-center justify-between sm:justify-start gap-4 z-20">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full sm:w-auto rounded-xl bg-cocoa-800 text-cream px-8 py-3 text-sm font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 shadow-sm active:scale-98"
+            className="w-full sm:w-auto rounded-xl bg-cocoa-800 text-cream px-8 py-3 text-sm font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 shadow-sm active:scale-95"
           >
             {saving ? "保存中..." : "保存设置"}
           </button>
-          {message && <span className="text-sm font-medium text-cocoa-700">{message}</span>}
+          {message && <span className="text-sm font-medium text-cocoa-700 shrink-0">{message}</span>}
         </div>
       </main>
     </div>
