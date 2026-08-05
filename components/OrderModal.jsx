@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { cldThumb } from "@/lib/cloudinary-url";
 import OrderReceiptCard from "@/components/OrderReceiptCard";
 
 export default function OrderModal({ photo, folderId, folderName, onClose }) {
+  const router = useRouter();
+
   const [options, setOptions] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
@@ -100,6 +103,9 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
       }
 
       const data = await res.json();
+
+      // Clear client-side router cache so other pages see the new order
+      router.refresh();
 
       setSubmittedOrder({
         id: data.order.id,
@@ -267,7 +273,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                   </div>
                 </div>
               )}
-              
+
               {options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
