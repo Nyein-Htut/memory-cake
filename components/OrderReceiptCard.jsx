@@ -258,7 +258,6 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       // Render Order Detail Rows
       renderDetailRow("微信昵称", order.wechatName);
-      renderDetailRow("尺寸 SIZE", `${order.sizeLabel}${priceText}`, { isPrice: true });
       renderDetailRow("尺寸 SIZE", order.sizeLabel, { isSizePrice: true });
       renderDetailRow("日期 DATE", [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
       renderDetailRow("地址 ADDRESS", order.deliveryPlace);
