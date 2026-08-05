@@ -228,32 +228,88 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     口味
                   </label>
-                  <select
-                    value={flavor}
-                    onChange={(e) => setFlavor(e.target.value)}
-                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                  >
+                  <div className="grid grid-cols-3 gap-2">
                     {options.flavors.map((f) => (
-                      <option key={f.label} value={f.label}>{f.label}</option>
+                      <button
+                        type="button"
+                        key={f.label}
+                        onClick={() => setFlavor(f.label)}
+                        className={`rounded-lg border overflow-hidden text-center transition-colors ${
+                          flavor === f.label
+                            ? "border-cocoa-800 ring-2 ring-cocoa-800"
+                            : "border-cocoa-200 hover:border-cocoa-400"
+                        }`}
+                      >
+                        <div className="relative w-full aspect-square bg-cocoa-100">
+                          {f.imageUrl ? (
+                            <Image
+                              src={cldThumb(f.imageUrl, 200)}
+                              alt={f.label}
+                              fill
+                              sizes="120px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">
+                              🍰
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className={`py-1.5 text-xs font-medium ${
+                            flavor === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
+                          }`}
+                        >
+                          {f.label}
+                        </div>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               )}
-
+              
               {options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     夹心 / 水果
                   </label>
-                  <select
-                    value={filling}
-                    onChange={(e) => setFilling(e.target.value)}
-                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                  >
+                  <div className="grid grid-cols-3 gap-2">
                     {options.fillings.map((f) => (
-                      <option key={f.label} value={f.label}>{f.label}</option>
+                      <button
+                        type="button"
+                        key={f.label}
+                        onClick={() => setFilling(f.label)}
+                        className={`rounded-lg border overflow-hidden text-center transition-colors ${
+                          filling === f.label
+                            ? "border-cocoa-800 ring-2 ring-cocoa-800"
+                            : "border-cocoa-200 hover:border-cocoa-400"
+                        }`}
+                      >
+                        <div className="relative w-full aspect-square bg-cocoa-100">
+                          {f.imageUrl ? (
+                            <Image
+                              src={cldThumb(f.imageUrl, 200)}
+                              alt={f.label}
+                              fill
+                              sizes="120px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">
+                              🍓
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className={`py-1.5 text-xs font-medium ${
+                            filling === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
+                          }`}
+                        >
+                          {f.label}
+                        </div>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               )}
 
