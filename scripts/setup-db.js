@@ -60,6 +60,7 @@ async function main() {
     ON CONFLICT (id) DO NOTHING;
   `;
 
+  // scripts/setup-db.js
   await sql`
     CREATE TABLE IF NOT EXISTS orders (
       id SERIAL PRIMARY KEY,
@@ -70,12 +71,7 @@ async function main() {
       size_label TEXT NOT NULL,
       size_price NUMERIC,
       flavor TEXT,
-      flavor_image_url TEXT,
       filling TEXT,
-      filling1 TEXT,
-      filling1_image_url TEXT,
-      filling2 TEXT,
-      filling2_image_url TEXT,
       delivery_date TEXT,
       delivery_time TEXT,
       delivery_place TEXT NOT NULL,
@@ -85,8 +81,9 @@ async function main() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `;
-  
-await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);`;
+
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS wechat_name TEXT;`;
+
 await sql`
     CREATE TABLE IF NOT EXISTS order_messages (
       id SERIAL PRIMARY KEY,
