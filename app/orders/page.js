@@ -60,6 +60,7 @@ export default function MyOrdersPage() {
     if (saved) {
       setPhone(saved);
       lookup(saved);
+        }
   }, []);
   
   useEffect(() => {
