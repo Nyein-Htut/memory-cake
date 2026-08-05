@@ -39,29 +39,39 @@ export default function MyOrdersPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch(`/api/orders/lookup?phone=${encodeURIComponent(p)}`);
-    setLoading(false);
+    try {
+      // Added cache: "no-store" & timestamp query param to force fresh DB fetch every time
+      const res = await fetch(`/api/orders/lookup?phone=${encodeURIComponent(p)}&_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
 
-    if (!res.ok) {
+      setLoading(false);
+
+      if (!res.ok) {
+        setError("Could not load orders. Please try again.");
+        return;
+      }
+
+      const data = await res.json();
+      setOrders(data.orders || []);
+      setSubmittedPhone(p);
+      localStorage.setItem("memory_cake_phone", p);
+    } catch (err) {
+      setLoading(false);
       setError("Could not load orders. Please try again.");
-      return;
     }
-
-    const data = await res.json();
-    setOrders(data.orders || []);
-    setSubmittedPhone(p);
-    localStorage.setItem("memory_cake_phone", p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
 
-  // AFTER
   useEffect(() => {
     const saved = localStorage.getItem("memory_cake_phone");
     if (saved) {
       setPhone(saved);
       lookup(saved);
-        }
-  }, []);
+    }
+  }, [lookup]);
   
   useEffect(() => {
     function refreshIfVisible() {
@@ -77,8 +87,7 @@ export default function MyOrdersPage() {
       window.removeEventListener("focus", refreshIfVisible);
       document.removeEventListener("visibilitychange", refreshIfVisible);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lookup]);
 
   async function handleCancel(order) {
     if (!confirm("Cancel this order? This cannot be undone.")) return;
