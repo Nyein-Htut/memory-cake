@@ -24,7 +24,7 @@ function senderLabel(senderRole, viewerRole) {
   return viewerRole === "admin" ? "Customer" : "Memory Cake";
 }
 
-export default function OrderChatPanel({ orderId, role, phone, onClose }) {
+export default function OrderChatPanel({ orderId, role, phone, customerName, onClose }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -186,31 +186,19 @@ export default function OrderChatPanel({ orderId, role, phone, onClose }) {
 
 
         {/* HEADER */}
-        <div
-          className="
-            flex items-center justify-between
-            px-4 py-3
-            border-b border-cocoa-200/60
-          "
-        >
-          <h2 className="font-serif text-lg text-cocoa-900">
-            {isAdmin
-              ? "Message customer"
-              : "Message us"}
-          </h2>
-
-          <button
-            onClick={onClose}
-            className="
-              text-cocoa-400
-              hover:text-cocoa-800
-              text-xl
-            "
-          >
-            ×
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cocoa-200/60">
+          <div className="min-w-0">
+            <h2 className="font-serif text-lg text-cocoa-900">
+              {isAdmin ? "Message customer" : "Message us"}
+            </h2>
+            {isAdmin && customerName && (
+              <p className="text-xs text-cocoa-400 mt-0.5 truncate">微信: {customerName}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-cocoa-400 hover:text-cocoa-800 text-xl leading-none">
+            &times;
           </button>
         </div>
-
 
 
         {/* MESSAGE AREA */}
