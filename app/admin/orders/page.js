@@ -16,7 +16,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
-  const [chatOrderId, setChatOrderId] = useState(null);
+  const [chatOrder, setChatOrder] = useState(null);
   const [error, setError] = useState("");
 
   async function load() {
@@ -181,10 +181,12 @@ export default function AdminOrdersPage() {
                       </div>
 
                       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 text-sm text-cocoa-700 pt-2 border-t border-cocoa-100/60">
+                        <p><span className="text-cocoa-400">微信：</span>{o.wechat_name || "未填写"}</p>
                         <p><span className="text-cocoa-400">配送日期：</span>{o.delivery_date || "未填写"} {o.delivery_time || ""}</p>
                         <p><span className="text-cocoa-400">配送地址：</span>{o.delivery_place || "未填写"}</p>
                         <p><span className="text-cocoa-400">联系电话：</span>{o.phone || "未填写"}</p>
                       </div>
+
 
                       {o.remark && (
                         <p className="mt-2 text-sm text-cocoa-700 bg-cocoa-50/80 border border-cocoa-100 rounded-lg px-3 py-1.5">
@@ -194,7 +196,7 @@ export default function AdminOrdersPage() {
 
                       <div className="mt-3 flex items-center justify-end gap-4">
                         <button
-                          onClick={() => setChatOrderId(o.id)}
+                          onClick={() => setChatOrder(o)}
                           className="relative text-xs text-cocoa-600 hover:text-cocoa-900 font-medium flex items-center gap-1"
                         >
                           💬 联系客户
@@ -238,8 +240,13 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {chatOrderId && (
-        <OrderChatPanel orderId={chatOrderId} role="admin" onClose={() => setChatOrderId(null)} />
+      {chatOrder && (
+        <OrderChatPanel
+          orderId={chatOrder.id}
+          customerName={chatOrder.wechat_name}
+          role="admin"
+          onClose={() => setChatOrder(null)}
+        />
       )}
     </div>
   );
