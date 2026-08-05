@@ -9,10 +9,10 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
   const [options, setOptions] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
+  const [wechatName, setWechatName] = useState("");
   const [sizeLabel, setSizeLabel] = useState("");
   const [flavor, setFlavor] = useState("");
-  const [filling1, setFilling1] = useState("");
-  const [filling2, setFilling2] = useState("");
+  const [filling, setFilling] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryPlace, setDeliveryPlace] = useState("");
@@ -29,16 +29,16 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
       .then((data) => {
         setOptions(data.options);
         if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
-        if (data.options?.flavors?.length) setFlavor(data.options.flavors[0].label);
-        if (data.options?.fillings?.length) {
-          setFilling1(data.options.fillings[0].label);
-          setFilling2((data.options.fillings[1] || data.options.fillings[0]).label);
-        }
+        if (data.options?.flavors?.length) setFlavor(data.options.flavors[0]);
+        if (data.options?.fillings?.length) setFilling(data.options.fillings[0]);
       })
       .finally(() => setLoadingOptions(false));
 
     const savedPhone = localStorage.getItem("memory_cake_phone");
     if (savedPhone) setPhone(savedPhone);
+
+    const savedWechat = localStorage.getItem("memory_cake_wechat_name");
+    if (savedWechat) setWechatName(savedWechat);
   }, []);
 
   useEffect(() => {
@@ -51,14 +51,14 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
 
   const selectedSize = options?.sizes?.find((s) => s.label === sizeLabel);
 
-  function imageForLabel(list, label) {
-    return list?.find((item) => item.label === label)?.imageUrl || null;
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
+    if (!wechatName.trim()) {
+      setError("请填写微信账号名");
+      return;
+    }
     if (!deliveryPlace.trim() || !phone.trim()) {
       setError("请填写配送地址和联系电话");
       return;
@@ -75,14 +75,11 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
           folderId,
           photoUrl: photo.url,
           folderName,
+          wechatName: wechatName.trim(),
           sizeLabel,
           sizePrice: selectedSize?.price,
           flavor,
-          flavorImageUrl: imageForLabel(options?.flavors, flavor),
-          filling1,
-          filling1ImageUrl: imageForLabel(options?.fillings, filling1),
-          filling2,
-          filling2ImageUrl: imageForLabel(options?.fillings, filling2),
+          filling,
           deliveryDate,
           deliveryTime,
           deliveryPlace: deliveryPlace.trim(),
@@ -91,9 +88,10 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         }),
       });
 
-      // Remember this device's phone number so "My Orders", the chat
-      // bubble, and the notification bell all auto-recognize this customer.
+      // Remember this device's phone + WeChat name so future orders and
+      // the chat widgets don't need to ask again.
       localStorage.setItem("memory_cake_phone", phone.trim());
+      localStorage.setItem("memory_cake_wechat_name", wechatName.trim());
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -105,14 +103,11 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
       setSubmittedOrder({
         id: data.order.id,
         createdAt: data.order.created_at,
+        wechatName: wechatName.trim(),
         sizeLabel,
         sizePrice: selectedSize?.price,
         flavor,
-        flavorImageUrl: imageForLabel(options?.flavors, flavor),
-        filling1,
-        filling1ImageUrl: imageForLabel(options?.fillings, filling1),
-        filling2,
-        filling2ImageUrl: imageForLabel(options?.fillings, filling2),
+        filling,
         deliveryDate,
         deliveryTime,
         deliveryPlace: deliveryPlace.trim(),
@@ -189,6 +184,20 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  微信账号名 *
+                </label>
+                <input
+                  type="text"
+                  value={wechatName}
+                  onChange={(e) => setWechatName(e.target.value)}
+                  placeholder="请输入您的微信昵称或账号名"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  required
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                   尺寸 *
                 </label>
@@ -213,103 +222,37 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                 </div>
               </div>
 
-              // after
               {options?.flavors?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     口味
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <select
+                    value={flavor}
+                    onChange={(e) => setFlavor(e.target.value)}
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  >
                     {options.flavors.map((f) => (
-                      <button
-                        type="button"
-                        key={f.label}
-                        onClick={() => setFlavor(f.label)}
-                        className={`rounded-lg border overflow-hidden text-center transition-colors ${
-                          flavor === f.label
-                            ? "border-cocoa-800 ring-2 ring-cocoa-800"
-                            : "border-cocoa-200 hover:border-cocoa-400"
-                        }`}
-                      >
-                        {f.imageUrl ? (
-                          <div className="relative w-full aspect-square bg-cocoa-100">
-                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-full aspect-square bg-cocoa-100 flex items-center justify-center text-2xl">🎂</div>
-                        )}
-                        <div className={`py-1.5 text-xs font-medium ${flavor === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
-                          {f.label}
-                        </div>
-                      </button>
+                      <option key={f} value={f}>{f}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
               )}
 
               {options?.fillings?.length > 0 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                      夹心 / 水果 1
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {options.fillings.map((f) => (
-                        <button
-                          type="button"
-                          key={f.label}
-                          onClick={() => setFilling1(f.label)}
-                          className={`rounded-lg border overflow-hidden text-center transition-colors ${
-                            filling1 === f.label
-                              ? "border-cocoa-800 ring-2 ring-cocoa-800"
-                              : "border-cocoa-200 hover:border-cocoa-400"
-                          }`}
-                        >
-                          {f.imageUrl ? (
-                            <div className="relative w-full aspect-square bg-cocoa-100">
-                              <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-full aspect-square bg-cocoa-100 flex items-center justify-center text-2xl">🍓</div>
-                          )}
-                          <div className={`py-1.5 text-xs font-medium ${filling1 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
-                            {f.label}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                      夹心 / 水果 2
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {options.fillings.map((f) => (
-                        <button
-                          type="button"
-                          key={f.label}
-                          onClick={() => setFilling2(f.label)}
-                          className={`rounded-lg border overflow-hidden text-center transition-colors ${
-                            filling2 === f.label
-                              ? "border-cocoa-800 ring-2 ring-cocoa-800"
-                              : "border-cocoa-200 hover:border-cocoa-400"
-                          }`}
-                        >
-                          {f.imageUrl ? (
-                            <div className="relative w-full aspect-square bg-cocoa-100">
-                              <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
-                            </div>
-                          ) : (
-                            <div className="w-full aspect-square bg-cocoa-100 flex items-center justify-center text-2xl">🍓</div>
-                          )}
-                          <div className={`py-1.5 text-xs font-medium ${filling2 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
-                            {f.label}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                    夹心 / 水果
+                  </label>
+                  <select
+                    value={filling}
+                    onChange={(e) => setFilling(e.target.value)}
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  >
+                    {options.fillings.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
