@@ -1,24 +1,18 @@
-// AFTER
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    // Disables the client-side Router Cache for dynamically-rendered
-    // routes (like /orders, /notifications) so navigating back to them
-    // always re-fetches fresh data instead of reusing a stale snapshot
-    // from up to 30s ago. Static routes are unaffected.
-    staleTimes: {
-      dynamic: 0,
-    },
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
-    ],
-  },
-};
+import { useRouter } from "next/navigation";
 
-module.exports = nextConfig;
+export default function OrderModal() {
+  const router = useRouter();
+
+  async function handleSubmit() {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      body: JSON.stringify(orderData),
+    });
+
+    if (res.ok) {
+      // 1. Force Next.js Router Cache to clear and re-fetch active routes
+      router.refresh(); 
+      // 2. Redirect or close modal
+    }
+  }
+}
