@@ -54,12 +54,28 @@ export default function MyOrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
 
+  // AFTER
   useEffect(() => {
     const saved = localStorage.getItem("memory_cake_phone");
     if (saved) {
       setPhone(saved);
       lookup(saved);
+  }, []);
+  
+  useEffect(() => {
+    function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return;
+      const saved = localStorage.getItem("memory_cake_phone");
+      if (saved) lookup(saved);
     }
+
+    window.addEventListener("focus", refreshIfVisible);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+
+    return () => {
+      window.removeEventListener("focus", refreshIfVisible);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
