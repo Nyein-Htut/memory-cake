@@ -47,11 +47,6 @@ export default function AdminHeader() {
             className="rounded-full object-cover shrink-0 sm:w-10 sm:h-10"
           />
 
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-serif font-medium text-lg sm:text-3xl text-cocoa-900 tracking-wide truncate">
-              Memory Cake
-            </span>
-
             <span className="text-[9px] sm:text-[10px] uppercase tracking-widest bg-cocoa-800 text-cream px-2 py-0.5 rounded-full shrink-0">
               Admin
             </span>
