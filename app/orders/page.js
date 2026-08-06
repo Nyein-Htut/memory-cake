@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import OrderChatPanel from "@/components/OrderChatPanel";
+import ChatWidget from "@/components/ChatWidget";
 
 const STATUS_LABELS = { new: "New", confirmed: "Confirmed", done: "Completed", cancelled: "Cancelled" };
 const STATUS_STYLES = {
@@ -254,6 +255,7 @@ export default function MyOrdersPage() {
       )}
 
       <Footer />
+     <ChatWidget />
     </div>
   );
 }
