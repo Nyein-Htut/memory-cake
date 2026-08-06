@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import OrderChatPanel from "@/components/OrderChatPanel";
+import { notifyNotificationsChanged } from "@/lib/notifyBus";
 
 const STATUS_LABELS = {
   new: "新订单",
@@ -38,15 +39,16 @@ export default function AdminOrdersPage() {
       }
 
       const data = await res.json();
-      setOrders(data.orders || []);
-    } catch (err) {
-      setError("Network error while loading orders.");
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
+    setOrders(data.orders || []);
+    notifyNotificationsChanged();
+  } catch (err) {
+    setError("Network error while loading orders.");
+    setOrders([]);
+  } finally {
+    setLoading(false);
   }
-
+}
+  
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
