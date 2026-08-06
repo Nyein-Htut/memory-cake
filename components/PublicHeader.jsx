@@ -50,8 +50,6 @@ export default function PublicHeader() {
           </Link>
         </div>
       </div>
-
-      <ChatWidget />
     </header>
   );
 }
