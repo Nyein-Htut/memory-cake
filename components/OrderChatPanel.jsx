@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { uploadChatAttachment } from "@/lib/uploadChatAttachment";
+import { notifyNotificationsChanged } from "@/lib/notifyBus";
 
 function PaperclipIcon(props) {
   return (
@@ -40,17 +41,16 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
   const load = useCallback(async () => {
     const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
 
-    const res = await fetch(
-      `/api/orders/${orderId}/messages${qs}`
-    );
-
-    if (res.ok) {
-      const data = await res.json();
-      setMessages(data.messages || []);
-    }
-
-    setLoading(false);
-  }, [orderId, isAdmin, phone]);
+    const load = useCallback(async () => {
+  const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
+  const res = await fetch(`/api/orders/${orderId}/messages${qs}`);
+  if (res.ok) {
+    const data = await res.json();
+    setMessages(data.messages || []);
+  }
+  setLoading(false);
+  notifyNotificationsChanged();
+}, [orderId, isAdmin, phone]);
 
   useEffect(() => {
     load();
