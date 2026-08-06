@@ -83,7 +83,7 @@ async function main() {
   `;
 
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS wechat_name TEXT;`;
-
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS seen_by_admin BOOLEAN NOT NULL DEFAULT FALSE;`;
 await sql`
     CREATE TABLE IF NOT EXISTS order_messages (
       id SERIAL PRIMARY KEY,
