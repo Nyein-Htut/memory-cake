@@ -45,11 +45,11 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
   const isAdmin = role === "admin";
 
   const load = useCallback(async () => {
-    const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
+    const qs = isAdmin
+      ? `?role=admin`
+      : `?role=customer&phone=${encodeURIComponent(phone)}`;
 
-    const res = await fetch(
-      `/api/orders/${orderId}/messages${qs}`
-    );
+    const res = await fetch(`/api/orders/${orderId}/messages${qs}`);
 
     if (res.ok) {
       const data = await res.json();
@@ -75,35 +75,18 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
   }, [messages]);
 
 
-  async function sendMessage({
-    message,
-    attachmentUrl,
-    attachmentType,
-  }) {
+  async function sendMessage({ message, attachmentUrl, attachmentType }) {
     setError("");
 
-    const res = await fetch(
-      `/api/orders/${orderId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          phone,
-          message,
-          attachmentUrl,
-          attachmentType,
-        }),
-      }
-    );
+    const res = await fetch(`/api/orders/${orderId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, message, attachmentUrl, attachmentType, role }),
+    });
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-
-      throw new Error(
-        data.error || "Could not send message"
-      );
+      throw new Error(data.error || "Could not send message");
     }
 
     await load();
