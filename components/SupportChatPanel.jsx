@@ -20,10 +20,17 @@ function SendIcon(props) {
   );
 }
 
-function senderLabel(senderRole, viewerRole) {
+// senderRole/viewerRole are always "admin" or "customer".
+// - Your own messages always read "You".
+// - On the admin side, the customer's messages are labeled with their real
+//   WeChat name when we have one (falls back to "Customer" otherwise).
+// - On the customer side, the admin's messages are always "Memory Cake".
+function senderLabel(senderRole, viewerRole, customerName) {
   if (senderRole === viewerRole) return "You";
-  return viewerRole === "admin" ? "Customer" : "Memory Cake";
+  if (viewerRole === "admin") return customerName || "Customer";
+  return "Memory Cake";
 }
+
 // `embedded`: when true, renders just the panel contents (header/messages/
 // input) so a parent (like ChatWidget's floating popup) can control the
 // outer frame/positioning. When false (default), renders its own centered
@@ -31,6 +38,7 @@ function senderLabel(senderRole, viewerRole) {
 // panel working exactly as before.
 export default function SupportChatPanel({ phone, role, onClose, embedded = false }) {
   const [messages, setMessages] = useState([]);
+  const [customerName, setCustomerName] = useState(null);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -42,14 +50,15 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
   const isAdmin = role === "admin";
 
   const load = useCallback(async () => {
-  const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}`);
-  if (res.ok) {
-    const data = await res.json();
-    setMessages(data.messages || []);
-  }
-  setLoading(false);
-  notifyNotificationsChanged();
-}, [phone]);
+    const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}`);
+    if (res.ok) {
+      const data = await res.json();
+      setMessages(data.messages || []);
+      setCustomerName(data.customerName || null);
+    }
+    setLoading(false);
+    notifyNotificationsChanged();
+  }, [phone]);
 
   useEffect(() => {
     load();
@@ -112,7 +121,11 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
           <h2 className="font-serif text-lg leading-none truncate">
             {isAdmin ? "Chat with customer" : "Chat with us"}
           </h2>
-          {isAdmin && <p className="text-xs text-cream/60 mt-1 truncate">{phone}</p>}
+          {isAdmin && (
+            <p className="text-xs text-cream/60 mt-1 truncate">
+              {customerName ? `${customerName} · ${phone}` : phone}
+            </p>
+          )}
         </div>
         <button onClick={onClose} className="text-cream/70 hover:text-cream text-xl leading-none shrink-0 ml-3">
           &times;
@@ -131,7 +144,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
         ) : (
           messages.map((m) => {
             const mine = m.sender === role;
-            const label = senderLabel(m.sender, role);
+            const label = senderLabel(m.sender, role, customerName);
             return (
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
@@ -149,7 +162,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
                       </a>
                     )}
                     {m.attachment_url && m.attachment_type === "file" && (
-                      <a
+                      
                         href={m.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer"
