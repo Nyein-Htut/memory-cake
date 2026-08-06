@@ -4,21 +4,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notifyBus";
 
 export default function AdminHeader() {
   const router = useRouter();
   const [notifs, setNotifs] = useState({ newOrders: 0, unreadSupportMessages: 0, unreadOrderMessages: 0 });
 
   useEffect(() => {
-    async function load() {
-      const res = await fetch("/api/admin/notifications");
-      if (res.ok) setNotifs(await res.json());
-    }
-    load();
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
+  async function load() {
+    const res = await fetch("/api/admin/notifications");
+    if (res.ok) setNotifs(await res.json());
+  }
+  load();
+  const interval = setInterval(load, 15000);
+  window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, load);
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, load);
+  };
+}, []);
+  
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/admin/login");
