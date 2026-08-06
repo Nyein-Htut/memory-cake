@@ -39,17 +39,18 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
   const isAdmin = role === "admin";
 
   const load = useCallback(async () => {
-    const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
-
-    const load = useCallback(async () => {
   const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
+
   const res = await fetch(`/api/orders/${orderId}/messages${qs}`);
+
   if (res.ok) {
     const data = await res.json();
     setMessages(data.messages || []);
   }
+
   setLoading(false);
   notifyNotificationsChanged();
+
 }, [orderId, isAdmin, phone]);
 
   useEffect(() => {
@@ -438,8 +439,6 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
             {error}
           </p>
         )}
-
-
       </div>
 
     </div>
