@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import NotificationBell from "./NotificationBell";
-import ChatWidget from "./ChatWidget";
 
 function ShoppingBagIcon(props) {
   return (
