@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
-
-// General "contact admin" chat — not tied to any specific order.
-// GET  /api/support/messages?phone=...   (customer, or admin viewing a thread)
-// POST /api/support/messages  body: { phone, message?, attachmentUrl?, attachmentType? }
 export async function GET(request) {
   const admin = await isAdminAuthed();
   const { searchParams } = new URL(request.url);
@@ -18,13 +14,23 @@ export async function GET(request) {
     SELECT * FROM support_messages WHERE phone = ${phone} ORDER BY created_at ASC
   `;
 
+  let customerName = null;
+  if (admin) {
+    const nameRows = await sql`
+      SELECT wechat_name FROM orders
+      WHERE phone = ${phone} AND wechat_name IS NOT NULL
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    customerName = nameRows[0]?.wechat_name || null;
+  }
+
   if (admin) {
     await sql`UPDATE support_messages SET read_by_admin = TRUE WHERE phone = ${phone} AND sender = 'customer'`;
   } else {
     await sql`UPDATE support_messages SET read_by_customer = TRUE WHERE phone = ${phone} AND sender = 'admin'`;
   }
 
-  return NextResponse.json({ messages });
+  return NextResponse.json({ messages, customerName });
 }
 
 export async function POST(request) {
