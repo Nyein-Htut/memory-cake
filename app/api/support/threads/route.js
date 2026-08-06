@@ -11,12 +11,19 @@ export async function GET() {
 
   const threads = await sql`
     SELECT
-      phone,
-      MAX(created_at) AS last_message_at,
-      (ARRAY_AGG(COALESCE(message, '📎 Attachment') ORDER BY created_at DESC))[1] AS last_message,
-      COUNT(*) FILTER (WHERE sender = 'customer' AND read_by_admin = FALSE)::int AS unread_count
-    FROM support_messages
-    GROUP BY phone
+      sm.phone,
+      MAX(sm.created_at) AS last_message_at,
+      (ARRAY_AGG(COALESCE(sm.message, '📎 Attachment') ORDER BY sm.created_at DESC))[1] AS last_message,
+      COUNT(*) FILTER (WHERE sm.sender = 'customer' AND sm.read_by_admin = FALSE)::int AS unread_count,
+      (
+        SELECT o.wechat_name
+        FROM orders o
+        WHERE o.phone = sm.phone AND o.wechat_name IS NOT NULL
+        ORDER BY o.created_at DESC
+        LIMIT 1
+      ) AS wechat_name
+    FROM support_messages sm
+    GROUP BY sm.phone
     ORDER BY last_message_at DESC
   `;
 
