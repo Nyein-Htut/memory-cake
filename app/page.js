@@ -4,6 +4,7 @@ import PublicHeader from "@/components/PublicHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import { cldThumb } from "@/lib/cloudinary-url";
 import Footer from "@/components/Footer";
+import ChatWidget from "@/components/ChatWidget";
 
 export const dynamic = "force-dynamic";
 
