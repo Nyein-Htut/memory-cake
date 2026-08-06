@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notifyBus";
 
 function BellIcon(props) {
   return (
@@ -45,6 +46,13 @@ export default function NotificationBell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
 
+  useEffect(() => {
+  function onChanged() { refresh(); }
+  window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+  return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone]);
+  
   return (
     <Link
       href="/notifications"
