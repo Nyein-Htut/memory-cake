@@ -55,5 +55,12 @@ export async function GET(request) {
     ? await sql`SELECT * FROM orders WHERE status = ${status} ORDER BY created_at DESC`
     : await sql`SELECT * FROM orders ORDER BY created_at DESC`;
 
+  if (!status || status === "new") {
+    await sql`
+      UPDATE orders SET seen_by_admin = TRUE
+      WHERE status = 'new' AND seen_by_admin = FALSE
+    `;
+  }
+
   return NextResponse.json({ orders });
 }
