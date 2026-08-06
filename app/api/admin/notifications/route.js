@@ -7,7 +7,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const newOrdersRows = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE status = 'new'`;
+  const newOrdersRows = await sql`
+    SELECT COUNT(*)::int AS count FROM orders WHERE status = 'new' AND seen_by_admin = FALSE
+  `;
   const unreadSupportRows = await sql`
     SELECT COUNT(*)::int AS count FROM support_messages WHERE sender = 'customer' AND read_by_admin = FALSE
   `;
