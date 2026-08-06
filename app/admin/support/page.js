@@ -41,7 +41,10 @@ export default function AdminSupportPage() {
                 className="w-full text-left bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 hover:border-cocoa-300 transition-colors flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-cocoa-900">{t.phone}</p>
+                  <p className="font-medium text-cocoa-900 truncate">{t.wechat_name || t.phone}</p>
+                  {t.wechat_name && (
+                    <p className="text-xs text-cocoa-400 truncate">{t.phone}</p>
+                  )}
                   <p className="text-sm text-cocoa-500 truncate">{t.last_message}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
