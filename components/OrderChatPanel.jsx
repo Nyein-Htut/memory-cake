@@ -20,9 +20,15 @@ function PaperclipIcon(props) {
   );
 }
 
-function senderLabel(senderRole, viewerRole) {
+// senderRole/viewerRole are always "admin" or "customer".
+// - Your own messages always read "You".
+// - On the admin side, the customer's messages are labeled with their real
+//   WeChat name (customerName, sourced from the order) when we have one.
+// - On the customer side, the admin's messages are always "Memory Cake".
+function senderLabel(senderRole, viewerRole, customerName) {
   if (senderRole === viewerRole) return "You";
-  return viewerRole === "admin" ? "Customer" : "Memory Cake";
+  if (viewerRole === "admin") return customerName || "Customer";
+  return "Memory Cake";
 }
 
 export default function OrderChatPanel({ orderId, role, phone, customerName, onClose }) {
@@ -39,19 +45,20 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
   const isAdmin = role === "admin";
 
   const load = useCallback(async () => {
-  const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
+    const qs = isAdmin ? "" : `?phone=${encodeURIComponent(phone)}`;
 
-  const res = await fetch(`/api/orders/${orderId}/messages${qs}`);
+    const res = await fetch(
+      `/api/orders/${orderId}/messages${qs}`
+    );
 
-  if (res.ok) {
-    const data = await res.json();
-    setMessages(data.messages || []);
-  }
+    if (res.ok) {
+      const data = await res.json();
+      setMessages(data.messages || []);
+    }
 
-  setLoading(false);
-  notifyNotificationsChanged();
-
-}, [orderId, isAdmin, phone]);
+    setLoading(false);
+    notifyNotificationsChanged();
+  }, [orderId, isAdmin, phone]);
 
   useEffect(() => {
     load();
@@ -247,10 +254,11 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
                 >
 
                   <div
-                    className="
+                    className={`
                       max-w-[80%]
                       flex flex-col
-                    "
+                      ${mine ? "items-end" : "items-start"}
+                    `}
                   >
 
                     <span
@@ -262,7 +270,8 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
                     >
                       {senderLabel(
                         m.sender,
-                        role
+                        role,
+                        customerName
                       )}
                     </span>
 
@@ -283,7 +292,7 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
                       {m.attachment_url &&
                       m.attachment_type === "image" && (
 
-                        <a
+                        
                           href={m.attachment_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -306,7 +315,7 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
                       {m.attachment_url &&
                       m.attachment_type === "file" && (
 
-                        <a
+                        
                           href={m.attachment_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -439,6 +448,8 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
             {error}
           </p>
         )}
+
+
       </div>
 
     </div>
