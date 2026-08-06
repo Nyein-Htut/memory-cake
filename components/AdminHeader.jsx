@@ -46,6 +46,7 @@ export default function AdminHeader() {
             height={36}
             className="rounded-full object-cover shrink-0 sm:w-10 sm:h-10"
           />
+          <div>
             <span className="text-[9px] sm:text-[10px] uppercase tracking-widest bg-cocoa-800 text-cream px-2 py-0.5 rounded-full shrink-0">
               Admin
             </span>
