@@ -50,7 +50,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
   const isAdmin = role === "admin";
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}`);
+    const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}&role=${role}`);
     if (res.ok) {
       const data = await res.json();
       setMessages(data.messages || []);
@@ -58,7 +58,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
     }
     setLoading(false);
     notifyNotificationsChanged();
-  }, [phone]);
+  }, [phone, role]);
 
   useEffect(() => {
     load();
@@ -75,7 +75,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
     const res = await fetch("/api/support/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, message, attachmentUrl, attachmentType }),
+      body: JSON.stringify({ phone, message, attachmentUrl, attachmentType, role }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
