@@ -87,6 +87,7 @@ export default async function HomePage() {
       </main>
 
      <Footer />
+     <ChatWidget />
     </div>
   );
 }
