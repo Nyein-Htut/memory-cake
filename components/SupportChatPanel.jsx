@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { uploadChatAttachment } from "@/lib/uploadChatAttachment";
+import { notifyNotificationsChanged } from "@/lib/notifyBus";
 
 function PaperclipIcon(props) {
   return (
@@ -41,13 +42,14 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
   const isAdmin = role === "admin";
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}`);
-    if (res.ok) {
-      const data = await res.json();
-      setMessages(data.messages || []);
-    }
-    setLoading(false);
-  }, [phone]);
+  const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}`);
+  if (res.ok) {
+    const data = await res.json();
+    setMessages(data.messages || []);
+  }
+  setLoading(false);
+  notifyNotificationsChanged();
+}, [phone]);
 
   useEffect(() => {
     load();
