@@ -17,7 +17,7 @@ function shuffle(arr) {
 const HERO_IMAGES = [
   "/hero/cake 1.png",
   "/hero/cake 2.png",
-  "/hero/cake 3.png",
+  "/hero/cake 3.jpg",
   "/hero/cake 4.jpg",
   "/hero/cake 5.png",
   "/hero/cake 6.png",
