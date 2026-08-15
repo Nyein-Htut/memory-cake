@@ -22,7 +22,6 @@ const HERO_IMAGES = [
   "/hero/event 5.jpg",
   "/hero/event 6.jpg",
   "/hero/event 7.jpg",
-  "/hero/event 8.jpg",
 ];
 
 const AUTOPLAY_MS = 5000;
