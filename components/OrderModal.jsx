@@ -15,7 +15,8 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
   const [wechatName, setWechatName] = useState("");
   const [sizeLabel, setSizeLabel] = useState("");
   const [flavor, setFlavor] = useState("");
-  const [filling, setFilling] = useState("");
+  const [filling1, setFilling1] = useState("");
+  const [filling2, setFilling2] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryPlace, setDeliveryPlace] = useState("");
@@ -34,7 +35,12 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
         // flavors/fillings are [{label, imageUrl}, ...] — store just the label string.
         if (data.options?.flavors?.length) setFlavor(data.options.flavors[0].label);
-        if (data.options?.fillings?.length) setFilling(data.options.fillings[0].label);
+        if (data.options?.fillings?.length) {
+          setFilling1(data.options.fillings[0].label);
+          setFilling2(
+            data.options.fillings[1]?.label || data.options.fillings[0].label
+          );
+        }
       })
       .finally(() => setLoadingOptions(false));
 
@@ -54,6 +60,9 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
   }, [onClose]);
 
   const selectedSize = options?.sizes?.find((s) => s.label === sizeLabel);
+  const selectedFlavorOption = options?.flavors?.find((f) => f.label === flavor);
+  const selectedFilling1Option = options?.fillings?.find((f) => f.label === filling1);
+  const selectedFilling2Option = options?.fillings?.find((f) => f.label === filling2);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -83,7 +92,8 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
           sizeLabel,
           sizePrice: selectedSize?.price,
           flavor,
-          filling,
+          filling1,
+          filling2,
           deliveryDate,
           deliveryTime,
           deliveryPlace: deliveryPlace.trim(),
@@ -114,7 +124,11 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         sizeLabel,
         sizePrice: selectedSize?.price,
         flavor,
-        filling,
+        filling1,
+        filling2,
+        flavorImageUrl: selectedFlavorOption?.imageUrl || null,
+        filling1ImageUrl: selectedFilling1Option?.imageUrl || null,
+        filling2ImageUrl: selectedFilling2Option?.imageUrl || null,
         deliveryDate,
         deliveryTime,
         deliveryPlace: deliveryPlace.trim(),
@@ -277,16 +291,16 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
               {options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                    夹心 / 水果
+                    夹心 / 水果 1
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {options.fillings.map((f) => (
                       <button
                         type="button"
                         key={f.label}
-                        onClick={() => setFilling(f.label)}
+                        onClick={() => setFilling1(f.label)}
                         className={`rounded-lg border overflow-hidden text-center transition-colors ${
-                          filling === f.label
+                          filling1 === f.label
                             ? "border-cocoa-800 ring-2 ring-cocoa-800"
                             : "border-cocoa-200 hover:border-cocoa-400"
                         }`}
@@ -308,7 +322,52 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                         </div>
                         <div
                           className={`py-1.5 text-xs font-medium ${
-                            filling === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
+                            filling1 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
+                          }`}
+                        >
+                          {f.label}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {options?.fillings?.length > 0 && (
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                    夹心 / 水果 2
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {options.fillings.map((f) => (
+                      <button
+                        type="button"
+                        key={f.label}
+                        onClick={() => setFilling2(f.label)}
+                        className={`rounded-lg border overflow-hidden text-center transition-colors ${
+                          filling2 === f.label
+                            ? "border-cocoa-800 ring-2 ring-cocoa-800"
+                            : "border-cocoa-200 hover:border-cocoa-400"
+                        }`}
+                      >
+                        <div className="relative w-full aspect-square bg-cocoa-100">
+                          {f.imageUrl ? (
+                            <Image
+                              src={cldThumb(f.imageUrl, 200)}
+                              alt={f.label}
+                              fill
+                              sizes="120px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">
+                              🫐
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className={`py-1.5 text-xs font-medium ${
+                            filling2 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
                           }`}
                         >
                           {f.label}
