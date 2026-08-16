@@ -15,7 +15,8 @@ export async function POST(request) {
     sizeLabel,
     sizePrice,
     flavor,
-    filling,
+    filling1,
+    filling2,
     deliveryDate,
     deliveryTime,
     deliveryPlace,
@@ -30,11 +31,11 @@ export async function POST(request) {
   const rows = await sql`
     INSERT INTO orders (
       photo_id, folder_id, photo_url, folder_name, wechat_name,
-      size_label, size_price, flavor, filling,
+      size_label, size_price, flavor, filling1, filling2,
       delivery_date, delivery_time, delivery_place, phone, remark
     ) VALUES (
       ${photoId || null}, ${folderId || null}, ${photoUrl || null}, ${folderName || null}, ${wechatName.trim()},
-      ${sizeLabel}, ${sizePrice || null}, ${flavor || null}, ${filling || null},
+      ${sizeLabel}, ${sizePrice || null}, ${flavor || null}, ${filling1 || null}, ${filling2 || null},
       ${deliveryDate || null}, ${deliveryTime || null}, ${deliveryPlace}, ${phone}, ${remark || null}
     )
     RETURNING *
