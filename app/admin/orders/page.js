@@ -163,7 +163,13 @@ export default function AdminOrdersPage() {
                           </p>
                           <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
                             {o.size_label || o.sizeLabel} {o.size_price || o.sizePrice ? `· MMK ${o.size_price || o.sizePrice}` : ""}
+                            {o.quantity > 1 ? ` × ${o.quantity}` : ""}
                           </p>
+                          {o.quantity > 1 && (o.size_price || o.sizePrice) && (
+                            <p className="text-xs text-cocoa-500 mt-0.5">
+                              总价 MMK {(o.size_price || o.sizePrice) * o.quantity}
+                            </p>
+                          )}
                           <p className="text-sm font-medium text-cocoa-700 mt-1">
                             {[o.flavor, o.filling1, o.filling2].filter(Boolean).join(" · ") || "未指定口味/夹心"}
                           </p>
