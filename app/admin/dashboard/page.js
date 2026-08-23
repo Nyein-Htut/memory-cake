@@ -11,10 +11,15 @@ export default function AdminDashboardPage() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
+  const [newOrderable, setNewOrderable] = useState(true);
+  const [newFormType, setNewFormType] = useState("cake");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [editOrderable, setEditOrderable] = useState(true);
+  const [editFormType, setEditFormType] = useState("cake");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const { draggingId, handlePointerDown, registerItemRef, wasDragRef } =
     useDragReorder(folders, setFolders, async (orderedIds) => {
@@ -46,7 +51,11 @@ export default function AdminDashboardPage() {
     const res = await fetch("/api/folders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName.trim() }),
+      body: JSON.stringify({
+        name: newName.trim(),
+        orderable: newOrderable,
+        orderFormType: newFormType,
+      }),
     });
 
     setCreating(false);
@@ -58,16 +67,27 @@ export default function AdminDashboardPage() {
     }
 
     setNewName("");
+    setNewOrderable(true);
+    setNewFormType("cake");
     loadFolders();
   }
 
-  async function handleRename(id) {
+  function startEditing(folder) {
+    setEditingId(folder.id);
+    setEditName(folder.name);
+    setEditOrderable(folder.orderable !== false);
+    setEditFormType(folder.order_form_type === "dessert" ? "dessert" : "cake");
+  }
+
+  async function handleSaveEdit(id) {
     if (!editName.trim()) return;
+    setSavingEdit(true);
     await fetch(`/api/folders/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName.trim() }),
+      body: JSON.stringify({ name: editName.trim(), orderable: editOrderable, orderFormType: editFormType }),
     });
+    setSavingEdit(false);
     setEditingId(null);
     loadFolders();
   }
@@ -87,22 +107,80 @@ export default function AdminDashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-6">Your Albums</h1>
 
-        <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3 mb-10">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="New folder name"
-            className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-3 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-          />
+        <form onSubmit={handleCreate} className="mb-10 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="New folder name"
+              className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-3 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+            />
 
-          <button
-            type="submit"
-            disabled={creating}
-            className="w-full sm:w-auto rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 whitespace-nowrap"
-          >
-            {creating ? "Creating..." : "+ New Folder"}
-          </button>
+            <button
+              type="submit"
+              disabled={creating}
+              className="w-full sm:w-auto rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 whitespace-nowrap"
+            >
+              {creating ? "Creating..." : "+ New Folder"}
+            </button>
+          </div>
+
+          <label className="flex items-start gap-2.5 text-sm text-cocoa-600 bg-white border border-cocoa-200 rounded-lg px-4 py-3">
+            <input
+              type="checkbox"
+              checked={newOrderable}
+              onChange={(e) => setNewOrderable(e.target.checked)}
+              className="mt-0.5 accent-cocoa-800"
+            />
+            <span>
+              <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
+              <span className="block text-xs text-cocoa-400 mt-0.5">
+                取消勾选后，此相册仅展示价格（使用照片说明文字），顾客无法在线下单。
+              </span>
+            </span>
+          </label>
+
+          {newOrderable && (
+            <div className="bg-white border border-cocoa-200 rounded-lg px-4 py-3">
+              <span className="block text-sm font-medium text-cocoa-800 mb-2">下单表单类型</span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <label
+                  className={`flex-1 rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
+                    newFormType === "cake" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="new-form-type"
+                    className="mr-2 accent-cocoa-800"
+                    checked={newFormType === "cake"}
+                    onChange={() => setNewFormType("cake")}
+                  />
+                  蛋糕表单（默认）— 尺寸 + 口味 + 两种夹心
+                </label>
+                <label
+                  className={`flex-1 rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
+                    newFormType === "dessert" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="new-form-type"
+                    className="mr-2 accent-cocoa-800"
+                    checked={newFormType === "dessert"}
+                    onChange={() => setNewFormType("dessert")}
+                  />
+                  甜品表单 — 单层，自定义价格选项
+                </label>
+              </div>
+              {newFormType === "dessert" && (
+                <p className="text-xs text-cocoa-400 mt-2">
+                  创建后进入该相册页面设置具体的价格选项。
+                </p>
+              )}
+            </div>
+          )}
         </form>
         {error && <p className="text-sm text-red-600 -mt-8 mb-8">{error}</p>}
 
@@ -144,6 +222,15 @@ export default function AdminDashboardPage() {
                     }}
                   >
                     <div className="relative aspect-[4/3] bg-cocoa-100">
+                      {folder.orderable === false ? (
+                        <div className="absolute top-2 left-2 z-10 rounded-full bg-cocoa-900/80 text-cream text-[10px] uppercase tracking-wide px-2 py-1">
+                          仅展示价格
+                        </div>
+                      ) : folder.order_form_type === "dessert" ? (
+                        <div className="absolute top-2 left-2 z-10 rounded-full bg-cocoa-900/80 text-cream text-[10px] uppercase tracking-wide px-2 py-1">
+                          甜品表单
+                        </div>
+                      ) : null}
                       {folder.cover_url ? (
                         <Image
                           src={cldThumb(folder.cover_url, 500)}
@@ -162,23 +249,44 @@ export default function AdminDashboardPage() {
 
                   <div className="p-4">
                     {editingId === folder.id ? (
-                      <div className="flex gap-2">
+                      <div className="space-y-2.5">
                         <input
                           autoFocus
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleRename(folder.id)}
-                          className="flex-1 rounded-md border border-cocoa-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          className="w-full rounded-md border border-cocoa-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
-                        <button
-                          onClick={() => handleRename(folder.id)}
-                          className="text-xs text-cocoa-700 font-medium"
-                        >
-                          Save
-                        </button>
-                        <button onClick={() => setEditingId(null)} className="text-xs text-cocoa-400">
-                          Cancel
-                        </button>
+                        <label className="flex items-center gap-2 text-xs text-cocoa-600">
+                          <input
+                            type="checkbox"
+                            checked={editOrderable}
+                            onChange={(e) => setEditOrderable(e.target.checked)}
+                            className="accent-cocoa-800"
+                          />
+                          顾客可直接下单
+                        </label>
+                        {editOrderable && (
+                          <select
+                            value={editFormType}
+                            onChange={(e) => setEditFormType(e.target.value)}
+                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          >
+                            <option value="cake">蛋糕表单（尺寸/口味/夹心）</option>
+                            <option value="dessert">甜品表单（单层/自定义价格）</option>
+                          </select>
+                        )}
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleSaveEdit(folder.id)}
+                            disabled={savingEdit}
+                            className="text-xs text-cocoa-700 font-medium disabled:opacity-60"
+                          >
+                            {savingEdit ? "Saving..." : "Save"}
+                          </button>
+                          <button onClick={() => setEditingId(null)} className="text-xs text-cocoa-400">
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-start justify-between gap-2">
@@ -190,22 +298,18 @@ export default function AdminDashboardPage() {
                           </Link>
                           <p className="text-xs text-cocoa-400 mt-0.5">
                             {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
+                            {folder.orderable === false
+                              ? " · 仅展示价格"
+                              : folder.order_form_type === "dessert"
+                              ? " · 甜品表单"
+                              : ""}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-1 text-xs shrink-0">
-                          <button
-                            onClick={() => {
-                              setEditingId(folder.id);
-                              setEditName(folder.name);
-                            }}
-                            className="text-cocoa-500 hover:text-cocoa-800"
-                          >
+                          <button onClick={() => startEditing(folder)} className="text-cocoa-500 hover:text-cocoa-800">
                             Rename
                           </button>
-                          <button
-                            onClick={() => handleDelete(folder.id, folder.name)}
-                            className="text-red-500 hover:text-red-700"
-                          >
+                          <button onClick={() => handleDelete(folder.id, folder.name)} className="text-red-500 hover:text-red-700">
                             Delete
                           </button>
                         </div>
