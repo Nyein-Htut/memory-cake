@@ -32,6 +32,7 @@ export default function AdminFolderPage({ params }) {
 
   const [settingCoverId, setSettingCoverId] = useState(null);
   const [dessertOptions, setDessertOptions] = useState([]);
+  const [minQuantity, setMinQuantity] = useState(6);
   const [savingDessertOptions, setSavingDessertOptions] = useState(false);
   const [dessertSaveMsg, setDessertSaveMsg] = useState("");
 
@@ -64,6 +65,7 @@ export default function AdminFolderPage({ params }) {
       setNameDraft(data.folder.name);
       setDescDraft(data.folder.description || "");
       setDessertOptions(data.folder.dessert_options || []);
+      setMinQuantity(data.folder.dessert_min_quantity || 6);
     }
 
     setLoading(false);
@@ -94,20 +96,30 @@ export default function AdminFolderPage({ params }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folderId]);
 
-  async function handleSaveFolderInfo() {
-    if (!nameDraft.trim()) return;
+  async function handleSaveDessertOptions() {
+    setSavingDessertOptions(true);
+    setDessertSaveMsg("");
 
-    await fetch(`/api/folders/${folderId}`, {
+    const res = await fetch(`/api/folders/${folderId}/order-form`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: nameDraft.trim(),
-        description: descDraft,
+        dessertOptions: dessertOptions.filter((o) => o.label.trim()),
+        minQuantity,
       }),
     });
 
-    setEditingName(false);
-    loadData();
+    setSavingDessertOptions(false);
+
+    if (res.ok) {
+      setDessertSaveMsg("已保存");
+
+      setTimeout(() => setDessertSaveMsg(""), 2000);
+
+      loadData();
+    } else {
+      setDessertSaveMsg("保存失败，请重试");
+    }
   }
 
   function updateDessertOption(i, field, value) {
@@ -129,39 +141,6 @@ export default function AdminFolderPage({ params }) {
     setDessertOptions((prev) =>
       prev.filter((_, idx) => idx !== i)
     );
-  }
-
-  async function handleSaveDessertOptions() {
-    setSavingDessertOptions(true);
-    setDessertSaveMsg("");
-
-    const res = await fetch(
-      `/api/folders/${folderId}/order-form`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dessertOptions: dessertOptions.filter(
-            (o) => o.label.trim()
-          ),
-        }),
-      }
-    );
-
-    setSavingDessertOptions(false);
-
-    if (res.ok) {
-      setDessertSaveMsg("已保存");
-
-      setTimeout(
-        () => setDessertSaveMsg(""),
-        2000
-      );
-
-      loadData();
-    } else {
-      setDessertSaveMsg("保存失败，请重试");
-    }
   }
 
   async function handleFilesSelected(e) {
@@ -484,7 +463,7 @@ export default function AdminFolderPage({ params }) {
         </div>
 
         {/* =====================================================
-            NEW: PRICE / ORDER MODE INFORMATION
+            PRICE / ORDER MODE INFORMATION
             ===================================================== */}
 
         {folder.orderable === false && (
@@ -503,6 +482,36 @@ export default function AdminFolderPage({ params }) {
               <p className="text-xs text-cocoa-400 mb-4">
                 顾客下单时会从这些选项中选择一项，订购卡片将只显示照片（单层），不再显示口味/夹心图标。
               </p>
+
+              {/* =====================================================
+                  MINIMUM PURCHASE QUANTITY
+                  ===================================================== */}
+
+              <div className="mb-4">
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  最少购买数量
+                </label>
+
+                <input
+                  type="number"
+                  min={1}
+                  value={minQuantity}
+                  onChange={(e) =>
+                    setMinQuantity(
+                      Number(e.target.value)
+                    )
+                  }
+                  className="w-28 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                />
+
+                <p className="text-xs text-cocoa-400 mt-1">
+                  顾客下单时如果数量少于此值，将无法提交（会用中文提示最低购买数量）。
+                </p>
+              </div>
+
+              {/* =====================================================
+                  DESSERT PRICE OPTIONS
+                  ===================================================== */}
 
               <div className="space-y-3">
                 {dessertOptions.map((o, i) => (
