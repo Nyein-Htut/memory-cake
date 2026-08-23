@@ -6,8 +6,17 @@ import { useRouter } from "next/navigation";
 import { cldThumb } from "@/lib/cloudinary-url";
 import OrderReceiptCard from "@/components/OrderReceiptCard";
 
-export default function OrderModal({ photo, folderId, folderName, onClose }) {
+export default function OrderModal({
+  photo,
+  folderId,
+  folderName,
+  orderFormType = "cake",
+  dessertOptions = [],
+  minQuantity = 6,
+  onClose,
+}) {
   const router = useRouter();
+  const isDessert = orderFormType === "dessert";
 
   const [options, setOptions] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -17,6 +26,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
   const [flavor, setFlavor] = useState("");
   const [filling1, setFilling1] = useState("");
   const [filling2, setFilling2] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [deliveryPlace, setDeliveryPlace] = useState("");
@@ -28,27 +38,31 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
   const [submittedOrder, setSubmittedOrder] = useState(null);
 
   useEffect(() => {
-    fetch("/api/order-options")
-      .then((res) => res.json())
-      .then((data) => {
-        setOptions(data.options);
-        if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
-        // flavors/fillings are [{label, imageUrl}, ...] — store just the label string.
-        if (data.options?.flavors?.length) setFlavor(data.options.flavors[0].label);
-        if (data.options?.fillings?.length) {
-          setFilling1(data.options.fillings[0].label);
-          setFilling2(
-            data.options.fillings[1]?.label || data.options.fillings[0].label
-          );
-        }
-      })
-      .finally(() => setLoadingOptions(false));
+    if (isDessert) {
+      if (dessertOptions?.length) setSizeLabel(dessertOptions[0].label);
+      setQuantity(minQuantity);
+      setLoadingOptions(false);
+    } else {
+      fetch("/api/order-options")
+        .then((res) => res.json())
+        .then((data) => {
+          setOptions(data.options);
+          if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
+          if (data.options?.flavors?.length) setFlavor(data.options.flavors[0].label);
+          if (data.options?.fillings?.length) {
+            setFilling1(data.options.fillings[0].label);
+            setFilling2(data.options.fillings[1]?.label || data.options.fillings[0].label);
+          }
+        })
+        .finally(() => setLoadingOptions(false));
+    }
 
     const savedPhone = localStorage.getItem("memory_cake_phone");
     if (savedPhone) setPhone(savedPhone);
 
     const savedWechat = localStorage.getItem("memory_cake_wechat_name");
     if (savedWechat) setWechatName(savedWechat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -59,7 +73,8 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const selectedSize = options?.sizes?.find((s) => s.label === sizeLabel);
+  const sizeChoices = isDessert ? dessertOptions : options?.sizes || [];
+  const selectedSize = sizeChoices.find((s) => s.label === sizeLabel);
   const selectedFlavorOption = options?.flavors?.find((f) => f.label === flavor);
   const selectedFilling1Option = options?.fillings?.find((f) => f.label === filling1);
   const selectedFilling2Option = options?.fillings?.find((f) => f.label === filling2);
@@ -70,6 +85,14 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
 
     if (!wechatName.trim()) {
       setError("请填写微信账号名");
+      return;
+    }
+    if (!sizeLabel) {
+      setError(isDessert ? "请选择口味" : "请选择尺寸");
+      return;
+    }
+    if (isDessert && quantity < minQuantity) {
+      setError(`此甜品最少需要订购 ${minQuantity} 份，请修改数量后重新提交`);
       return;
     }
     if (!deliveryPlace.trim() || !phone.trim()) {
@@ -91,9 +114,10 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
           wechatName: wechatName.trim(),
           sizeLabel,
           sizePrice: selectedSize?.price,
-          flavor,
-          filling1,
-          filling2,
+          flavor: isDessert ? "" : flavor,
+          filling1: isDessert ? "" : filling1,
+          filling2: isDessert ? "" : filling2,
+          quantity: isDessert ? quantity : 1,
           deliveryDate,
           deliveryTime,
           deliveryPlace: deliveryPlace.trim(),
@@ -102,8 +126,6 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         }),
       });
 
-      // Remember this device's phone + WeChat name so future orders and
-      // the chat widgets don't need to ask again.
       localStorage.setItem("memory_cake_phone", phone.trim());
       localStorage.setItem("memory_cake_wechat_name", wechatName.trim());
 
@@ -113,8 +135,6 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
       }
 
       const data = await res.json();
-
-      // Clear client-side router cache so other pages see the new order
       router.refresh();
 
       setSubmittedOrder({
@@ -123,12 +143,14 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         wechatName: wechatName.trim(),
         sizeLabel,
         sizePrice: selectedSize?.price,
-        flavor,
-        filling1,
-        filling2,
-        flavorImageUrl: selectedFlavorOption?.imageUrl || null,
-        filling1ImageUrl: selectedFilling1Option?.imageUrl || null,
-        filling2ImageUrl: selectedFilling2Option?.imageUrl || null,
+        flavor: isDessert ? "" : flavor,
+        filling1: isDessert ? "" : filling1,
+        filling2: isDessert ? "" : filling2,
+        flavorImageUrl: isDessert ? null : selectedFlavorOption?.imageUrl || null,
+        filling1ImageUrl: isDessert ? null : selectedFilling1Option?.imageUrl || null,
+        filling2ImageUrl: isDessert ? null : selectedFilling2Option?.imageUrl || null,
+        quantity: isDessert ? quantity : 1,
+        totalPrice: isDessert && selectedSize?.price ? selectedSize.price * quantity : null,
         deliveryDate,
         deliveryTime,
         deliveryPlace: deliveryPlace.trim(),
@@ -175,7 +197,9 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
         <div className="p-5 sm:p-6">
           {!submittedOrder && (
             <>
-              <h2 className="font-serif font-medium text-2xl text-cocoa-900 mb-1">订购这款蛋糕</h2>
+              <h2 className="font-serif font-medium text-2xl text-cocoa-900 mb-1">
+                {isDessert ? "订购这款甜品" : "订购这款蛋糕"}
+              </h2>
               <p className="text-xs text-cocoa-400 mb-5">
                 填写以下信息，我们会尽快与您联系确认订单
               </p>
@@ -220,30 +244,75 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
 
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                  尺寸 *
+                  {isDessert ? "选择口味 *" : "尺寸 *"}
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(options?.sizes || []).map((s) => (
-                    <button
-                      type="button"
-                      key={s.label}
-                      onClick={() => setSizeLabel(s.label)}
-                      className={`rounded-lg border px-2 py-2.5 text-sm text-center transition-colors ${
-                        sizeLabel === s.label
-                          ? "border-cocoa-800 bg-cocoa-800 text-cream"
-                          : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"
-                      }`}
-                    >
-                      <div className="font-medium">{s.label}</div>
-                      <div className={`text-[11px] mt-0.5 ${sizeLabel === s.label ? "text-cream/80" : "text-cocoa-400"}`}>
-                        MMK{s.price}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                {sizeChoices.length === 0 ? (
+                  <p className="text-sm text-cocoa-400">暂无可选项，请联系客服咨询价格</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {sizeChoices.map((s) => (
+                      <button
+                        type="button"
+                        key={s.label}
+                        onClick={() => setSizeLabel(s.label)}
+                        className={`rounded-lg border px-2 py-2.5 text-sm text-center transition-colors ${
+                          sizeLabel === s.label
+                            ? "border-cocoa-800 bg-cocoa-800 text-cream"
+                            : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"
+                        }`}
+                      >
+                        <div className="font-medium">{s.label}</div>
+                        <div className={`text-[11px] mt-0.5 ${sizeLabel === s.label ? "text-cream/80" : "text-cocoa-400"}`}>
+                          MMK{s.price}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {options?.flavors?.length > 0 && (
+              {isDessert && (
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                    数量 *
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="w-9 h-9 rounded-lg border border-cocoa-200 text-cocoa-700 hover:border-cocoa-400 text-lg font-medium"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-20 text-center rounded-lg border border-cocoa-200 bg-white px-2 py-2 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => q + 1)}
+                      className="w-9 h-9 rounded-lg border border-cocoa-200 text-cocoa-700 hover:border-cocoa-400 text-lg font-medium"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p className={`text-xs mt-1.5 ${quantity < minQuantity ? "text-red-600" : "text-cocoa-400"}`}>
+                    {quantity < minQuantity
+                      ? `此甜品最少需要订购 ${minQuantity} 份，请增加数量`
+                      : `最少订购 ${minQuantity} 份`}
+                  </p>
+                  {selectedSize?.price ? (
+                    <p className="text-sm text-cocoa-700 mt-2 font-medium">
+                      小计：MMK {selectedSize.price * quantity}
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {!isDessert && options?.flavors?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     口味
@@ -262,24 +331,12 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                       >
                         <div className="relative w-full aspect-square bg-cocoa-100">
                           {f.imageUrl ? (
-                            <Image
-                              src={cldThumb(f.imageUrl, 200)}
-                              alt={f.label}
-                              fill
-                              sizes="120px"
-                              className="object-cover"
-                            />
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">
-                              🍰
-                            </div>
+                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">🍰</div>
                           )}
                         </div>
-                        <div
-                          className={`py-1.5 text-xs font-medium ${
-                            flavor === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
-                          }`}
-                        >
+                        <div className={`py-1.5 text-xs font-medium ${flavor === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
                           {f.label}
                         </div>
                       </button>
@@ -288,7 +345,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                 </div>
               )}
 
-              {options?.fillings?.length > 0 && (
+              {!isDessert && options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     夹心 / 水果 1
@@ -307,24 +364,12 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                       >
                         <div className="relative w-full aspect-square bg-cocoa-100">
                           {f.imageUrl ? (
-                            <Image
-                              src={cldThumb(f.imageUrl, 200)}
-                              alt={f.label}
-                              fill
-                              sizes="120px"
-                              className="object-cover"
-                            />
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">
-                              🍓
-                            </div>
+                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">🍓</div>
                           )}
                         </div>
-                        <div
-                          className={`py-1.5 text-xs font-medium ${
-                            filling1 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
-                          }`}
-                        >
+                        <div className={`py-1.5 text-xs font-medium ${filling1 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
                           {f.label}
                         </div>
                       </button>
@@ -333,7 +378,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                 </div>
               )}
 
-              {options?.fillings?.length > 0 && (
+              {!isDessert && options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
                     夹心 / 水果 2
@@ -352,24 +397,12 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                       >
                         <div className="relative w-full aspect-square bg-cocoa-100">
                           {f.imageUrl ? (
-                            <Image
-                              src={cldThumb(f.imageUrl, 200)}
-                              alt={f.label}
-                              fill
-                              sizes="120px"
-                              className="object-cover"
-                            />
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">
-                              🫐
-                            </div>
+                            <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">🫐</div>
                           )}
                         </div>
-                        <div
-                          className={`py-1.5 text-xs font-medium ${
-                            filling2 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"
-                          }`}
-                        >
+                        <div className={`py-1.5 text-xs font-medium ${filling2 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
                           {f.label}
                         </div>
                       </button>
@@ -438,7 +471,7 @@ export default function OrderModal({ photo, folderId, folderName, onClose }) {
                 <textarea
                   value={remark}
                   onChange={(e) => setRemark(e.target.value)}
-                  placeholder="如有蛋糕上的文字、特殊要求等，请在此说明"
+                  placeholder="如有特殊要求，请在此说明"
                   rows={3}
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
