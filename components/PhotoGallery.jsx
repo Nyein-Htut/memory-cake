@@ -11,6 +11,7 @@ export default function PhotoGallery({
   orderable = true,
   orderFormType = "cake",
   dessertOptions = [],
+  dessertMinQuantity = 6,
   initialPhotos,
   total,
   pageSize = 24,
@@ -286,16 +287,15 @@ export default function PhotoGallery({
       )}
 
       {/* ORDER MODAL */}
-      {orderable && orderingPhoto && (
+       {orderable && orderingPhoto && (
         <OrderModal
           photo={orderingPhoto}
           folderId={folderId}
           folderName={folderName}
           orderFormType={orderFormType}
           dessertOptions={dessertOptions}
-          onClose={() =>
-            setOrderingPhoto(null)
-          }
+          minQuantity={dessertMinQuantity}
+          onClose={() => setOrderingPhoto(null)}
         />
       )}
     </>
