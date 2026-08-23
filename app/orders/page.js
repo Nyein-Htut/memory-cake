@@ -184,6 +184,7 @@ export default function MyOrdersPage() {
                         </p>
                         <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
                           {order.size_label} {order.size_price ? `· MMK ${order.size_price}` : ""}
+                          {order.quantity > 1 ? ` × ${order.quantity}` : ""}
                         </p>
                         <p className="text-sm text-cocoa-700 mt-1">
                           {[order.flavor, order.filling1, order.filling2].filter(Boolean).join(" · ") || "No flavor specified"}
