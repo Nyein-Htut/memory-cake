@@ -17,6 +17,7 @@ export async function POST(request) {
     flavor,
     filling1,
     filling2,
+    quantity,
     deliveryDate,
     deliveryTime,
     deliveryPlace,
@@ -28,14 +29,36 @@ export async function POST(request) {
     return NextResponse.json({ error: "缺少必填信息" }, { status: 400 });
   }
 
+  const cleanQuantity =
+    Number.isFinite(Number(quantity)) && Number(quantity) > 0
+      ? Math.floor(Number(quantity))
+      : 1;
+
+  // Re-check the folder's minimum server-side — never trust the client alone.
+  if (folderId) {
+    const folderRows = await sql`
+      SELECT order_form_type, dessert_min_quantity FROM folders WHERE id = ${folderId}
+    `;
+    const folder = folderRows[0];
+    if (folder?.order_form_type === "dessert") {
+      const minQty = folder.dessert_min_quantity || 6;
+      if (cleanQuantity < minQty) {
+        return NextResponse.json(
+          { error: `此甜品最少需要订购 ${minQty} 份，请修改数量后重新提交` },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const rows = await sql`
     INSERT INTO orders (
       photo_id, folder_id, photo_url, folder_name, wechat_name,
-      size_label, size_price, flavor, filling1, filling2,
+      size_label, size_price, flavor, filling1, filling2, quantity,
       delivery_date, delivery_time, delivery_place, phone, remark
     ) VALUES (
       ${photoId || null}, ${folderId || null}, ${photoUrl || null}, ${folderName || null}, ${wechatName.trim()},
-      ${sizeLabel}, ${sizePrice || null}, ${flavor || null}, ${filling1 || null}, ${filling2 || null},
+      ${sizeLabel}, ${sizePrice || null}, ${flavor || null}, ${filling1 || null}, ${filling2 || null}, ${cleanQuantity},
       ${deliveryDate || null}, ${deliveryTime || null}, ${deliveryPlace}, ${phone}, ${remark || null}
     )
     RETURNING *
