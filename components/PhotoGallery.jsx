@@ -8,6 +8,9 @@ import OrderModal from "@/components/OrderModal";
 export default function PhotoGallery({
   folderId,
   folderName,
+  orderable = true,
+  orderFormType = "cake",
+  dessertOptions = [],
   initialPhotos,
   total,
   pageSize = 24,
@@ -34,19 +37,28 @@ export default function PhotoGallery({
 
       if (res.ok) {
         const data = await res.json();
+
         setPhotos((prev) => [...prev, ...data.photos]);
       }
     } finally {
       setLoadingMore(false);
     }
-  }, [folderId, photos.length, pageSize, loadingMore, hasMore]);
+  }, [
+    folderId,
+    photos.length,
+    pageSize,
+    loadingMore,
+    hasMore,
+  ]);
 
   useEffect(() => {
     if (!sentinelRef.current || !hasMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) loadMore();
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
       },
       { rootMargin: "600px" }
     );
@@ -56,12 +68,17 @@ export default function PhotoGallery({
     return () => observer.disconnect();
   }, [loadMore, hasMore]);
 
-  const close = useCallback(() => setActiveIndex(null), []);
+  const close = useCallback(
+    () => setActiveIndex(null),
+    []
+  );
 
   const showPrev = useCallback(
     () =>
       setActiveIndex((i) =>
-        i === null ? null : (i - 1 + photos.length) % photos.length
+        i === null
+          ? null
+          : (i - 1 + photos.length) % photos.length
       ),
     [photos.length]
   );
@@ -69,7 +86,9 @@ export default function PhotoGallery({
   const showNext = useCallback(
     () =>
       setActiveIndex((i) =>
-        i === null ? null : (i + 1) % photos.length
+        i === null
+          ? null
+          : (i + 1) % photos.length
       ),
     [photos.length]
   );
@@ -85,21 +104,33 @@ export default function PhotoGallery({
 
     window.addEventListener("keydown", onKey);
 
-    return () => window.removeEventListener("keydown", onKey);
-  }, [activeIndex, close, showPrev, showNext]);
+    return () =>
+      window.removeEventListener("keydown", onKey);
+  }, [
+    activeIndex,
+    close,
+    showPrev,
+    showNext,
+  ]);
 
   function handleTouchStart(e) {
-    touchStartX.current = e.touches[0].clientX;
+    touchStartX.current =
+      e.touches[0].clientX;
   }
 
   function handleTouchEnd(e) {
     if (touchStartX.current === null) return;
 
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    const delta =
+      e.changedTouches[0].clientX -
+      touchStartX.current;
 
     if (Math.abs(delta) > 50) {
-      if (delta > 0) showPrev();
-      else showNext();
+      if (delta > 0) {
+        showPrev();
+      } else {
+        showNext();
+      }
     }
 
     touchStartX.current = null;
@@ -119,31 +150,45 @@ export default function PhotoGallery({
             >
               <Image
                 src={cldThumb(photo.url, 400)}
-                alt={photo.caption || "Memory Cake photo"}
+                alt={
+                  photo.caption ||
+                  "Memory Cake photo"
+                }
                 fill
                 sizes="(max-width:640px) 50vw, 25vw"
                 className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
               />
             </button>
 
-            <div className="p-2.5 sm:p-3">
-              <button
-                onClick={() => setOrderingPhoto(photo)}
-                className="w-full rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm py-2 font-medium hover:bg-cocoa-900 transition-colors"
-              >
-                🎂 订购此蛋糕
-              </button>
-            </div>
+            {/* ORDER BUTTON */}
+            {orderable && (
+              <div className="p-2.5 sm:p-3">
+                <button
+                  onClick={() =>
+                    setOrderingPhoto(photo)
+                  }
+                  className="w-full rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm py-2 font-medium hover:bg-cocoa-900 transition-colors"
+                >
+                  🎂 订购此蛋糕
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {hasMore && (
-        <div ref={sentinelRef} className="py-10 text-center text-cocoa-400 text-sm">
-          {loadingMore ? "Loading more photos..." : ""}
+        <div
+          ref={sentinelRef}
+          className="py-10 text-center text-cocoa-400 text-sm"
+        >
+          {loadingMore
+            ? "Loading more photos..."
+            : ""}
         </div>
       )}
 
+      {/* FULLSCREEN PHOTO VIEWER */}
       {activeIndex !== null && (
         <div
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center px-3"
@@ -151,29 +196,46 @@ export default function PhotoGallery({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
+          {/* CLOSE */}
           <button
-            onClick={(e) => { e.stopPropagation(); close(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              close();
+            }}
             className="absolute top-5 right-5 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-3xl transition z-10"
             aria-label="Close"
           >
             &times;
           </button>
 
+          {/* PREVIOUS */}
           <button
-            onClick={(e) => { e.stopPropagation(); showPrev(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              showPrev();
+            }}
             className="absolute left-4 sm:left-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
             aria-label="Previous"
           >
             &#8249;
           </button>
 
+          {/* IMAGE */}
           <div
             className="relative w-full max-w-5xl h-[65vh] sm:h-[75vh]"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
             <Image
-              src={cldFull(photos[activeIndex].url, 1600)}
-              alt={photos[activeIndex].caption || "Memory Cake photo"}
+              src={cldFull(
+                photos[activeIndex].url,
+                1600
+              )}
+              alt={
+                photos[activeIndex].caption ||
+                "Memory Cake photo"
+              }
               fill
               sizes="100vw"
               priority
@@ -181,39 +243,59 @@ export default function PhotoGallery({
             />
           </div>
 
+          {/* NEXT */}
           <button
-            onClick={(e) => { e.stopPropagation(); showNext(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              showNext();
+            }}
             className="absolute right-4 sm:right-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
             aria-label="Next"
           >
             &#8250;
           </button>
 
+          {/* CAPTION + ORDER */}
           <div
             className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
             {photos[activeIndex].caption && (
               <div className="max-w-3xl px-6 py-3 rounded-full bg-black/40 backdrop-blur text-white text-sm text-center">
                 {photos[activeIndex].caption}
               </div>
             )}
-            <button
-              onClick={() => setOrderingPhoto(photos[activeIndex])}
-              className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
-            >
-              🎂 订购此蛋糕
-            </button>
+
+            {/* ORDER BUTTON IN FULLSCREEN */}
+            {orderable && (
+              <button
+                onClick={() =>
+                  setOrderingPhoto(
+                    photos[activeIndex]
+                  )
+                }
+                className="rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
+              >
+                🎂 订购此蛋糕
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {orderingPhoto && (
+      {/* ORDER MODAL */}
+      {orderable && orderingPhoto && (
         <OrderModal
           photo={orderingPhoto}
           folderId={folderId}
           folderName={folderName}
-          onClose={() => setOrderingPhoto(null)}
+          orderFormType={orderFormType}
+          dessertOptions={dessertOptions}
+          onClose={() =>
+            setOrderingPhoto(null)
+          }
         />
       )}
     </>
