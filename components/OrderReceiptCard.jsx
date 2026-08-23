@@ -60,6 +60,8 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       canvas.height = CARD_HEIGHT;
       const ctx = canvas.getContext("2d");
 
+      const isDessert = !order.flavor && !order.filling1 && !order.filling2;
+
       // Soft Light Cream Background
       const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
       bgGrad.addColorStop(0, "#ffffff");
@@ -85,26 +87,24 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 142);
 
       // ==========================================
-      // TOP SECTION: Cake Photo (Left) + Options (Right)
+      // TOP SECTION: Photo — single wide layer for dessert orders,
+      // photo + 3 option chips for regular cake orders.
       // ==========================================
       const photoX = 70;
       const photoY = 185;
-      const photoWidth = 520;
+      const photoWidth = isDessert ? CARD_WIDTH - 140 : 520;
       const photoHeight = 520;
 
-      // Draw Main Cake Box Background
       ctx.fillStyle = "#f2e7d8";
       roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 24);
       ctx.fill();
 
-      // Main Cake Image Render
       const cakeImg = await loadImageSafe(photoUrl);
       if (cakeImg) {
         ctx.save();
         roundRect(ctx, photoX, photoY, photoWidth, photoHeight, 24);
         ctx.clip();
-        
-        // Scale and center without clipping key areas
+
         const scale = Math.min(photoWidth / cakeImg.width, photoHeight / cakeImg.height);
         const dw = cakeImg.width * scale;
         const dh = cakeImg.height * scale;
@@ -120,67 +120,62 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         ctx.fillText("🎂", photoX + photoWidth / 2, photoY + photoHeight / 2 + 20);
       }
 
-      // Vertical Right Option Column Setup
-      const chipX = 630;
-      const chipWidth = 195;
-      const chipHeight = 135;
-      const chipGap = 42;
+      if (!isDessert) {
+        const chipX = 630;
+        const chipWidth = 195;
+        const chipHeight = 135;
+        const chipGap = 42;
 
-      function drawOptionChip(yPos, label, img, fallbackEmoji) {
-        ctx.save();
-        
-        // Subtle Drop Shadow Behind Option Chips
-        ctx.shadowColor = "rgba(110, 85, 60, 0.08)";
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetY = 4;
-
-        ctx.fillStyle = "#faf3e8";
-        roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
-        ctx.fill();
-        ctx.restore();
-
-        // Border Line for Chip
-        ctx.strokeStyle = "#eee1d1";
-        ctx.lineWidth = 1.5;
-        roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
-        ctx.stroke();
-
-        // Fill Image / Fallback Emoji
-        if (img) {
+        function drawOptionChip(yPos, label, img, fallbackEmoji) {
           ctx.save();
+          ctx.shadowColor = "rgba(110, 85, 60, 0.08)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+
+          ctx.fillStyle = "#faf3e8";
           roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
-          ctx.clip();
-          const scale = Math.max(chipWidth / img.width, chipHeight / img.height);
-          const dw = img.width * scale;
-          const dh = img.height * scale;
-          const dx = chipX + (chipWidth - dw) / 2;
-          const dy = yPos + (chipHeight - dh) / 2;
-          ctx.drawImage(img, dx, dy, dw, dh);
+          ctx.fill();
           ctx.restore();
-        } else {
-          ctx.fillStyle = "#7a5738";
-          ctx.font = "500 42px sans-serif";
+
+          ctx.strokeStyle = "#eee1d1";
+          ctx.lineWidth = 1.5;
+          roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
+          ctx.stroke();
+
+          if (img) {
+            ctx.save();
+            roundRect(ctx, chipX, yPos, chipWidth, chipHeight, 20);
+            ctx.clip();
+            const scale = Math.max(chipWidth / img.width, chipHeight / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const dx = chipX + (chipWidth - dw) / 2;
+            const dy = yPos + (chipHeight - dh) / 2;
+            ctx.drawImage(img, dx, dy, dw, dh);
+            ctx.restore();
+          } else {
+            ctx.fillStyle = "#7a5738";
+            ctx.font = "500 42px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(fallbackEmoji, chipX + chipWidth / 2, yPos + chipHeight / 2 + 14);
+          }
+
           ctx.textAlign = "center";
-          ctx.fillText(fallbackEmoji, chipX + chipWidth / 2, yPos + chipHeight / 2 + 14);
+          ctx.font = "700 22px Inter, system-ui, sans-serif";
+          ctx.fillStyle = "#221912";
+          ctx.fillText(label || "—", chipX + chipWidth / 2, yPos + chipHeight + 30);
         }
 
-        // Label Underneath Box
-        ctx.textAlign = "center";
-        ctx.font = "700 22px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "#221912";
-        ctx.fillText(label || "—", chipX + chipWidth / 2, yPos + chipHeight + 30);
+        const [flavorImg, filling1Img, filling2Img] = await Promise.all([
+          loadImageSafe(order.flavorImageUrl),
+          loadImageSafe(order.filling1ImageUrl),
+          loadImageSafe(order.filling2ImageUrl),
+        ]);
+
+        drawOptionChip(photoY, order.flavor, flavorImg, "🍫");
+        drawOptionChip(photoY + chipHeight + chipGap, order.filling1, filling1Img, "🍓");
+        drawOptionChip(photoY + (chipHeight + chipGap) * 2, order.filling2, filling2Img, "🫐");
       }
-
-      const [flavorImg, filling1Img, filling2Img] = await Promise.all([
-        loadImageSafe(order.flavorImageUrl),
-        loadImageSafe(order.filling1ImageUrl),
-        loadImageSafe(order.filling2ImageUrl),
-      ]);
-
-      // Render 3 Option Chips Vertically
-      drawOptionChip(photoY, order.flavor, flavorImg, "🍫");
-      drawOptionChip(photoY + chipHeight + chipGap, order.filling1, filling1Img, "🍓");
-      drawOptionChip(photoY + (chipHeight + chipGap) * 2, order.filling2, filling2Img, "🫐");
 
       // ==========================================
       // BOTTOM SECTION: Order Details
@@ -205,60 +200,73 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         return lines.length;
       }
 
-      function renderDetailRow(label, value, options = {}) {
+      function renderDetailRow(label, value) {
         if (!value) return;
 
-        const { isSizePrice = false } = options;
         const leftX = 75;
         const rightXPos = CARD_WIDTH - 75;
         const maxValWidth = CARD_WIDTH - 320;
 
-        // Label Text (Left)
         ctx.textAlign = "left";
         ctx.font = "700 23px Inter, system-ui, sans-serif";
         ctx.fillStyle = "#63472d";
         ctx.fillText(label, leftX, currentY);
 
-        // Value Text (Right)
-        if (isSizePrice) {
-          ctx.textAlign = "right";
-          
-          // Size part
-          ctx.font = "700 36px 'Cormorant Garamond', Georgia, serif";
+        ctx.textAlign = "right";
+        ctx.font = "700 26px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "#1e1610";
+
+        const lineHeight = 38;
+        const lineCount = wrapRightText(value, rightXPos, currentY, maxValWidth, lineHeight);
+        currentY += Math.max(lineCount * lineHeight, 36) + 24;
+      }
+
+      // Highlighted price-style row: "<mainText>  MMK <price>" with the
+      // price portion in the warm burgundy/gold accent.
+      function renderPriceRow(label, mainText, price) {
+        if (!mainText) return;
+
+        const leftX = 75;
+        const rightXPos = CARD_WIDTH - 75;
+
+        ctx.textAlign = "left";
+        ctx.font = "700 23px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "#63472d";
+        ctx.fillText(label, leftX, currentY);
+
+        ctx.textAlign = "right";
+        const pricePart = price ? `  MMK ${price}` : "";
+        const fullText = `${mainText}${pricePart}`;
+        const parts = fullText.split("MMK");
+
+        if (parts.length > 1) {
           ctx.fillStyle = "#221912";
-          
-          const pricePart = order.sizePrice ? `  MMK ${order.sizePrice}` : "";
-          const fullText = `${order.sizeLabel}${pricePart}`;
+          ctx.font = "700 38px 'Cormorant Garamond', Georgia, serif";
+          ctx.fillText(parts[0], rightXPos - ctx.measureText(`MMK ${parts[1]}`).width, currentY);
 
-          // Highlight MMK Price in Warm Burgundy/Gold Accent
-          const parts = fullText.split("MMK");
-          if (parts.length > 1) {
-            ctx.fillStyle = "#221912";
-            ctx.font = "700 38px 'Cormorant Garamond', Georgia, serif";
-            ctx.fillText(parts[0], rightXPos - ctx.measureText(`MMK ${parts[1]}`).width, currentY);
-
-            ctx.fillStyle = "#7a2a16";
-            ctx.font = "700 34px 'Cormorant Garamond', Georgia, serif";
-            ctx.fillText(`MMK ${parts[1]}`, rightXPos, currentY);
-          } else {
-            ctx.fillText(fullText, rightXPos, currentY);
-          }
-
-          currentY += 56;
+          ctx.fillStyle = "#7a2a16";
+          ctx.font = "700 34px 'Cormorant Garamond', Georgia, serif";
+          ctx.fillText(`MMK ${parts[1]}`, rightXPos, currentY);
         } else {
-          ctx.textAlign = "right";
-          ctx.font = "700 26px Inter, system-ui, sans-serif";
-          ctx.fillStyle = "#1e1610";
-
-          const lineHeight = 38;
-          const lineCount = wrapRightText(value, rightXPos, currentY, maxValWidth, lineHeight);
-          currentY += Math.max(lineCount * lineHeight, 36) + 24;
+          ctx.fillStyle = "#221912";
+          ctx.font = "700 36px 'Cormorant Garamond', Georgia, serif";
+          ctx.fillText(fullText, rightXPos, currentY);
         }
+
+        currentY += 56;
       }
 
       // Render Order Detail Rows
       renderDetailRow("微信昵称", order.wechatName);
-      renderDetailRow("尺寸 SIZE", order.sizeLabel, { isSizePrice: true });
+      renderPriceRow(isDessert ? "选购 ITEM" : "尺寸 SIZE", order.sizeLabel, order.sizePrice);
+
+      if (isDessert && order.quantity) {
+        renderDetailRow("数量 QTY", `${order.quantity} 份`);
+        if (order.totalPrice) {
+          renderPriceRow("总价 TOTAL", `${order.quantity} 份合计`, order.totalPrice);
+        }
+      }
+
       renderDetailRow("日期 DATE", [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
       renderDetailRow("地址 ADDRESS", order.deliveryPlace);
       renderDetailRow("电话 PHONE", order.phone);
