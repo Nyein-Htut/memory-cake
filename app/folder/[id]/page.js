@@ -83,9 +83,13 @@ export default async function FolderPage({ params }) {
             </p>
           </div>
         ) : (
-          <PhotoGallery
+            <PhotoGallery
             folderId={folderId}
             folderName={folder.name}
+            orderable={folder.orderable !== false}
+            orderFormType={folder.order_form_type || "cake"}
+            dessertOptions={folder.dessert_options || []}
+            dessertMinQuantity={folder.dessert_min_quantity || 6}
             initialPhotos={photos}
             total={total}
             pageSize={PAGE_SIZE}
