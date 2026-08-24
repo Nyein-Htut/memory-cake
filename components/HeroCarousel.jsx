@@ -15,13 +15,13 @@ function shuffle(arr) {
 }
 
 const HERO_IMAGES = [
-  "/hero/event 1.jpg",
-  "/hero/event 2.jpg",
-  "/hero/event 3.jpg",
-  "/hero/event 4.jpg",
-  "/hero/event 5.jpg",
-  "/hero/event 6.jpg",
-  "/hero/event 7.jpg",
+  "/hero/cake 1.png",
+  "/hero/cake 2.png",
+  "/hero/cake 3.png",
+  "/hero/cake 4.jpg",
+  "/hero/cake 5.png",
+  "/hero/cake 6.png",
+  "/hero/cake 7.png",
 ];
 
 const AUTOPLAY_MS = 5000;
