@@ -3,8 +3,8 @@ import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
 import cloudinary from "@/lib/cloudinary";
 
-// Now supports ?limit=&offset= so the admin folder page can page through
-// photos instead of loading the entire album at once.
+export const dynamic = "force-dynamic";
+
 export async function GET(request, { params }) {
   const id = Number(params.id);
   const { searchParams } = new URL(request.url);
