@@ -46,23 +46,55 @@ export default function NotificationsPage() {
     load(phoneInput.trim());
   }
 
+  function handleChangeNumber() {
+    localStorage.removeItem("memory_cake_phone");
+    setPhone("");
+    setPhoneInput("");
+    setItems([]);
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F0E6DA]">
       <PublicHeader />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-12">
         <h1 className="font-serif font-semibold text-3xl sm:text-4xl text-cocoa-900 mb-2">Notifications</h1>
-        <p className="text-cocoa-500 text-sm mb-8">Updates from us about your orders and messages.</p>
+        <p className="text-cocoa-500 text-sm mb-2">Updates from us about your orders and messages.</p>
+
+        {phone && (
+          <p className="text-xs text-cocoa-400 mb-8">
+            Showing updates for {phone} ·{" "}
+            <button
+              type="button"
+              onClick={handleChangeNumber}
+              className="underline hover:text-cocoa-700"
+            >
+              Not you? Change number
+            </button>
+          </p>
+        )}
 
         {!phone ? (
-          <form onSubmit={handleUsePhone} className="flex flex-col sm:flex-row gap-3 max-w-md">
-            <input
-              type="tel"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
-              placeholder="Your phone number"
-              className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-3 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-            />
+          <form onSubmit={handleUsePhone} className="flex flex-col sm:flex-row gap-3 max-w-md mt-6">
+            <div className="relative flex-1">
+              <input
+                type="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="Your phone number"
+                className="w-full rounded-lg border border-cocoa-200 bg-white px-4 py-3 pr-10 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+              />
+              {phoneInput && (
+                <button
+                  type="button"
+                  onClick={() => setPhoneInput("")}
+                  aria-label="Clear"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-cocoa-400 hover:text-cocoa-700 hover:bg-cocoa-100 text-lg leading-none transition-colors"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
             <button
               type="submit"
               className="rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900"
