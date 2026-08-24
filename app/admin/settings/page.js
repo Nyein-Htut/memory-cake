@@ -27,6 +27,14 @@ export default function AdminSettingsPage() {
     setSizes((prev) => prev.map((s, idx) => (idx === i ? { ...s, [field]: value } : s)));
   }
 
+  // Price inputs are plain text fields that only ever keep digits. A
+  // type="number" input reformats on every keystroke (cursor/leading-zero
+  // jumps) and silently changes value on scroll-wheel — this avoids both.
+  function updateSizePrice(i, rawValue) {
+    const digits = rawValue.replace(/[^0-9]/g, "");
+    updateSize(i, "price", digits === "" ? "" : Number(digits));
+  }
+
   function addSize() {
     setSizes((prev) => [...prev, { label: "", price: 0 }]);
   }
@@ -144,9 +152,11 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={s.price}
-                    onChange={(e) => updateSize(i, "price", Number(e.target.value))}
+                    onChange={(e) => updateSizePrice(i, e.target.value)}
                     className="w-20 sm:w-28 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                   />
                 </div>
