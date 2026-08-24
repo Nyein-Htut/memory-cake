@@ -34,7 +34,13 @@ export default function AdminFolderPage({ params }) {
   const [captionDraft, setCaptionDraft] = useState("");
 
   const [settingCoverId, setSettingCoverId] = useState(null);
-  const [dessertOptions, setDessertOptions] = useState([]);
+
+  // Dessert folders now carry a single price (the folder/photo IS the
+  // item — no separate "label" needed, that was redundant with the
+  // folder name). Internally still saved as a one-item dessert_options
+  // array (label = folder name) so the order form / receipt code
+  // doesn't need to change.
+  const [dessertPrice, setDessertPrice] = useState("");
   const [minQuantity, setMinQuantity] = useState(6);
   const [savingDessertOptions, setSavingDessertOptions] = useState(false);
   const [dessertSaveMsg, setDessertSaveMsg] = useState("");
@@ -58,7 +64,7 @@ export default function AdminFolderPage({ params }) {
       `/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`,
       { cache: "no-store" }
     );
-    
+
     if (res.ok) {
       const data = await res.json();
 
@@ -70,7 +76,8 @@ export default function AdminFolderPage({ params }) {
       setDescDraft(data.folder.description || "");
       setEditOrderable(data.folder.orderable !== false);
       setEditFormType(data.folder.order_form_type === "dessert" ? "dessert" : "cake");
-      setDessertOptions(data.folder.dessert_options || []);
+      const existingPrice = data.folder.dessert_options?.[0]?.price;
+      setDessertPrice(existingPrice ? String(existingPrice) : "");
       setMinQuantity(data.folder.dessert_min_quantity || 6);
     }
 
@@ -102,9 +109,6 @@ export default function AdminFolderPage({ params }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folderId]);
 
-  // This was referenced by the "Edit info" Save button but never defined —
-  // that's what threw "handleSaveFolderInfo is not defined". Now it saves
-  // name/description AND the order-mode settings in one request.
   async function handleSaveFolderInfo() {
     if (!nameDraft.trim()) {
       setError("请填写相册名称");
@@ -136,15 +140,22 @@ export default function AdminFolderPage({ params }) {
     loadData();
   }
 
+  function updateDessertPrice(rawValue) {
+    const digits = rawValue.replace(/[^0-9]/g, "");
+    setDessertPrice(digits);
+  }
+
   async function handleSaveDessertOptions() {
     setSavingDessertOptions(true);
     setDessertSaveMsg("");
+
+    const price = Number(dessertPrice) || 0;
 
     const res = await fetch(`/api/folders/${folderId}/order-form`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        dessertOptions: dessertOptions.filter((o) => o.label.trim()),
+        dessertOptions: price > 0 ? [{ label: folder.name, price }] : [],
         minQuantity,
       }),
     });
@@ -158,28 +169,6 @@ export default function AdminFolderPage({ params }) {
     } else {
       setDessertSaveMsg("保存失败，请重试");
     }
-  }
-
-  function updateDessertOption(i, field, value) {
-    setDessertOptions((prev) =>
-      prev.map((o, idx) => (idx === i ? { ...o, [field]: value } : o))
-    );
-  }
-
-  // Price stays a plain text field, digits only. type="number" was causing
-  // the cursor/leading-zero jumping and letting the mouse scroll wheel
-  // silently change the value when it happened to be hovering the input.
-  function updateDessertOptionPrice(i, rawValue) {
-    const digits = rawValue.replace(/[^0-9]/g, "");
-    updateDessertOption(i, "price", digits === "" ? "" : Number(digits));
-  }
-
-  function addDessertOption() {
-    setDessertOptions((prev) => [...prev, { label: "", price: 0 }]);
-  }
-
-  function removeDessertOption(i) {
-    setDessertOptions((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   async function handleFilesSelected(e) {
@@ -427,12 +416,12 @@ export default function AdminFolderPage({ params }) {
                         checked={editFormType === "dessert"}
                         onChange={() => setEditFormType("dessert")}
                       />
-                      甜品表单 — 单层，自定义价格选项
+                      甜品表单 — 单一价格
                     </label>
                   </div>
                   {editFormType === "dessert" && (
                     <p className="text-xs text-cocoa-400 mt-2">
-                      保存后可在下方「甜品价格选项」区域设置具体价格。
+                      保存后可在下方设置价格。
                     </p>
                   )}
                 </div>
@@ -499,64 +488,48 @@ export default function AdminFolderPage({ params }) {
 
         {folder.orderable !== false && folder.order_form_type === "dessert" && (
           <section className="mb-8 bg-white rounded-2xl border border-cocoa-100 shadow-sm p-4 sm:p-6">
-            <h2 className="font-serif text-lg text-cocoa-900 mb-1">甜品价格选项</h2>
-            <p className="text-xs text-cocoa-400 mb-4">
-              顾客下单时会从这些选项中选择一项，订购卡片将只显示照片（单层），不再显示口味/夹心图标。
-            </p>
+            <h2 className="font-serif text-lg text-cocoa-900 mb-4">甜品价格</h2>
 
-            <div className="mb-4">
-              <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                最少购买数量
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={minQuantity}
-                onChange={(e) => setMinQuantity(Number(e.target.value))}
-                className="w-28 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
-              />
-              <p className="text-xs text-cocoa-400 mt-1">
-                顾客下单时如果数量少于此值，将无法提交（会用中文提示最低购买数量）。
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {dessertOptions.map((o, i) => (
-                <div key={i} className="flex items-center gap-2 p-2.5 bg-cocoa-50/30 rounded-xl border border-cocoa-100">
+            <div className="flex flex-wrap items-end gap-4 mb-4">
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  价格
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-cocoa-500 text-xs font-medium">MMK</span>
                   <input
-                    value={o.label}
-                    onChange={(e) => updateDessertOption(i, "label", e.target.value)}
-                    placeholder="例如：芒果慕斯"
-                    className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={dessertPrice}
+                    onChange={(e) => updateDessertPrice(e.target.value)}
+                    placeholder="0"
+                    className="w-32 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                   />
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={o.price}
-                      onChange={(e) => updateDessertOptionPrice(i, e.target.value)}
-                      className="w-24 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
-                    />
-                  </div>
-                  <button onClick={() => removeDessertOption(i)} className="text-red-500 hover:text-red-700 text-xs px-1.5 py-1 shrink-0 font-medium">
-                    删除
-                  </button>
                 </div>
-              ))}
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  最少购买数量
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={minQuantity}
+                  onChange={(e) => setMinQuantity(Number(e.target.value))}
+                  className="w-28 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-4 mt-4">
-              <button onClick={addDessertOption} className="text-sm text-cocoa-700 hover:text-cocoa-900 font-medium">
-                + 添加选项
-              </button>
+            <div className="flex items-center gap-4">
               <button
                 onClick={handleSaveDessertOptions}
                 disabled={savingDessertOptions}
                 className="rounded-lg bg-cocoa-800 text-cream px-4 py-2 text-sm font-medium hover:bg-cocoa-900 disabled:opacity-60"
               >
-                {savingDessertOptions ? "保存中..." : "保存价格选项"}
+                {savingDessertOptions ? "保存中..." : "保存"}
               </button>
               {dessertSaveMsg && <span className="text-sm text-cocoa-600">{dessertSaveMsg}</span>}
             </div>
