@@ -119,67 +119,77 @@ export default function AdminDashboardPage() {
 
             <button
               type="submit"
-              disabled={creating}
+              disabled={creating || !newName.trim()}
               className="w-full sm:w-auto rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60 whitespace-nowrap"
             >
               {creating ? "Creating..." : "+ New Folder"}
             </button>
           </div>
 
-          <label className="flex items-start gap-2.5 text-sm text-cocoa-600 bg-white border border-cocoa-200 rounded-lg px-4 py-3">
-            <input
-              type="checkbox"
-              checked={newOrderable}
-              onChange={(e) => setNewOrderable(e.target.checked)}
-              className="mt-0.5 accent-cocoa-800"
-            />
-            <span>
-              <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
-              <span className="block text-xs text-cocoa-400 mt-0.5">
-                取消勾选后，此相册仅展示价格（使用照片说明文字），顾客无法在线下单。
-              </span>
-            </span>
-          </label>
+          {/* Order-mode options only appear once a name has been entered —
+              they're irrelevant noise before that. */}
+          {newName.trim() && (
+            <>
+              <label className="flex items-start gap-2.5 text-sm text-cocoa-600 bg-white border border-cocoa-200 rounded-lg px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={newOrderable}
+                  onChange={(e) => setNewOrderable(e.target.checked)}
+                  className="mt-0.5 accent-cocoa-800"
+                />
+                <span>
+                  <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
+                  <span className="block text-xs text-cocoa-400 mt-0.5">
+                    取消勾选后，此相册仅展示价格（使用照片说明文字），顾客无法在线下单，"订购此蛋糕"按钮会被替换为价格展示。适用于「大蛋糕」这类需要单独报价的相册。
+                  </span>
+                </span>
+              </label>
 
-          {newOrderable && (
-            <div className="bg-white border border-cocoa-200 rounded-lg px-4 py-3">
-              <span className="block text-sm font-medium text-cocoa-800 mb-2">下单表单类型</span>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <label
-                  className={`flex-1 rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
-                    newFormType === "cake" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="new-form-type"
-                    className="mr-2 accent-cocoa-800"
-                    checked={newFormType === "cake"}
-                    onChange={() => setNewFormType("cake")}
-                  />
-                  蛋糕表单（默认）— 尺寸 + 口味 + 两种夹心
-                </label>
-                <label
-                  className={`flex-1 rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
-                    newFormType === "dessert" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="new-form-type"
-                    className="mr-2 accent-cocoa-800"
-                    checked={newFormType === "dessert"}
-                    onChange={() => setNewFormType("dessert")}
-                  />
-                  甜品表单 — 单层，自定义价格选项
-                </label>
-              </div>
-              {newFormType === "dessert" && (
-                <p className="text-xs text-cocoa-400 mt-2">
-                  创建后进入该相册页面设置具体的价格选项。
+              {newOrderable ? (
+                <div className="bg-white border border-cocoa-200 rounded-lg px-4 py-3">
+                  <span className="block text-sm font-medium text-cocoa-800 mb-2">下单表单类型</span>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <label
+                      className={`flex-1 rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
+                        newFormType === "cake" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="new-form-type"
+                        className="mr-2 accent-cocoa-800"
+                        checked={newFormType === "cake"}
+                        onChange={() => setNewFormType("cake")}
+                      />
+                      蛋糕表单（默认）— 尺寸 + 口味 + 两种夹心
+                    </label>
+                    <label
+                      className={`flex-1 rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
+                        newFormType === "dessert" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="new-form-type"
+                        className="mr-2 accent-cocoa-800"
+                        checked={newFormType === "dessert"}
+                        onChange={() => setNewFormType("dessert")}
+                      />
+                      甜品表单 — 单层，自定义价格选项
+                    </label>
+                  </div>
+                  {newFormType === "dessert" && (
+                    <p className="text-xs text-cocoa-400 mt-2">
+                      创建后进入该相册页面设置具体的价格选项。
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-cocoa-400 px-1">
+                  已取消勾选「顾客可直接下单」，此相册不会显示下单表单，因此无需选择表单类型。
                 </p>
               )}
-            </div>
+            </>
           )}
         </form>
         {error && <p className="text-sm text-red-600 -mt-8 mb-8">{error}</p>}
@@ -249,33 +259,68 @@ export default function AdminDashboardPage() {
 
                   <div className="p-4">
                     {editingId === folder.id ? (
-                      <div className="space-y-2.5">
+                      <div className="space-y-3">
                         <input
                           autoFocus
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="w-full rounded-md border border-cocoa-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
-                        <label className="flex items-center gap-2 text-xs text-cocoa-600">
+
+                        <label className="flex items-start gap-2 text-xs text-cocoa-600 bg-cocoa-50/60 border border-cocoa-100 rounded-lg px-3 py-2.5">
                           <input
                             type="checkbox"
                             checked={editOrderable}
                             onChange={(e) => setEditOrderable(e.target.checked)}
-                            className="accent-cocoa-800"
+                            className="mt-0.5 accent-cocoa-800"
                           />
-                          顾客可直接下单
+                          <span>
+                            <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
+                            <span className="block text-[11px] text-cocoa-400 mt-0.5">
+                              取消勾选后，此相册仅展示价格（使用照片说明文字），"订购此蛋糕"按钮会被替换为价格展示。
+                            </span>
+                          </span>
                         </label>
-                        {editOrderable && (
-                          <select
-                            value={editFormType}
-                            onChange={(e) => setEditFormType(e.target.value)}
-                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                          >
-                            <option value="cake">蛋糕表单（尺寸/口味/夹心）</option>
-                            <option value="dessert">甜品表单（单层/自定义价格）</option>
-                          </select>
+
+                        {editOrderable ? (
+                          <div className="space-y-1.5">
+                            <span className="block text-xs font-medium text-cocoa-800">下单表单类型</span>
+                            <label
+                              className={`block rounded-lg border px-3 py-2 text-xs cursor-pointer ${
+                                editFormType === "cake" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`edit-form-type-${folder.id}`}
+                                className="mr-2 accent-cocoa-800"
+                                checked={editFormType === "cake"}
+                                onChange={() => setEditFormType("cake")}
+                              />
+                              蛋糕表单 — 尺寸 + 口味 + 两种夹心
+                            </label>
+                            <label
+                              className={`block rounded-lg border px-3 py-2 text-xs cursor-pointer ${
+                                editFormType === "dessert" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`edit-form-type-${folder.id}`}
+                                className="mr-2 accent-cocoa-800"
+                                checked={editFormType === "dessert"}
+                                onChange={() => setEditFormType("dessert")}
+                              />
+                              甜品表单 — 单层，自定义价格选项
+                            </label>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-cocoa-400">
+                            仅展示价格模式下不显示下单表单，无需选择表单类型。
+                          </p>
                         )}
-                        <div className="flex gap-3">
+
+                        <div className="flex gap-3 pt-1">
                           <button
                             onClick={() => handleSaveEdit(folder.id)}
                             disabled={savingEdit}
