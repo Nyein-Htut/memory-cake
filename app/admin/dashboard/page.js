@@ -13,6 +13,8 @@ export default function AdminDashboardPage() {
   const [newName, setNewName] = useState("");
   const [newOrderable, setNewOrderable] = useState(true);
   const [newFormType, setNewFormType] = useState("cake");
+  const [newDessertOptions, setNewDessertOptions] = useState([{ label: "", price: 0 }]);
+  const [newMinQuantity, setNewMinQuantity] = useState(6);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -42,6 +44,16 @@ export default function AdminDashboardPage() {
     loadFolders();
   }, []);
 
+  function updateNewDessertOption(i, field, value) {
+    setNewDessertOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, [field]: value } : o)));
+  }
+  function addNewDessertOption() {
+    setNewDessertOptions((prev) => [...prev, { label: "", price: 0 }]);
+  }
+  function removeNewDessertOption(i) {
+    setNewDessertOptions((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
   async function handleCreate(e) {
     e.preventDefault();
     if (!newName.trim()) return;
@@ -55,6 +67,11 @@ export default function AdminDashboardPage() {
         name: newName.trim(),
         orderable: newOrderable,
         orderFormType: newFormType,
+        dessertOptions:
+          newOrderable && newFormType === "dessert"
+            ? newDessertOptions.filter((o) => o.label.trim())
+            : [],
+        minQuantity: newMinQuantity,
       }),
     });
 
@@ -69,6 +86,8 @@ export default function AdminDashboardPage() {
     setNewName("");
     setNewOrderable(true);
     setNewFormType("cake");
+    setNewDessertOptions([{ label: "", price: 0 }]);
+    setNewMinQuantity(6);
     loadFolders();
   }
 
@@ -140,7 +159,7 @@ export default function AdminDashboardPage() {
                 <span>
                   <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
                   <span className="block text-xs text-cocoa-400 mt-0.5">
-                    取消勾选后，此相册仅展示价格（使用照片说明文字），顾客无法在线下单，"订购此蛋糕"按钮会被替换为价格展示。适用于「大蛋糕」这类需要单独报价的相册。
+                    取消勾选后，此相册仅展示价格（使用每张照片的说明文字），顾客无法在线下单，"订购此蛋糕"按钮会被替换为价格展示。适用于「大蛋糕」这类需要单独报价的相册。
                   </span>
                 </span>
               </label>
@@ -178,15 +197,74 @@ export default function AdminDashboardPage() {
                       甜品表单 — 单层，自定义价格选项
                     </label>
                   </div>
+
+                  {/* Price list + minimum quantity — set right here as soon
+                      as 甜品表单 is chosen, no need to save first and come
+                      back later. More options can always be added/edited
+                      from the folder page afterward. */}
                   {newFormType === "dessert" && (
-                    <p className="text-xs text-cocoa-400 mt-2">
-                      创建后进入该相册页面设置具体的价格选项。
-                    </p>
+                    <div className="mt-4 pt-4 border-t border-cocoa-100 space-y-3">
+                      <div>
+                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                          最少购买数量
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newMinQuantity}
+                          onChange={(e) => setNewMinQuantity(Number(e.target.value))}
+                          className="w-28 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <span className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                          价格选项
+                        </span>
+                        <div className="space-y-2">
+                          {newDessertOptions.map((o, i) => (
+                            <div key={i} className="flex items-center gap-2 p-2 bg-cocoa-50/40 rounded-lg border border-cocoa-100">
+                              <input
+                                value={o.label}
+                                onChange={(e) => updateNewDessertOption(i, "label", e.target.value)}
+                                placeholder="例如：芒果慕斯"
+                                className="flex-1 min-w-0 rounded-md border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                              />
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
+                                <input
+                                  type="number"
+                                  value={o.price}
+                                  onChange={(e) => updateNewDessertOption(i, "price", Number(e.target.value))}
+                                  className="w-24 rounded-md border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                                />
+                              </div>
+                              {newDessertOptions.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeNewDessertOption(i)}
+                                  className="text-red-500 hover:text-red-700 text-xs px-1 shrink-0 font-medium"
+                                >
+                                  删除
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={addNewDessertOption}
+                          className="mt-2 text-xs text-cocoa-700 hover:text-cocoa-900 font-medium"
+                        >
+                          + 添加价格选项
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (
                 <p className="text-xs text-cocoa-400 px-1">
-                  已取消勾选「顾客可直接下单」，此相册不会显示下单表单，因此无需选择表单类型。
+                  已取消勾选「顾客可直接下单」，此相册不会显示下单表单，因此无需选择表单类型或价格。
                 </p>
               )}
             </>
@@ -313,6 +391,11 @@ export default function AdminDashboardPage() {
                               />
                               甜品表单 — 单层，自定义价格选项
                             </label>
+                            {editFormType === "dessert" && (
+                              <p className="text-[11px] text-cocoa-400">
+                                保存后，进入该相册页面设置/调整具体价格选项。
+                              </p>
+                            )}
                           </div>
                         ) : (
                           <p className="text-[11px] text-cocoa-400">
