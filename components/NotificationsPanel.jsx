@@ -41,6 +41,13 @@ export default function NotificationsPanel({ phone, onPhoneChange, onClose }) {
     load(phoneInput.trim());
   }
 
+  function handleChangeNumber() {
+    localStorage.removeItem("memory_cake_phone");
+    setPhoneInput("");
+    setItems([]);
+    onPhoneChange("");
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-6"
@@ -56,16 +63,41 @@ export default function NotificationsPanel({ phone, onPhoneChange, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          {phone && (
+            <p className="text-xs text-cocoa-400 -mt-1 mb-1">
+              Showing updates for {phone} ·{" "}
+              <button
+                type="button"
+                onClick={handleChangeNumber}
+                className="underline hover:text-cocoa-700"
+              >
+                Not you? Change number
+              </button>
+            </p>
+          )}
+
           {!phone ? (
             <form onSubmit={handleUsePhone} className="space-y-3">
               <p className="text-sm text-cocoa-500">Enter your phone number to see updates from us.</p>
-              <input
-                type="tel"
-                value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
-                placeholder="Your phone number"
-                className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-              />
+              <div className="relative">
+                <input
+                  type="tel"
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value)}
+                  placeholder="Your phone number"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 pr-9 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+                {phoneInput && (
+                  <button
+                    type="button"
+                    onClick={() => setPhoneInput("")}
+                    aria-label="Clear"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-cocoa-400 hover:text-cocoa-700 hover:bg-cocoa-100 text-lg leading-none transition-colors"
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
               <button type="submit" className="w-full rounded-lg bg-cocoa-800 text-cream py-2.5 text-sm font-medium hover:bg-cocoa-900">
                 Continue
               </button>
