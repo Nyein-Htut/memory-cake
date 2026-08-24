@@ -55,9 +55,10 @@ export default function AdminFolderPage({ params }) {
     setLoading(true);
 
     const res = await fetch(
-      `/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`
+      `/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`,
+      { cache: "no-store" }
     );
-
+    
     if (res.ok) {
       const data = await res.json();
 
