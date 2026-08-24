@@ -166,6 +166,14 @@ export default function AdminFolderPage({ params }) {
     );
   }
 
+  // Price stays a plain text field, digits only. type="number" was causing
+  // the cursor/leading-zero jumping and letting the mouse scroll wheel
+  // silently change the value when it happened to be hovering the input.
+  function updateDessertOptionPrice(i, rawValue) {
+    const digits = rawValue.replace(/[^0-9]/g, "");
+    updateDessertOption(i, "price", digits === "" ? "" : Number(digits));
+  }
+
   function addDessertOption() {
     setDessertOptions((prev) => [...prev, { label: "", price: 0 }]);
   }
@@ -524,9 +532,11 @@ export default function AdminFolderPage({ params }) {
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={o.price}
-                      onChange={(e) => updateDessertOption(i, "price", Number(e.target.value))}
+                      onChange={(e) => updateDessertOptionPrice(i, e.target.value)}
                       className="w-24 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                     />
                   </div>
