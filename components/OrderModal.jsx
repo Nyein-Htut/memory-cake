@@ -232,14 +232,26 @@ export default function OrderModal({
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
                   微信账号名 *
                 </label>
-                <input
-                  type="text"
-                  value={wechatName}
-                  onChange={(e) => setWechatName(e.target.value)}
-                  placeholder="请输入您的微信昵称或账号名"
-                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={wechatName}
+                    onChange={(e) => setWechatName(e.target.value)}
+                    placeholder="请输入您的微信昵称或账号名"
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 pr-9 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                    required
+                  />
+                  {wechatName && (
+                    <button
+                      type="button"
+                      onClick={() => setWechatName("")}
+                      aria-label="清空微信账号名"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-cocoa-400 hover:text-cocoa-700 hover:bg-cocoa-100 text-lg leading-none transition-colors"
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -454,14 +466,26 @@ export default function OrderModal({
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
                   联系电话 *
                 </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="请输入手机号码"
-                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="请输入手机号码"
+                    className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 pr-9 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                    required
+                  />
+                  {phone && (
+                    <button
+                      type="button"
+                      onClick={() => setPhone("")}
+                      aria-label="清空联系电话"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-cocoa-400 hover:text-cocoa-700 hover:bg-cocoa-100 text-lg leading-none transition-colors"
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
