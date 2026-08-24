@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
-// Public, read-only, paginated photo listing for one folder.
-// GET /api/folders/123/photos?limit=24&offset=0
+export const dynamic = "force-dynamic";
+
 export async function GET(request, { params }) {
   const id = Number(params.id);
   const { searchParams } = new URL(request.url);
