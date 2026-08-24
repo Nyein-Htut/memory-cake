@@ -47,6 +47,14 @@ export default function AdminDashboardPage() {
   function updateNewDessertOption(i, field, value) {
     setNewDessertOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, [field]: value } : o)));
   }
+
+  // Plain text + digit filtering instead of type="number" — avoids the
+  // cursor-jump-while-typing and scroll-wheel-changes-the-value bugs.
+  function updateNewDessertOptionPrice(i, rawValue) {
+    const digits = rawValue.replace(/[^0-9]/g, "");
+    updateNewDessertOption(i, "price", digits === "" ? "" : Number(digits));
+  }
+
   function addNewDessertOption() {
     setNewDessertOptions((prev) => [...prev, { label: "", price: 0 }]);
   }
@@ -233,9 +241,11 @@ export default function AdminDashboardPage() {
                               <div className="flex items-center gap-1 shrink-0">
                                 <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
                                 <input
-                                  type="number"
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   value={o.price}
-                                  onChange={(e) => updateNewDessertOption(i, "price", Number(e.target.value))}
+                                  onChange={(e) => updateNewDessertOptionPrice(i, e.target.value)}
                                   className="w-24 rounded-md border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                                 />
                               </div>
