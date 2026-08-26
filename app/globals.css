@@ -18,3 +18,6 @@ body {
   background-color: #e8d1b8;
   color: #3f2f24;
 }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
