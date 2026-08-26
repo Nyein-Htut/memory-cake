@@ -126,12 +126,10 @@ export default function AdminHeroSlidesPage() {
       <AdminHeader />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-2">首页轮播图</h1>
-        <p className="text-sm text-cocoa-400 mb-6">
-          管理首页顶部滚动展示的图片。停用的图片不会出现在首页，但仍保留在此处，可随时重新启用。
-        </p>
+        <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 mb-1">首页轮播图</h1>
+        <p className="text-xs sm:text-sm text-cocoa-400 mb-6">停用的图片不会显示在首页</p>
 
-        <div className="mb-8 border-2 border-dashed border-cocoa-200 rounded-2xl p-5 sm:p-8 text-center bg-white">
+        <div className="mb-8 border-2 border-dashed border-cocoa-200 rounded-2xl p-6 sm:p-8 text-center bg-white">
           <input
             ref={fileInputRef}
             type="file"
@@ -144,24 +142,26 @@ export default function AdminHeroSlidesPage() {
           />
           <label
             htmlFor="hero-slide-upload"
-            className={`inline-flex items-center justify-center min-h-[48px] rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium cursor-pointer hover:bg-cocoa-900 transition-colors ${
+            className={`inline-flex items-center justify-center gap-2 min-h-[48px] rounded-lg bg-cocoa-800 text-cream px-6 py-3 font-medium cursor-pointer hover:bg-cocoa-900 transition-colors ${
               uploading ? "opacity-60 pointer-events-none" : ""
             }`}
           >
-            {uploading ? uploadProgress || "上传中..." : "上传轮播图片"}
+            {uploading ? uploadProgress || "上传中..." : "+ 上传图片"}
           </label>
-          <p className="text-xs text-cocoa-400 mt-2">可一次选择多张图片，建议使用横向（16:9）图片效果最佳。</p>
+          {!uploading && (
+            <p className="text-xs text-cocoa-400 mt-2.5">建议横向 16:9 图片，可多选</p>
+          )}
           {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
         </div>
 
         {loading ? (
           <p className="text-cocoa-400">加载中...</p>
         ) : slides.length === 0 ? (
-          <p className="text-cocoa-400">暂无轮播图片，请上传第一张。</p>
+          <p className="text-cocoa-400 text-center py-8">暂无图片，点击上方按钮上传</p>
         ) : (
           <>
             {slides.length > 1 && (
-              <p className="text-xs text-cocoa-400 mb-3">按住并拖动图片可调整播放顺序。</p>
+              <p className="text-xs text-cocoa-400 mb-3">按住拖动可调整顺序</p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
               {slides.map((slide) => (
