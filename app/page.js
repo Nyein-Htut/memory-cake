@@ -5,6 +5,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import { cldThumb } from "@/lib/cloudinary-url";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
+import { sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -13,22 +14,27 @@ async function getFolders() {
     `${process.env.NEXT_PUBLIC_SITE_URL}/api/folders`,
     { cache: "no-store" }
   );
-
   if (!res.ok) return [];
-
   const data = await res.json();
   return data.folders;
 }
 
+async function getHeroSlides() {
+  const rows = await sql`
+    SELECT id, url FROM hero_slides WHERE active = TRUE ORDER BY position ASC, created_at ASC
+  `;
+  return rows;
+}
+
 export default async function HomePage() {
-  const folders = await getFolders();
+  const [folders, heroSlides] = await Promise.all([getFolders(), getHeroSlides()]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0E6DA]">
       <PublicHeader />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
-        <HeroCarousel />
+        <HeroCarousel slides={heroSlides} />
 
         <div id="albums" className="mt-12 sm:mt-16 mb-8 sm:mb-10 text-center">
           <h2 className="font-serif font-semibold text-2xl sm:text-3xl md:text-4xl text-cocoa-900 mb-2">
