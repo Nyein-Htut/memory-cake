@@ -64,10 +64,13 @@ function ExternalIcon(props) {
   );
 }
 
+// Short, single-idea labels — this is a tab bar, not a sentence. Anything
+// longer wraps or crowds the icon on a narrow screen.
 const NAV_ITEMS = [
-  { href: "/admin/orders", label: "订购信息", icon: OrdersIcon, badgeKey: "newOrders" },
-  { href: "/admin/support", label: "客服聊天", icon: ChatIcon, badgeKey: "chat" },
-  { href: "/admin/hero-slides", label: "首页轮播图", icon: ImagesIcon },
+  { href: "/admin/dashboard", label: "相册", icon: FoldersIcon },
+  { href: "/admin/orders", label: "订单", icon: OrdersIcon, badgeKey: "newOrders" },
+  { href: "/admin/support", label: "客服", icon: ChatIcon, badgeKey: "chat" },
+  { href: "/admin/hero-slides", label: "轮播图", icon: ImagesIcon },
   { href: "/admin/settings", label: "设置", icon: SettingsIcon },
 ];
 
@@ -104,57 +107,62 @@ export default function AdminHeader() {
 
   return (
     <header className="sticky top-0 z-20 bg-cream/95 backdrop-blur-md border-b border-cocoa-200/60 shadow-sm">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
-        <Link href="/admin/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Image src="/logo.jpg" alt="Memory Cake logo" width={34} height={34} className="rounded-full object-cover shrink-0" />
-          <div className="flex flex-col leading-tight min-w-0">
-            <span className="font-serif font-semibold text-sm sm:text-base text-cocoa-900 truncate">Memory Cake</span>
-            <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-cocoa-400">管理后台</span>
-          </div>
+      {/* Top row: brand + 2 icon-only utility buttons */}
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 h-12 sm:h-14 flex items-center justify-between gap-3">
+        <Link href="/admin/dashboard" className="flex items-center gap-2 min-w-0">
+          <Image src="/logo.jpg" alt="Memory Cake" width={28} height={28} className="rounded-full object-cover shrink-0" />
+          <span className="font-serif font-semibold text-sm text-cocoa-900 truncate">Memory Cake</span>
         </Link>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <Link
             href="/"
             target="_blank"
             aria-label="查看网站"
-            className="flex items-center justify-center w-9 h-9 rounded-full border border-cocoa-200 text-cocoa-600 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-cocoa-500 hover:text-cocoa-900 hover:bg-cocoa-100 transition-colors"
           >
             <ExternalIcon className="w-4 h-4" />
           </Link>
           <button
             onClick={handleLogout}
             aria-label="退出登录"
-            className="flex items-center justify-center w-9 h-9 rounded-full border border-cocoa-200 text-cocoa-600 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full text-cocoa-500 hover:text-cocoa-900 hover:bg-cocoa-100 transition-colors"
           >
             <LogoutIcon className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <nav className="max-w-5xl mx-auto px-2 sm:px-6 flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide pb-2 sm:pb-2.5">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname?.startsWith(item.href);
-          const count = badgeCount(item.badgeKey);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`relative flex items-center gap-1.5 shrink-0 rounded-full px-3.5 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                active ? "bg-cocoa-800 text-cream" : "text-cocoa-500 hover:text-cocoa-900 hover:bg-cocoa-100"
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {item.label}
-              {count > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                  {count > 9 ? "9+" : count}
+      {/* Nav row: equal-width tabs, icon over label — no overflow, no scroll */}
+      <nav className="border-t border-cocoa-100">
+        <div className="max-w-5xl mx-auto grid grid-cols-5">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname?.startsWith(item.href);
+            const count = badgeCount(item.badgeKey);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative flex flex-col items-center justify-center gap-0.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium transition-colors border-b-2 ${
+                  active
+                    ? "text-cocoa-900 border-cocoa-800"
+                    : "text-cocoa-400 border-transparent hover:text-cocoa-700"
+                }`}
+              >
+                <span className="relative">
+                  <Icon className="w-5 h-5" />
+                  {count > 0 && (
+                    <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center leading-none">
+                      {count > 9 ? "9+" : count}
+                    </span>
+                  )}
                 </span>
-              )}
-            </Link>
-          );
-        })}
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
     </header>
   );
