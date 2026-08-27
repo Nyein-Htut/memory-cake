@@ -1,7 +1,7 @@
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
-import CakeDesigner from "@/components/CakeDesigner";
+import CakeDesignerClient from "@/components/CakeDesignerClient";
 
 export const metadata = {
   title: "DIY 蛋糕设计 | Memory Cake",
@@ -23,7 +23,7 @@ export default function DesignPage() {
           </p>
         </div>
 
-        <CakeDesigner />
+        <CakeDesignerClient />
       </main>
 
       <Footer />
