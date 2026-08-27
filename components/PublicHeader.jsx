@@ -19,6 +19,25 @@ function ShoppingBagIcon(props) {
   );
 }
 
+function PaletteIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 21a9 9 0 1 1 0-18c4.6 0 8.5 3.2 9 7.5.3 2.5-1.3 4-3.5 4h-1.7c-1 0-1.6 1.2-1 2 .4.5.5 1.2.1 1.8-.5.7-1.6 1.4-2.9 1.7Z" />
+      <circle cx="7.5" cy="10.5" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="11.5" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="9.5" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export default function PublicHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-cocoa-200/50 bg-[#F0E6DA]/95 backdrop-blur-md">
@@ -39,6 +58,15 @@ export default function PublicHeader() {
 
         <div className="flex items-center gap-2 shrink-0">
           <NotificationBell />
+
+          <Link
+            href="/design"
+            aria-label="DIY 蛋糕设计"
+            className="flex items-center gap-1.5 shrink-0 rounded-full border border-cocoa-200 bg-white/70 px-2.5 sm:px-3.5 py-2 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
+          >
+            <PaletteIcon className="w-5 h-5 shrink-0" />
+            <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">DIY 设计</span>
+          </Link>
 
           <Link
             href="/orders"
