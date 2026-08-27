@@ -366,4 +366,449 @@ function drawFruitBorder(ctx, cx, capY, w, h) {
   }
 }
 
-fun
+function drawSprinkles(ctx, cx, capY, w, h) {
+  const colors = ["#f6c9da", "#aed9e0", "#f5e2a8", "#cbb9e0", "#c8493f", "#ffffff"];
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    const seedA = Math.sin(i * 12.9898) * 43758.5453;
+    const seedB = Math.sin(i * 78.233) * 12543.123;
+    const fracA = seedA - Math.floor(seedA);
+    const fracB = seedB - Math.floor(seedB);
+    const angle = fracA * Math.PI * 2;
+    const dist = fracB * 0.85;
+    const x = cx + Math.cos(angle) * (w / 2) * dist;
+    const y = capY + Math.sin(angle) * (h / 2) * dist;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(fracA * Math.PI * 2);
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(-4, -1.3, 8, 2.6);
+    ctx.restore();
+  }
+}
+
+function drawCandles(ctx, cx, capY, w, count) {
+  if (count <= 0) return;
+  const spacing = Math.min(30, (w * 0.6) / Math.max(1, count - 1 || 1));
+  const startX = cx - (spacing * (count - 1)) / 2;
+  for (let i = 0; i < count; i++) {
+    const x = count === 1 ? cx : startX + i * spacing;
+    const candleH = 46;
+    const candleW = 8;
+    const grad = ctx.createLinearGradient(x - candleW / 2, 0, x + candleW / 2, 0);
+    grad.addColorStop(0, "#fff2d0");
+    grad.addColorStop(0.5, "#ffe3a1");
+    grad.addColorStop(1, "#f5c977");
+    ctx.fillStyle = grad;
+    roundRect(ctx, x - candleW / 2, capY - candleH, candleW, candleH, 3);
+    ctx.fill();
+
+    ctx.save();
+    ctx.shadowColor = "rgba(255,150,40,0.8)";
+    ctx.shadowBlur = 10;
+    const flameGrad = ctx.createRadialGradient(x, capY - candleH - 10, 1, x, capY - candleH - 10, 10);
+    flameGrad.addColorStop(0, "#fff6d1");
+    flameGrad.addColorStop(0.5, "#ffb703");
+    flameGrad.addColorStop(1, "#e85d04");
+    ctx.fillStyle = flameGrad;
+    ctx.beginPath();
+    ctx.ellipse(x, capY - candleH - 10, 5, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMessage(ctx, cx, y, maxWidth, message, frostingColor) {
+  if (!message.trim()) return;
+  const textColor = isLight(frostingColor) ? "#6b4536" : "#fffaf0";
+  let fontSize = 42;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    ctx.font = `italic 700 ${fontSize}px 'Cormorant Garamond', Georgia, serif`;
+    if (ctx.measureText(message).width <= maxWidth || fontSize <= 20) break;
+    fontSize -= 2;
+  }
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.25)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = textColor;
+  ctx.fillText(message, cx, y);
+  ctx.restore();
+}
+
+async function draw(canvas, state) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  canvas.width = CANVAS_WIDTH;
+  canvas.height = CANVAS_HEIGHT;
+
+  await Promise.all([
+    document.fonts.load("italic 700 42px 'Cormorant Garamond'").catch(() => {}),
+    document.fonts.load("700 40px 'Cormorant Garamond'").catch(() => {}),
+    document.fonts.load("600 19px 'Inter'").catch(() => {}),
+  ]);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+  bg.addColorStop(0, "#fff9f2");
+  bg.addColorStop(1, "#f3e6d6");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#1a130e";
+  ctx.font = "700 40px 'Cormorant Garamond', Georgia, serif";
+  ctx.fillText("MEMORY CAKE", CANVAS_WIDTH / 2, 78);
+  ctx.font = "600 19px Inter, sans-serif";
+  ctx.fillStyle = "#7a5738";
+  ctx.fillText("记忆蛋糕坊 · DIY 蛋糕设计预览", CANVAS_WIDTH / 2, 108);
+
+  const sizeScale = { small: 0.82, medium: 1, large: 1.16 }[state.size] || 1;
+  const baseWidth = 400 * sizeScale;
+  const baseHeight = 185 * sizeScale;
+  const cx = CANVAS_WIDTH / 2;
+  const cakeBottomY = 730;
+
+  ctx.save();
+  const plateGrad = ctx.createRadialGradient(cx, cakeBottomY + 18, 10, cx, cakeBottomY + 18, baseWidth * 0.72);
+  plateGrad.addColorStop(0, "rgba(0,0,0,0.16)");
+  plateGrad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = plateGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cakeBottomY + 18, baseWidth * 0.62, 26, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  const baseCapH = state.shape === "round" ? baseHeight * 0.34 : baseHeight * 0.22;
+  const baseBodyY = cakeBottomY - baseHeight;
+  const baseCapY = baseBodyY;
+
+  drawBody(ctx, cx - baseWidth / 2, baseBodyY, baseWidth, baseHeight, state.shape, state.frostingColor);
+
+  let topWidth = 0, topHeight = 0, topCapY = 0;
+  if (state.tiers === 2) {
+    topWidth = baseWidth * 0.6;
+    topHeight = baseHeight * 0.82;
+    const topBodyY = baseBodyY - topHeight + 14;
+    drawBody(ctx, cx - topWidth / 2, topBodyY, topWidth, topHeight, state.shape, state.frostingColor);
+    topCapY = topBodyY;
+  }
+
+  drawCap(ctx, cx, baseCapY, baseWidth, baseCapH, state.shape, state.frostingColor);
+  if (state.frostingStyle === "swirl") drawSwirlTexture(ctx, cx, baseCapY, baseWidth, baseCapH, state.frostingColor);
+
+  let topmostCapY = baseCapY, topmostWidth = baseWidth, topmostCapH = baseCapH;
+
+  if (state.tiers === 2) {
+    const topCapH = state.shape === "round" ? topHeight * 0.34 : topHeight * 0.22;
+    drawCap(ctx, cx, topCapY, topWidth, topCapH, state.shape, state.frostingColor);
+    if (state.frostingStyle === "swirl") drawSwirlTexture(ctx, cx, topCapY, topWidth, topCapH, state.frostingColor);
+    topmostCapY = topCapY;
+    topmostWidth = topWidth;
+    topmostCapH = topCapH;
+  }
+
+  if (state.pipedBorder) drawPipedBorder(ctx, cx, cakeBottomY - 2, baseWidth, state.frostingColor);
+  if (state.ribbon) drawRibbon(ctx, cx, cakeBottomY - baseHeight * 0.32, baseWidth + 4, 26 * sizeScale, state.ribbonColor);
+  if (state.addDrip) drawDrips(ctx, cx, topmostCapY, topmostWidth, baseHeight * 0.5, state.dripColor);
+
+  const topperSize = 34 * sizeScale;
+  const hasStar = state.toppers.includes("star");
+  const hasHeart = state.toppers.includes("heart");
+  if (hasStar) drawStarTopper(ctx, cx - (hasHeart ? 26 : 0), topmostCapY - topperSize * 0.5, topperSize);
+  if (hasHeart) drawHeartTopper(ctx, cx + (hasStar ? 26 : 0), topmostCapY - topperSize * 0.4, topperSize);
+  if (state.toppers.includes("flower")) drawFlowerTopper(ctx, cx, topmostCapY - topperSize * 0.3, topperSize);
+  if (state.toppers.includes("macarons")) drawMacaronBorder(ctx, cx, topmostCapY, topmostWidth, topmostCapH);
+  if (state.toppers.includes("fruit")) drawFruitBorder(ctx, cx, topmostCapY, topmostWidth, topmostCapH);
+  if (state.toppers.includes("sprinkles")) drawSprinkles(ctx, cx, topmostCapY, topmostWidth, topmostCapH);
+
+  drawCandles(ctx, cx, topmostCapY - topmostCapH * 0.3, topmostWidth, state.candleCount);
+  drawMessage(ctx, cx, baseBodyY + baseHeight * 0.55, baseWidth * 0.78, state.message, state.frostingColor);
+
+  ctx.textAlign = "center";
+  ctx.font = "500 15px Inter, sans-serif";
+  ctx.fillStyle = "#9c8064";
+  ctx.fillText("仅供设计预览 · 实际成品可能因手工制作略有差异", CANVAS_WIDTH / 2, CANVAS_HEIGHT - 40);
+}
+
+export default function CakeDesigner() {
+  const canvasRef = useRef(null);
+  const [shape, setShape] = useState("round");
+  const [tiers, setTiers] = useState(1);
+  const [size, setSize] = useState("medium");
+  const [frostingColor, setFrostingColor] = useState(FROSTING_COLORS[1].hex);
+  const [frostingStyle, setFrostingStyle] = useState("swirl");
+  const [addDrip, setAddDrip] = useState(false);
+  const [dripColor, setDripColor] = useState(DRIP_COLORS[0].hex);
+  const [pipedBorder, setPipedBorder] = useState(true);
+  const [ribbon, setRibbon] = useState(false);
+  const [ribbonColor, setRibbonColor] = useState(RIBBON_COLORS[0].hex);
+  const [toppers, setToppers] = useState(["sprinkles"]);
+  const [candleCount, setCandleCount] = useState(0);
+  const [message, setMessage] = useState("");
+  const [rendering, setRendering] = useState(true);
+
+  const redraw = useCallback(() => {
+    setRendering(true);
+    draw(canvasRef.current, {
+      shape, tiers, size, frostingColor, frostingStyle, addDrip, dripColor,
+      pipedBorder, ribbon, ribbonColor, toppers, candleCount, message,
+    }).finally(() => setRendering(false));
+  }, [shape, tiers, size, frostingColor, frostingStyle, addDrip, dripColor, pipedBorder, ribbon, ribbonColor, toppers, candleCount, message]);
+
+  useEffect(() => {
+    redraw();
+  }, [redraw]);
+
+  function toggleTopper(id) {
+    setToppers((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+  }
+
+  function applyTheme(c) {
+    setShape(c.shape);
+    setTiers(c.tiers);
+    setSize(c.size);
+    setFrostingColor(c.frostingColor);
+    setFrostingStyle(c.frostingStyle);
+    setAddDrip(c.addDrip);
+    setDripColor(c.dripColor);
+    setPipedBorder(c.pipedBorder);
+    setRibbon(c.ribbon);
+    setRibbonColor(c.ribbonColor);
+    setToppers(c.toppers);
+    setCandleCount(c.candleCount);
+    setMessage(c.message);
+  }
+
+  function handleSave() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "memory-cake-diy-design.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  async function handleShare() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], "memory-cake-diy-design.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "我的DIY蛋糕设计", text: "看看我在Memory Cake设计的蛋糕！" });
+        return;
+      }
+    } catch {
+      // fall through
+    }
+    handleSave();
+  }
+
+  return (
+    <div className="grid lg:grid-cols-[1fr_420px] gap-8">
+      <div className="order-2 lg:order-1">
+        <div className="lg:sticky lg:top-24">
+          <div className="rounded-2xl overflow-hidden shadow-soft border border-cocoa-200/60 bg-white">
+            <canvas ref={canvasRef} className="w-full h-auto block aspect-[800/900]" />
+          </div>
+          <div className="flex gap-3 mt-4">
+            <button onClick={handleSave} className="flex-1 rounded-lg bg-cocoa-800 text-cream py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors">
+              💾 保存图片
+            </button>
+            <button onClick={handleShare} className="flex-1 rounded-lg border border-cocoa-300 text-cocoa-800 py-2.5 text-sm font-medium hover:bg-cocoa-50 transition-colors">
+              📤 分享设计
+            </button>
+          </div>
+          <p className="text-xs text-cocoa-400 mt-3 text-center">
+            这是一个DIY设计预览工具，暂不支持直接下单。若您喜欢这个设计，欢迎截图后通过客服联系我们 🎂
+          </p>
+        </div>
+      </div>
+
+      <div className="order-1 lg:order-2 space-y-6">
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">✨ 快速主题</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => applyTheme(t.config)}
+                className="rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-700 hover:border-cocoa-500 hover:bg-cocoa-50 transition-colors text-left"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">形状</h3>
+          <div className="flex gap-2">
+            {[["round", "圆形"], ["square", "方形"], ["heart", "心形"]].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setShape(val)}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${shape === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">层数</h3>
+          <div className="flex gap-2">
+            {[[1, "单层"], [2, "双层"]].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setTiers(val)}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${tiers === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">大小</h3>
+          <div className="flex gap-2">
+            {[["small", "小"], ["medium", "中"], ["large", "大"]].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setSize(val)}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${size === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">奶油颜色</h3>
+          <div className="flex flex-wrap gap-2">
+            {FROSTING_COLORS.map((c) => (
+              <button
+                key={c.hex}
+                onClick={() => setFrostingColor(c.hex)}
+                title={c.label}
+                aria-label={c.label}
+                className={`w-9 h-9 rounded-full border-2 transition-transform ${frostingColor === c.hex ? "border-cocoa-800 scale-110" : "border-white"} shadow-sm`}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">奶油质感</h3>
+          <div className="flex gap-2">
+            {[["smooth", "顺滑"], ["swirl", "奶油纹理"]].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setFrostingStyle(val)}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${frostingStyle === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border border-cocoa-100 rounded-xl p-4 space-y-3">
+          <label className="flex items-center gap-2 text-sm text-cocoa-700">
+            <input type="checkbox" checked={addDrip} onChange={(e) => setAddDrip(e.target.checked)} className="accent-cocoa-800" />
+            淋面滴落效果
+          </label>
+          {addDrip && (
+            <div className="flex flex-wrap gap-2 pl-6">
+              {DRIP_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => setDripColor(c.hex)}
+                  title={c.label}
+                  className={`w-7 h-7 rounded-full border-2 ${dripColor === c.hex ? "border-cocoa-800 scale-110" : "border-white"} shadow-sm`}
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 text-sm text-cocoa-700">
+            <input type="checkbox" checked={pipedBorder} onChange={(e) => setPipedBorder(e.target.checked)} className="accent-cocoa-800" />
+            贝壳花边（底部）
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-cocoa-700">
+            <input type="checkbox" checked={ribbon} onChange={(e) => setRibbon(e.target.checked)} className="accent-cocoa-800" />
+            丝带装饰
+          </label>
+          {ribbon && (
+            <div className="flex flex-wrap gap-2 pl-6">
+              {RIBBON_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => setRibbonColor(c.hex)}
+                  title={c.label}
+                  className={`w-7 h-7 rounded-full border-2 ${ribbonColor === c.hex ? "border-cocoa-800 scale-110" : "border-white"} shadow-sm`}
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">装饰配件</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {TOPPER_OPTIONS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => toggleTopper(t.id)}
+                className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors ${toppers.includes(t.id) ? "border-cocoa-800 bg-cocoa-50 text-cocoa-900" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">蜡烛数量：{candleCount}</h3>
+          <input
+            type="range"
+            min={0}
+            max={12}
+            value={candleCount}
+            onChange={(e) => setCandleCount(Number(e.target.value))}
+            className="w-full accent-cocoa-800"
+          />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">蛋糕文字</h3>
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value.slice(0, 24))}
+            placeholder="例如：Happy Birthday"
+            className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+          />
+          <p className="text-xs text-cocoa-400 mt-1">最多24个字符</p>
+        </div>
+
+        {rendering && <p className="text-xs text-cocoa-400">正在生成预览...</p>}
+      </div>
+    </div>
+  );
+}
