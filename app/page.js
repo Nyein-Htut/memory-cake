@@ -74,26 +74,30 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7">
+          /* Added extra horizontal right-padding (pr-4 sm:pr-6) so rightmost stacked cards don't clip the screen edge */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-7 pr-4 sm:pr-6">
             {folders.map((folder) => {
               const hasMultiple = folder.photo_count > 1;
 
               return (
                 <div key={folder.id} className="relative">
-                  {/* Clean, right-aligned peeking stacked layers */}
+                  {/* Distinct 3-card stack back layers */}
                   {hasMultiple && (
                     <>
+                      {/* 3rd (Backmost Card) */}
                       <div
                         aria-hidden="true"
-                        className="absolute inset-0 rounded-2xl bg-white/90 border border-cocoa-200/80 shadow-sm translate-x-2.5 -translate-y-1 scale-[0.97]"
+                        className="absolute inset-0 rounded-2xl bg-white border border-cocoa-300/70 shadow-md translate-x-6 -translate-y-1 scale-[0.93] z-0"
                       />
+                      {/* 2nd (Middle Card) */}
                       <div
                         aria-hidden="true"
-                        className="absolute inset-0 rounded-2xl bg-white/60 border border-cocoa-200/60 shadow-sm translate-x-4.5 -translate-y-2 scale-[0.94]"
+                        className="absolute inset-0 rounded-2xl bg-white border border-cocoa-300/80 shadow-md translate-x-3 -translate-y-0.5 scale-[0.96] z-[5]"
                       />
                     </>
                   )}
 
+                  {/* 1st (Top Front Card) */}
                   <Link
                     href={`/folder/${folder.id}`}
                     className="group relative block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300 z-10"
@@ -104,12 +108,12 @@ export default async function HomePage() {
                           src={cldThumb(folder.cover_url, 500)}
                           alt={folder.name}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-cocoa-300">
-                          <span className="font-serif text-lg">
+                          <span className="font-serif text-sm sm:text-base">
                             No photos yet
                           </span>
                         </div>
@@ -117,18 +121,18 @@ export default async function HomePage() {
 
                       {/* Photo-count badge pill */}
                       {hasMultiple && (
-                        <span className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1">
+                        <span className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm text-white text-[11px] font-medium px-2 py-0.5">
                           <StackIcon className="w-3.5 h-3.5" />
                           {folder.photo_count}
                         </span>
                       )}
                     </div>
 
-                    <div className="p-3 sm:p-4 bg-white">
-                      <h3 className="font-serif font-medium text-base sm:text-lg text-cocoa-900 truncate">
+                    <div className="p-2.5 sm:p-3 bg-white">
+                      <h3 className="font-serif font-medium text-sm sm:text-base text-cocoa-900 truncate">
                         {folder.name}
                       </h3>
-                      <p className="flex items-center gap-1 text-xs text-cocoa-500 mt-1">
+                      <p className="flex items-center gap-1 text-[11px] sm:text-xs text-cocoa-500 mt-0.5">
                         <span aria-hidden>🖼️</span>
                         {folder.photo_count} photo
                         {folder.photo_count === 1 ? "" : "s"}
