@@ -68,19 +68,15 @@ export default function PhotoGallery({
 
   const touchStartX = useRef(null);
   const sentinelRef = useRef(null);
-
   const hasMore = photos.length < total;
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
-
     setLoadingMore(true);
-
     try {
       const res = await fetch(
         `/api/folders/${folderId}/photos?limit=${pageSize}&offset=${photos.length}`
       );
-
       if (res.ok) {
         const data = await res.json();
         setPhotos((prev) => [...prev, ...data.photos]);
@@ -92,21 +88,17 @@ export default function PhotoGallery({
 
   useEffect(() => {
     if (!sentinelRef.current || !hasMore) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
       { rootMargin: "600px" }
     );
-
     observer.observe(sentinelRef.current);
-
     return () => observer.disconnect();
   }, [loadMore, hasMore]);
 
   const close = useCallback(() => setActiveIndex(null), []);
-
   const showPrev = useCallback(
     () =>
       setActiveIndex((i) =>
@@ -114,7 +106,6 @@ export default function PhotoGallery({
       ),
     [photos.length]
   );
-
   const showNext = useCallback(
     () =>
       setActiveIndex((i) =>
@@ -125,15 +116,12 @@ export default function PhotoGallery({
 
   useEffect(() => {
     if (activeIndex === null) return;
-
     function onKey(e) {
       if (e.key === "Escape") close();
       if (e.key === "ArrowLeft") showPrev();
       if (e.key === "ArrowRight") showNext();
     }
-
     window.addEventListener("keydown", onKey);
-
     return () => window.removeEventListener("keydown", onKey);
   }, [activeIndex, close, showPrev, showNext]);
 
@@ -143,14 +131,11 @@ export default function PhotoGallery({
 
   function handleTouchEnd(e) {
     if (touchStartX.current === null) return;
-
     const delta = e.changedTouches[0].clientX - touchStartX.current;
-
     if (Math.abs(delta) > 50) {
       if (delta > 0) showPrev();
       else showNext();
     }
-
     touchStartX.current = null;
   }
 
@@ -175,23 +160,21 @@ export default function PhotoGallery({
               />
             </button>
 
-            {/* ACTION ROW — share on the left (obvious, always visible),
-                order button shrunk and pinned to the right. */}
-            <div className="p-2.5 sm:p-3 flex items-center gap-2">
+            {/* ACTION ROW */}
+            <div className="p-2 sm:p-3 flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => sharePhoto(photo, folderName)}
-                className="shrink-0 flex items-center gap-1 rounded-lg border border-cocoa-300 bg-white text-cocoa-700 text-xs px-2.5 py-2 font-medium hover:bg-cocoa-50 hover:border-cocoa-400 transition-colors"
+                className="flex-1 min-w-0 flex items-center justify-center gap-1 rounded-lg border border-cocoa-300 bg-white text-cocoa-700 text-xs px-2 py-2 font-medium hover:bg-cocoa-50 hover:border-cocoa-400 transition-colors whitespace-nowrap"
               >
-                <ShareIcon className="w-4 h-4" />
-                分享到微信
+                <ShareIcon className="w-3.5 h-3.5 shrink-0" />
+                <span>分享到微信</span>
               </button>
-
               {orderable ? (
                 <button
                   onClick={() => setOrderingPhoto(photo)}
-                  className="ml-auto shrink-0 rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm px-3 py-2 font-medium hover:bg-cocoa-900 transition-colors"
+                  className="shrink-0 rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm px-3 py-2 font-medium hover:bg-cocoa-900 transition-colors whitespace-nowrap"
                 >
-                  🎂 订购
+                  订购
                 </button>
               ) : (
                 <div
@@ -227,7 +210,6 @@ export default function PhotoGallery({
           >
             &times;
           </button>
-
           <button
             onClick={(e) => { e.stopPropagation(); showPrev(); }}
             className="absolute left-4 sm:left-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
@@ -235,7 +217,6 @@ export default function PhotoGallery({
           >
             &#8249;
           </button>
-
           <div
             className="relative w-full max-w-5xl h-[65vh] sm:h-[75vh]"
             onClick={(e) => e.stopPropagation()}
@@ -249,7 +230,6 @@ export default function PhotoGallery({
               className="object-contain rounded-xl"
             />
           </div>
-
           <button
             onClick={(e) => { e.stopPropagation(); showNext(); }}
             className="absolute right-4 sm:right-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
@@ -257,7 +237,6 @@ export default function PhotoGallery({
           >
             &#8250;
           </button>
-
           <div
             className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 w-full max-w-md px-4"
             onClick={(e) => e.stopPropagation()}
@@ -281,7 +260,7 @@ export default function PhotoGallery({
                     onClick={() => setOrderingPhoto(photos[activeIndex])}
                     className="rounded-full bg-cocoa-800 text-cream px-4 py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
                   >
-                    🎂 订购
+                    订购
                   </button>
                 </div>
               </>
