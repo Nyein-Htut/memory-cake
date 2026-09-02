@@ -26,7 +26,7 @@ async function getHeroSlides() {
   return rows;
 }
 
-function StackIcon(props: React.SVGProps<SVGSVGElement>) {
+function StackIcon(props) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -75,12 +75,12 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7">
-            {folders.map((folder: any) => {
+            {folders.map((folder) => {
               const hasMultiple = folder.photo_count > 1;
 
               return (
                 <div key={folder.id} className="relative">
-                  {/* Refined side-peeking stacked cards matching image reference */}
+                  {/* Clean, right-aligned peeking stacked layers */}
                   {hasMultiple && (
                     <>
                       <div
