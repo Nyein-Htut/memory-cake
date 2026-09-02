@@ -74,33 +74,32 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          /* Added extra horizontal right-padding (pr-4 sm:pr-6) so rightmost stacked cards don't clip the screen edge */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-7 pr-4 sm:pr-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-8 gap-y-8 pr-6 sm:pr-8">
             {folders.map((folder) => {
               const hasMultiple = folder.photo_count > 1;
 
               return (
-                <div key={folder.id} className="relative">
-                  {/* Distinct 3-card stack back layers */}
+                <div key={folder.id} className="relative group">
+                  {/* Subtle 3-Layer Deck (Matches your target design closely without overflow) */}
                   {hasMultiple && (
                     <>
-                      {/* 3rd (Backmost Card) */}
+                      {/* Backmost Layer (Layer 3) */}
                       <div
                         aria-hidden="true"
-                        className="absolute inset-0 rounded-2xl bg-white border border-cocoa-300/70 shadow-md translate-x-6 -translate-y-1 scale-[0.93] z-0"
+                        className="absolute inset-0 rounded-2xl bg-white/70 border border-cocoa-200/50 shadow-sm translate-x-3 -translate-y-1 scale-[0.96] z-0"
                       />
-                      {/* 2nd (Middle Card) */}
+                      {/* Middle Layer (Layer 2) */}
                       <div
                         aria-hidden="true"
-                        className="absolute inset-0 rounded-2xl bg-white border border-cocoa-300/80 shadow-md translate-x-3 -translate-y-0.5 scale-[0.96] z-[5]"
+                        className="absolute inset-0 rounded-2xl bg-white/90 border border-cocoa-200/80 shadow-sm translate-x-1.5 -translate-y-0.5 scale-[0.98] z-[5]"
                       />
                     </>
                   )}
 
-                  {/* 1st (Top Front Card) */}
+                  {/* Main Foreground Card (Layer 1) */}
                   <Link
                     href={`/folder/${folder.id}`}
-                    className="group relative block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300 z-10"
+                    className="relative block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300 z-10"
                   >
                     <div className="relative aspect-square sm:aspect-[4/3] bg-cocoa-100">
                       {folder.cover_url ? (
@@ -108,7 +107,7 @@ export default async function HomePage() {
                           src={cldThumb(folder.cover_url, 500)}
                           alt={folder.name}
                           fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
@@ -128,7 +127,7 @@ export default async function HomePage() {
                       )}
                     </div>
 
-                    <div className="p-2.5 sm:p-3 bg-white">
+                    <div className="p-3 bg-white">
                       <h3 className="font-serif font-medium text-sm sm:text-base text-cocoa-900 truncate">
                         {folder.name}
                       </h3>
