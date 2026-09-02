@@ -26,6 +26,15 @@ async function getHeroSlides() {
   return rows;
 }
 
+function StackIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="4" y="4" width="13" height="13" rx="2" />
+      <path d="M8 20h11a2 2 0 0 0 2-2V7" />
+    </svg>
+  );
+}
+
 export default async function HomePage() {
   const [folders, heroSlides] = await Promise.all([getFolders(), getHeroSlides()]);
 
@@ -54,40 +63,70 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {folders.map((folder) => (
-              <Link
-                key={folder.id}
-                href={`/folder/${folder.id}`}
-                className="group block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="relative aspect-square sm:aspect-[4/3] bg-cocoa-100">
-                  {folder.cover_url ? (
-                    <Image
-                      src={cldThumb(folder.cover_url, 500)}
-                      alt={folder.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-cocoa-300">
-                      <span className="font-serif text-lg">No photos yet</span>
-                    </div>
-                  )}
-                </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7">
+            {folders.map((folder) => {
+              const hasMultiple = folder.photo_count > 1;
 
-                <div className="p-3 sm:p-4">
-                  <h3 className="font-serif font-medium text-base sm:text-lg text-cocoa-900 truncate">
-                    {folder.name}
-                  </h3>
-                  <p className="flex items-center gap-1 text-xs text-cocoa-500 mt-1">
-                    <span aria-hidden>🖼️</span>
-                    {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
-                  </p>
+              return (
+                <div key={folder.id} className="relative">
+                  {/* Stacked "peek" layers behind the card — only shown when
+                      there's more than one photo, so customers immediately
+                      see this is an album, not a single image. */}
+                  {hasMultiple && (
+                    <>
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-2xl bg-white border border-cocoa-200 shadow-card rotate-[4deg] translate-x-2 -translate-y-0.5"
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-2xl bg-white border border-cocoa-200 shadow-card rotate-[-3deg] -translate-x-1.5 translate-y-1"
+                      />
+                    </>
+                  )}
+
+                  <Link
+                    href={`/folder/${folder.id}`}
+                    className="group relative block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="relative aspect-square sm:aspect-[4/3] bg-cocoa-100">
+                      {folder.cover_url ? (
+                        <Image
+                          src={cldThumb(folder.cover_url, 500)}
+                          alt={folder.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-cocoa-300">
+                          <span className="font-serif text-lg">No photos yet</span>
+                        </div>
+                      )}
+
+                      {/* Photo-count badge, mimics the "展开 N" pill customers
+                          are used to seeing on stacked/album-style photos. */}
+                      {hasMultiple && (
+                        <span className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1">
+                          <StackIcon className="w-3.5 h-3.5" />
+                          {folder.photo_count}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-3 sm:p-4">
+                      <h3 className="font-serif font-medium text-base sm:text-lg text-cocoa-900 truncate">
+                        {folder.name}
+                      </h3>
+                      <p className="flex items-center gap-1 text-xs text-cocoa-500 mt-1">
+                        <span aria-hidden>🖼️</span>
+                        {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
