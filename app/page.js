@@ -9,14 +9,23 @@ import { sql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+// Was previously self-fetching `${NEXT_PUBLIC_SITE_URL}/api/folders` from a
+// server component — if that env var is missing/wrong on whatever host
+// you're on, the fetch fails silently (caught by `if (!res.ok) return []`)
+// and the homepage just shows "No albums yet" with no error. Querying the
+// database directly removes that dependency entirely, same pattern already
+// used below for hero slides.
 async function getFolders() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SITE_URL}/api/folders`,
-    { cache: "no-store" }
-  );
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.folders;
+  const folders = await sql`
+    SELECT f.id, f.name, f.description, f.cover_url, f.position, f.orderable,
+           f.order_form_type, f.dessert_options, f.dessert_min_quantity, f.created_at,
+           COUNT(p.id)::int AS photo_count
+    FROM folders f
+    LEFT JOIN photos p ON p.folder_id = f.id
+    GROUP BY f.id
+    ORDER BY f.position ASC, f.created_at DESC
+  `;
+  return folders;
 }
 
 async function getHeroSlides() {
