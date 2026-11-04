@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const folders = await sql`
     SELECT f.id, f.name, f.description, f.cover_url, f.position, f.orderable,
