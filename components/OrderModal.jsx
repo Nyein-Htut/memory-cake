@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cldThumb } from "@/lib/cloudinary-url";
 import OrderReceiptCard from "@/components/OrderReceiptCard";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 export default function OrderModal({
   photo,
@@ -16,6 +17,7 @@ export default function OrderModal({
   onClose,
 }) {
   const router = useRouter();
+  const { t } = useLang();
   const isDessert = orderFormType === "dessert";
 
   const [options, setOptions] = useState(null);
@@ -84,19 +86,19 @@ export default function OrderModal({
     setError("");
 
     if (!wechatName.trim()) {
-      setError("请填写微信账号名");
+      setError(t("order.errWechat"));
       return;
     }
     if (!sizeLabel) {
-      setError(isDessert ? "请选择口味" : "请选择尺寸");
+      setError(isDessert ? t("order.errFlavor") : t("order.errSize"));
       return;
     }
     if (isDessert && quantity < minQuantity) {
-      setError(`此甜品最少需要订购 ${minQuantity} 份，请修改数量后重新提交`);
+      setError(t("order.errMinQty", { n: minQuantity }));
       return;
     }
     if (!deliveryPlace.trim() || !phone.trim()) {
-      setError("请填写配送地址和联系电话");
+      setError(t("order.errAddrPhone"));
       return;
     }
 
@@ -131,7 +133,7 @@ export default function OrderModal({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "提交失败，请稍后重试");
+        throw new Error(data.error || t("order.errSubmit"));
       }
 
       const data = await res.json();
@@ -178,7 +180,7 @@ export default function OrderModal({
             <div className="relative w-full aspect-[4/3] bg-cocoa-100 rounded-t-2xl overflow-hidden">
               <Image
                 src={cldThumb(photo.url, 600)}
-                alt={photo.caption || "蛋糕图片"}
+                alt={photo.caption || t("order.photoAlt")}
                 fill
                 sizes="500px"
                 className="object-cover"
@@ -187,7 +189,7 @@ export default function OrderModal({
             <button
               onClick={onClose}
               className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center text-xl"
-              aria-label="关闭"
+              aria-label={t("common.close")}
             >
               &times;
             </button>
@@ -198,21 +200,17 @@ export default function OrderModal({
           {!submittedOrder && (
             <>
               <h2 className="font-serif font-medium text-2xl text-cocoa-900 mb-1">
-                {isDessert ? "订购这款甜品" : "订购这款蛋糕"}
+                {isDessert ? t("order.titleDessert") : t("order.titleCake")}
               </h2>
-              <p className="text-xs text-cocoa-400 mb-5">
-                填写以下信息，我们会尽快与您联系确认订单
-              </p>
+              <p className="text-xs text-cocoa-400 mb-5">{t("order.intro")}</p>
             </>
           )}
 
           {submittedOrder ? (
             <div>
               <div className="text-center mb-4">
-                <p className="font-serif text-lg text-cocoa-900 mb-1">订购信息已提交！🎂</p>
-                <p className="text-xs text-cocoa-500">
-                  我们会尽快通过您留下的电话与您联系。这是您的订购卡片：
-                </p>
+                <p className="font-serif text-lg text-cocoa-900 mb-1">{t("order.submitted")}</p>
+                <p className="text-xs text-cocoa-500">{t("order.submittedSub")}</p>
               </div>
 
               <OrderReceiptCard order={submittedOrder} photoUrl={photo.url} />
@@ -221,23 +219,23 @@ export default function OrderModal({
                 onClick={onClose}
                 className="w-full mt-4 rounded-lg border border-cocoa-200 text-cocoa-500 py-2.5 text-sm hover:bg-cocoa-50 transition-colors"
               >
-                关闭
+                {t("common.close")}
               </button>
             </div>
           ) : loadingOptions ? (
-            <p className="text-cocoa-400 text-sm py-8 text-center">加载中...</p>
+            <p className="text-cocoa-400 text-sm py-8 text-center">{t("common.loading")}</p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  微信账号名 *
+                  {t("order.wechat")}
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={wechatName}
                     onChange={(e) => setWechatName(e.target.value)}
-                    placeholder="请输入您的微信昵称或账号名"
+                    placeholder={t("order.wechatPh")}
                     className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 pr-9 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                     required
                   />
@@ -245,7 +243,7 @@ export default function OrderModal({
                     <button
                       type="button"
                       onClick={() => setWechatName("")}
-                      aria-label="清空微信账号名"
+                      aria-label={t("order.clearWechat")}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-cocoa-400 hover:text-cocoa-700 hover:bg-cocoa-100 text-lg leading-none transition-colors"
                     >
                       &times;
@@ -256,10 +254,10 @@ export default function OrderModal({
 
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                  {isDessert ? "选择口味 *" : "尺寸 *"}
+                  {isDessert ? t("order.pickFlavor") : t("order.size")}
                 </label>
                 {sizeChoices.length === 0 ? (
-                  <p className="text-sm text-cocoa-400">暂无可选项，请联系客服咨询价格</p>
+                  <p className="text-sm text-cocoa-400">{t("order.noOptions")}</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
                     {sizeChoices.map((s) => (
@@ -286,7 +284,7 @@ export default function OrderModal({
               {isDessert && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                    数量 *
+                    {t("order.qty")}
                   </label>
                   <div className="flex items-center gap-3">
                     <button
@@ -313,12 +311,12 @@ export default function OrderModal({
                   </div>
                   <p className={`text-xs mt-1.5 ${quantity < minQuantity ? "text-red-600" : "text-cocoa-400"}`}>
                     {quantity < minQuantity
-                      ? `此甜品最少需要订购 ${minQuantity} 份，请增加数量`
-                      : `最少订购 ${minQuantity} 份`}
+                      ? t("order.minQtyLow", { n: minQuantity })
+                      : t("order.minQtyOk", { n: minQuantity })}
                   </p>
                   {selectedSize?.price ? (
                     <p className="text-sm text-cocoa-700 mt-2 font-medium">
-                      小计：MMK {selectedSize.price * quantity}
+                      {t("order.subtotal", { p: selectedSize.price * quantity })}
                     </p>
                   ) : null}
                 </div>
@@ -327,7 +325,7 @@ export default function OrderModal({
               {!isDessert && options?.flavors?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                    口味
+                    {t("order.flavor")}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {options.flavors.map((f) => (
@@ -360,7 +358,7 @@ export default function OrderModal({
               {!isDessert && options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                    夹心 / 水果 1
+                    {t("order.filling1")}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {options.fillings.map((f) => (
@@ -393,7 +391,7 @@ export default function OrderModal({
               {!isDessert && options?.fillings?.length > 0 && (
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
-                    夹心 / 水果 2
+                    {t("order.filling2")}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {options.fillings.map((f) => (
@@ -426,7 +424,7 @@ export default function OrderModal({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                    取货/配送日期
+                    {t("order.date")}
                   </label>
                   <input
                     type="date"
@@ -437,7 +435,7 @@ export default function OrderModal({
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                    期望时间
+                    {t("order.time")}
                   </label>
                   <input
                     type="time"
@@ -450,13 +448,13 @@ export default function OrderModal({
 
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  配送地址 *
+                  {t("order.address")}
                 </label>
                 <input
                   type="text"
                   value={deliveryPlace}
                   onChange={(e) => setDeliveryPlace(e.target.value)}
-                  placeholder="请输入配送地址或到店自取"
+                  placeholder={t("order.addressPh")}
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                   required
                 />
@@ -464,14 +462,14 @@ export default function OrderModal({
 
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  联系电话 *
+                  {t("order.phone")}
                 </label>
                 <div className="relative">
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="请输入手机号码"
+                    placeholder={t("order.phonePh")}
                     className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 pr-9 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                     required
                   />
@@ -479,7 +477,7 @@ export default function OrderModal({
                     <button
                       type="button"
                       onClick={() => setPhone("")}
-                      aria-label="清空联系电话"
+                      aria-label={t("order.clearPhone")}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-cocoa-400 hover:text-cocoa-700 hover:bg-cocoa-100 text-lg leading-none transition-colors"
                     >
                       &times;
@@ -490,12 +488,12 @@ export default function OrderModal({
 
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  备注
+                  {t("order.remark")}
                 </label>
                 <textarea
                   value={remark}
                   onChange={(e) => setRemark(e.target.value)}
-                  placeholder="如有特殊要求，请在此说明"
+                  placeholder={t("order.remarkPh")}
                   rows={3}
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
@@ -508,7 +506,7 @@ export default function OrderModal({
                 disabled={submitting}
                 className="w-full rounded-lg bg-cocoa-800 text-cream py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60"
               >
-                {submitting ? "提交中..." : "提交订购"}
+                {submitting ? t("order.submitting") : t("order.submit")}
               </button>
             </form>
           )}
