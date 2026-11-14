@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notifyBus";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function BellIcon(props) {
   return (
@@ -14,6 +15,7 @@ function BellIcon(props) {
 }
 
 export default function NotificationBell() {
+  const { t } = useLang();
   const [phone, setPhone] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -47,16 +49,16 @@ export default function NotificationBell() {
   }, [phone]);
 
   useEffect(() => {
-  function onChanged() { refresh(); }
-  window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
-  return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    function onChanged() { refresh(); }
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
-  
+
   return (
     <Link
       href="/notifications"
-      aria-label="Notifications"
+      aria-label={t("nav.notifications")}
       className="relative flex items-center justify-center shrink-0 rounded-full border border-cocoa-200 bg-white/70 w-9 h-9 sm:w-10 sm:h-10 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
     >
       <BellIcon className="w-5 h-5" />
