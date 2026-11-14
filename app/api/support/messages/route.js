@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
+import { pushToAdmins, pushToCustomer } from "@/lib/push";
 
 // General "contact admin" chat — not tied to any specific order.
 // GET  /api/support/messages?phone=...&role=admin|customer
 // POST /api/support/messages  body: { phone, message?, attachmentUrl?, attachmentType?, role }
-//
-// `role` is what the caller CLAIMS to be. We only ever actually trust
-// "admin" if isAdminAuthed() also passes — this stops an admin session
-// cookie (e.g. from testing in the same browser) from silently hijacking
-// messages sent from the customer-facing chat widget.
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const phone = (searchParams.get("phone") || "").trim();
@@ -24,9 +20,6 @@ export async function GET(request) {
     SELECT * FROM support_messages WHERE phone = ${phone} ORDER BY created_at ASC
   `;
 
-  // Support chat isn't tied to a specific order, but we can still label the
-  // customer by their most recent WeChat name (from any order they placed
-  // with this phone number) instead of a generic "Customer" label.
   let customerName = null;
   if (admin) {
     const nameRows = await sql`
@@ -68,6 +61,29 @@ export async function POST(request) {
     )
     RETURNING *
   `;
+
+  const preview = message?.trim() ? message.trim().slice(0, 80) : "📎 Attachment";
+
+  if (sender === "customer") {
+    const nameRows = await sql`
+      SELECT wechat_name FROM orders
+      WHERE phone = ${cleanPhone} AND wechat_name IS NOT NULL
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    await pushToAdmins({
+      title: `💬 客服消息 · ${nameRows[0]?.wechat_name || cleanPhone}`,
+      body: preview,
+      url: "/admin/support",
+      tag: `support-${cleanPhone}`,
+    });
+  } else {
+    await pushToCustomer(cleanPhone, {
+      title: "Memory Cake",
+      body: preview,
+      url: "/notifications",
+      tag: `support-${cleanPhone}`,
+    });
+  }
 
   return NextResponse.json({ message: rows[0] }, { status: 201 });
 }
