@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { cldThumb, cldFull } from "@/lib/cloudinary-url";
 import OrderModal from "@/components/OrderModal";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function ShareIcon(props) {
   return (
@@ -17,9 +18,9 @@ function ShareIcon(props) {
   );
 }
 
-async function sharePhoto(photo, folderName) {
+async function sharePhoto(photo, folderName, t) {
   const shareUrl = cldFull(photo.url, 1600);
-  const shareText = photo.caption || "快来看看这款蛋糕！";
+  const shareText = photo.caption || t("gallery.shareText");
   const shareTitle = folderName ? `${folderName} · Memory Cake` : "Memory Cake";
 
   try {
@@ -37,12 +38,12 @@ async function sharePhoto(photo, folderName) {
       return;
     }
     await navigator.clipboard?.writeText(shareUrl);
-    alert("图片链接已复制，可粘贴到微信分享给好友");
+    alert(t("gallery.linkCopied"));
   } catch (err) {
     if (err?.name !== "AbortError") {
       try {
         await navigator.clipboard?.writeText(shareUrl);
-        alert("图片链接已复制，可粘贴到微信分享给好友");
+        alert(t("gallery.linkCopied"));
       } catch {
         // ignore — nothing more we can do
       }
@@ -61,6 +62,7 @@ export default function PhotoGallery({
   total,
   pageSize = 24,
 }) {
+  const { t } = useLang();
   const [photos, setPhotos] = useState(initialPhotos);
   const [activeIndex, setActiveIndex] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -163,25 +165,25 @@ export default function PhotoGallery({
             {/* ACTION ROW */}
             <div className="p-2 sm:p-3 flex items-center gap-1.5 sm:gap-2">
               <button
-                onClick={() => sharePhoto(photo, folderName)}
+                onClick={() => sharePhoto(photo, folderName, t)}
                 className="flex-1 min-w-0 flex items-center justify-center gap-1 rounded-lg border border-cocoa-300 bg-white text-cocoa-700 text-xs px-2 py-2 font-medium hover:bg-cocoa-50 hover:border-cocoa-400 transition-colors whitespace-nowrap"
               >
                 <ShareIcon className="w-3.5 h-3.5 shrink-0" />
-                <span>分享到微信</span>
+                <span className="truncate">{t("gallery.share")}</span>
               </button>
               {orderable ? (
                 <button
                   onClick={() => setOrderingPhoto(photo)}
                   className="shrink-0 rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm px-3 py-2 font-medium hover:bg-cocoa-900 transition-colors whitespace-nowrap"
                 >
-                  订购
+                  {t("gallery.order")}
                 </button>
               ) : (
                 <div
                   className="flex-1 min-w-0 rounded-lg bg-cocoa-50 border border-cocoa-200 text-cocoa-800 text-xs sm:text-sm py-2 text-center truncate"
                   title={photo.caption || undefined}
                 >
-                  {photo.caption || "价格请咨询客服"}
+                  {photo.caption || t("gallery.askPrice")}
                 </div>
               )}
             </div>
@@ -191,7 +193,7 @@ export default function PhotoGallery({
 
       {hasMore && (
         <div ref={sentinelRef} className="py-10 text-center text-cocoa-400 text-sm">
-          {loadingMore ? "Loading more photos..." : ""}
+          {loadingMore ? t("gallery.loadingMore") : ""}
         </div>
       )}
 
@@ -206,14 +208,14 @@ export default function PhotoGallery({
           <button
             onClick={(e) => { e.stopPropagation(); close(); }}
             className="absolute top-5 right-5 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-3xl transition z-10"
-            aria-label="Close"
+            aria-label={t("common.close")}
           >
             &times;
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); showPrev(); }}
             className="absolute left-4 sm:left-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
-            aria-label="Previous"
+            aria-label={t("common.prev")}
           >
             &#8249;
           </button>
@@ -233,7 +235,7 @@ export default function PhotoGallery({
           <button
             onClick={(e) => { e.stopPropagation(); showNext(); }}
             className="absolute right-4 sm:right-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
-            aria-label="Next"
+            aria-label={t("common.next")}
           >
             &#8250;
           </button>
@@ -250,31 +252,31 @@ export default function PhotoGallery({
                 )}
                 <div className="flex items-center gap-3 w-full justify-center">
                   <button
-                    onClick={() => sharePhoto(photos[activeIndex], folderName)}
+                    onClick={() => sharePhoto(photos[activeIndex], folderName, t)}
                     className="flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 backdrop-blur text-white px-4 py-2.5 text-sm font-medium hover:bg-white/20 transition-colors"
                   >
                     <ShareIcon className="w-4 h-4" />
-                    分享到微信
+                    {t("gallery.share")}
                   </button>
                   <button
                     onClick={() => setOrderingPhoto(photos[activeIndex])}
                     className="rounded-full bg-cocoa-800 text-cream px-4 py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
                   >
-                    订购
+                    {t("gallery.order")}
                   </button>
                 </div>
               </>
             ) : (
               <div className="flex items-center gap-3 w-full justify-center">
                 <button
-                  onClick={() => sharePhoto(photos[activeIndex], folderName)}
+                  onClick={() => sharePhoto(photos[activeIndex], folderName, t)}
                   className="flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 backdrop-blur text-white px-4 py-2.5 text-sm font-medium hover:bg-white/20 transition-colors"
                 >
                   <ShareIcon className="w-4 h-4" />
-                  分享到微信
+                  {t("gallery.share")}
                 </button>
                 <div className="px-6 py-2.5 rounded-full bg-black/40 backdrop-blur text-white text-sm text-center font-medium">
-                  {photos[activeIndex].caption || "价格请咨询客服"}
+                  {photos[activeIndex].caption || t("gallery.askPrice")}
                 </div>
               </div>
             )}
