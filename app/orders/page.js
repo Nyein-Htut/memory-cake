@@ -5,8 +5,8 @@ import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import OrderChatPanel from "@/components/OrderChatPanel";
 import ChatWidget from "@/components/ChatWidget";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
-const STATUS_LABELS = { new: "New", confirmed: "Confirmed", done: "Completed", cancelled: "Cancelled" };
 const STATUS_STYLES = {
   new: "bg-amber-100 text-amber-800",
   confirmed: "bg-blue-100 text-blue-800",
@@ -24,6 +24,7 @@ function canCancel(order) {
 }
 
 export default function MyOrdersPage() {
+  const { lang, t } = useLang();
   const [phone, setPhone] = useState("");
   const [submittedPhone, setSubmittedPhone] = useState("");
   const [orders, setOrders] = useState([]);
@@ -32,6 +33,8 @@ export default function MyOrdersPage() {
   const [cancellingId, setCancellingId] = useState(null);
   const [chatOrderId, setChatOrderId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+
+  const locale = lang === "en" ? "en-GB" : "zh-CN";
 
   const lookup = useCallback(async (phoneToLookup) => {
     const p = (phoneToLookup ?? phone).trim();
@@ -52,7 +55,7 @@ export default function MyOrdersPage() {
       setLoading(false);
 
       if (!res.ok) {
-        setError("Could not load orders. Please try again.");
+        setError(t("orders.loadFail"));
         return;
       }
 
@@ -62,9 +65,9 @@ export default function MyOrdersPage() {
       localStorage.setItem("memory_cake_phone", p);
     } catch (err) {
       setLoading(false);
-      setError("Could not load orders. Please try again.");
+      setError(t("orders.loadFail"));
     }
-  }, [phone]);
+  }, [phone, t]);
 
   useEffect(() => {
     const saved = localStorage.getItem("memory_cake_phone");
@@ -73,7 +76,7 @@ export default function MyOrdersPage() {
       lookup(saved);
     }
   }, [lookup]);
-  
+
   useEffect(() => {
     function refreshIfVisible() {
       if (document.visibilityState !== "visible") return;
@@ -91,7 +94,7 @@ export default function MyOrdersPage() {
   }, [lookup]);
 
   async function handleCancel(order) {
-    if (!confirm("Cancel this order? This cannot be undone.")) return;
+    if (!confirm(t("orders.cancelConfirm"))) return;
     setCancellingId(order.id);
 
     const res = await fetch(`/api/orders/${order.id}/cancel`, {
@@ -104,7 +107,7 @@ export default function MyOrdersPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error || "Could not cancel order.");
+      setError(data.error || t("orders.cancelFail"));
       return;
     }
 
@@ -116,10 +119,8 @@ export default function MyOrdersPage() {
       <PublicHeader />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-12">
-        <h1 className="font-serif font-semibold text-3xl sm:text-4xl text-cocoa-900 mb-2">My Orders</h1>
-        <p className="text-cocoa-500 text-sm mb-8">
-          Enter the phone number you used when ordering to see your order status.
-        </p>
+        <h1 className="font-serif font-semibold text-3xl sm:text-4xl text-cocoa-900 mb-2">{t("orders.title")}</h1>
+        <p className="text-cocoa-500 text-sm mb-8">{t("orders.intro")}</p>
 
         <form
           onSubmit={(e) => { e.preventDefault(); lookup(); }}
@@ -129,7 +130,7 @@ export default function MyOrdersPage() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Your phone number"
+            placeholder={t("common.yourPhone")}
             className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-3 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
           />
           <button
@@ -137,14 +138,14 @@ export default function MyOrdersPage() {
             disabled={loading}
             className="rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900 disabled:opacity-60"
           >
-            {loading ? "Looking up..." : "View my orders"}
+            {loading ? t("orders.looking") : t("orders.view")}
           </button>
         </form>
 
         {error && <p className="text-sm text-red-600 mb-6">{error}</p>}
 
         {submittedPhone && !loading && orders.length === 0 && !error && (
-          <p className="text-cocoa-400">No orders found for that phone number.</p>
+          <p className="text-cocoa-400">{t("orders.none")}</p>
         )}
 
         <div className="space-y-4">
@@ -166,7 +167,7 @@ export default function MyOrdersPage() {
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-medium">
-                        放大查看
+                        {t("orders.zoom")}
                       </div>
                     </div>
                   ) : (
@@ -179,7 +180,7 @@ export default function MyOrdersPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs text-cocoa-400">
-                          {new Date(order.created_at).toLocaleString()}
+                          {new Date(order.created_at).toLocaleString(locale)}
                           {order.folder_name ? ` · ${order.folder_name}` : ""}
                         </p>
                         <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
@@ -187,17 +188,17 @@ export default function MyOrdersPage() {
                           {order.quantity > 1 ? ` × ${order.quantity}` : ""}
                         </p>
                         <p className="text-sm text-cocoa-700 mt-1">
-                          {[order.flavor, order.filling1, order.filling2].filter(Boolean).join(" · ") || "No flavor specified"}
+                          {[order.flavor, order.filling1, order.filling2].filter(Boolean).join(" · ") || t("orders.noFlavor")}
                         </p>
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[order.status] || "bg-cocoa-100 text-cocoa-700"}`}>
-                        {STATUS_LABELS[order.status] || order.status}
+                        {STATUS_STYLES[order.status] ? t(`status.${order.status}`) : order.status}
                       </span>
                     </div>
 
                     <div className="mt-3 pt-3 border-t border-cocoa-100/60 text-sm text-cocoa-700 space-y-1">
-                      <p><span className="text-cocoa-400">Delivery:</span> {order.delivery_date || "Not set"} {order.delivery_time || ""}</p>
-                      <p><span className="text-cocoa-400">Address:</span> {order.delivery_place}</p>
+                      <p><span className="text-cocoa-400">{t("orders.delivery")}</span> {order.delivery_date || t("orders.notSet")} {order.delivery_time || ""}</p>
+                      <p><span className="text-cocoa-400">{t("orders.addressLabel")}</span> {order.delivery_place}</p>
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -205,21 +206,21 @@ export default function MyOrdersPage() {
                         onClick={() => setChatOrderId(order.id)}
                         className="text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1.5"
                       >
-                        💬 Message us
+                        {t("orders.message")}
                       </button>
 
                       {order.status !== "cancelled" && order.status !== "done" && (
                         <button
                           onClick={() => handleCancel(order)}
                           disabled={!cancellable || cancellingId === order.id}
-                          title={!cancellable ? "Orders can't be cancelled within 24 hours of delivery" : ""}
+                          title={!cancellable ? t("orders.cancelTitle") : ""}
                           className="text-sm text-red-500 hover:text-red-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {cancellingId === order.id ? "Cancelling..." : "Cancel order"}
+                          {cancellingId === order.id ? t("orders.cancelling") : t("orders.cancel")}
                         </button>
                       )}
                       {!cancellable && order.status !== "cancelled" && order.status !== "done" && (
-                        <span className="text-xs text-cocoa-400">Can't cancel within 24h of delivery — message us instead</span>
+                        <span className="text-xs text-cocoa-400">{t("orders.cancelHint")}</span>
                       )}
                     </div>
                   </div>
@@ -245,7 +246,7 @@ export default function MyOrdersPage() {
               onClick={() => setPreviewImage(null)}
               className="absolute -top-10 right-0 text-white text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full"
             >
-              ✕ 关闭
+              {t("orders.closePreview")}
             </button>
           </div>
         </div>
@@ -256,7 +257,7 @@ export default function MyOrdersPage() {
       )}
 
       <Footer />
-     <ChatWidget />
+      <ChatWidget />
     </div>
   );
 }
