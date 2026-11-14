@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 const CARD_WIDTH = 900;
 const CARD_HEIGHT = 1550;
@@ -35,6 +36,7 @@ async function loadImageSafe(src) {
 }
 
 export default function OrderReceiptCard({ order, photoUrl }) {
+  const { lang, t } = useLang();
   const canvasRef = useRef(null);
   const [dataUrl, setDataUrl] = useState(null);
   const [generating, setGenerating] = useState(true);
@@ -84,7 +86,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       ctx.font = "600 22px Inter, sans-serif";
       ctx.fillStyle = "#7a5738";
-      ctx.fillText("记忆蛋糕坊 · 订购确认单", CARD_WIDTH / 2, 142);
+      ctx.fillText(t("receipt.subtitle"), CARD_WIDTH / 2, 142);
 
       // ==========================================
       // TOP SECTION: Photo — single wide layer for dessert orders,
@@ -257,20 +259,20 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       }
 
       // Render Order Detail Rows
-      renderDetailRow("微信昵称", order.wechatName);
-      renderPriceRow(isDessert ? "选购 ITEM" : "尺寸 SIZE", order.sizeLabel, order.sizePrice);
+      renderDetailRow(t("receipt.wechat"), order.wechatName);
+      renderPriceRow(isDessert ? t("receipt.item") : t("receipt.size"), order.sizeLabel, order.sizePrice);
 
       if (isDessert && order.quantity) {
-        renderDetailRow("数量 QTY", `${order.quantity} 份`);
+        renderDetailRow(t("receipt.qty"), t("receipt.qtyValue", { n: order.quantity }));
         if (order.totalPrice) {
-          renderPriceRow("总价 TOTAL", `${order.quantity} 份合计`, order.totalPrice);
+          renderPriceRow(t("receipt.total"), t("receipt.totalOf", { n: order.quantity }), order.totalPrice);
         }
       }
 
-      renderDetailRow("日期 DATE", [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
-      renderDetailRow("地址 ADDRESS", order.deliveryPlace);
-      renderDetailRow("电话 PHONE", order.phone);
-      if (order.remark) renderDetailRow("备注 NOTE", order.remark);
+      renderDetailRow(t("receipt.date"), [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
+      renderDetailRow(t("receipt.address"), order.deliveryPlace);
+      renderDetailRow(t("receipt.phone"), order.phone);
+      if (order.remark) renderDetailRow(t("receipt.note"), order.remark);
 
       // ==========================================
       // FOOTER SECTION
@@ -281,14 +283,17 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       ctx.font = "600 20px Inter, sans-serif";
       ctx.fillStyle = "#7a5738";
       ctx.fillText(
-        `订单编号 #${order.id || "8"} · ${orderDate.toLocaleDateString("zh-CN")}`,
+        t("receipt.orderNo", {
+          id: order.id || "8",
+          date: orderDate.toLocaleDateString(lang === "en" ? "en-GB" : "zh-CN"),
+        }),
         CARD_WIDTH / 2,
         CARD_HEIGHT - 95
       );
 
       ctx.font = "600 22px 'Cormorant Garamond', Georgia, serif";
       ctx.fillStyle = "#593d24";
-      ctx.fillText("— 感谢您的订购，期待为您制作 🎂 —", CARD_WIDTH / 2, CARD_HEIGHT - 60);
+      ctx.fillText(t("receipt.thanks"), CARD_WIDTH / 2, CARD_HEIGHT - 60);
 
       const url = canvas.toDataURL("image/png");
       setDataUrl(url);
@@ -319,8 +324,8 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: "Memory Cake 蛋糕订购",
-          text: "我在Memory Cake订购了这款蛋糕！",
+          title: t("receipt.shareTitle"),
+          text: t("receipt.shareText"),
         });
         return;
       }
@@ -336,18 +341,18 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       {generating && (
         <div className="py-20 text-amber-900/60 text-base font-semibold animate-pulse">
-          正在生成订单卡片...
+          {t("receipt.generating")}
         </div>
       )}
 
       {!generating && failed && (
         <div className="py-12">
-          <p className="text-base text-amber-950 font-medium mb-4">卡片生成失败，请重试。</p>
+          <p className="text-base text-amber-950 font-medium mb-4">{t("receipt.failed")}</p>
           <button
             onClick={generate}
             className="rounded-xl bg-amber-900 text-amber-50 px-6 py-3 text-base font-semibold shadow-md active:scale-95 transition-transform"
           >
-            重新生成
+            {t("receipt.retry")}
           </button>
         </div>
       )}
@@ -355,20 +360,20 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       {!generating && !failed && dataUrl && (
         <>
           <div className="overflow-hidden rounded-2xl shadow-2xl border border-amber-200/50 mb-6">
-            <img src={dataUrl} alt="订单卡片" className="w-full block" />
+            <img src={dataUrl} alt={t("receipt.alt")} className="w-full block" />
           </div>
           <div className="flex gap-3 justify-center pb-4">
             <button
               onClick={handleSave}
               className="flex-1 rounded-xl bg-amber-900 text-amber-50 py-3.5 text-base font-semibold hover:bg-amber-950 active:scale-98 transition-all shadow-md"
             >
-              💾 保存图片
+              {t("receipt.save")}
             </button>
             <button
               onClick={handleShare}
               className="flex-1 rounded-xl border-2 border-amber-800/20 text-amber-950 py-3.5 text-base font-semibold hover:bg-amber-100/50 active:scale-98 transition-all"
             >
-              📤 分享卡片
+              {t("receipt.share")}
             </button>
           </div>
         </>
