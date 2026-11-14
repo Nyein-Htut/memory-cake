@@ -6,6 +6,8 @@ import { cldThumb } from "@/lib/cloudinary-url";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import { sql } from "@/lib/db";
+import { getLang, getT } from "@/lib/i18n/server";
+import { photoCountLabel } from "@/lib/i18n/dictionaries";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +55,7 @@ function StackIcon(props) {
 }
 
 export default async function HomePage() {
+  const t = getT(getLang());
   const [folders, heroSlides] = await Promise.all([
     getFolders(),
     getHeroSlides(),
@@ -67,20 +70,18 @@ export default async function HomePage() {
 
         <div id="albums" className="mt-12 sm:mt-16 mb-8 sm:mb-10 text-center">
           <h2 className="font-serif font-semibold text-2xl sm:text-3xl md:text-4xl text-cocoa-900 mb-2">
-            🎂 蛋糕作品分类
+            {t("home.title")}
           </h2>
           <div className="mx-auto w-14 h-px bg-cocoa-400/60 mb-3" />
           <p className="text-cocoa-500 text-sm sm:text-base">
-            每一款蛋糕，都是独一无二的回忆
+            {t("home.subtitle")}
           </p>
         </div>
 
         {folders.length === 0 ? (
           <div className="text-center py-16 sm:py-24 text-cocoa-400">
-            <p className="font-serif text-lg sm:text-xl">No albums yet.</p>
-            <p className="text-sm mt-2">
-              Check back soon — new memories are on the way.
-            </p>
+            <p className="font-serif text-lg sm:text-xl">{t("home.empty")}</p>
+            <p className="text-sm mt-2">{t("home.emptySub")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-8 gap-y-8 pr-6 sm:pr-8">
@@ -122,7 +123,7 @@ export default async function HomePage() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-cocoa-300">
                           <span className="font-serif text-sm sm:text-base">
-                            No photos yet
+                            {t("home.noPhotos")}
                           </span>
                         </div>
                       )}
@@ -142,8 +143,7 @@ export default async function HomePage() {
                       </h3>
                       <p className="flex items-center gap-1 text-[11px] sm:text-xs text-cocoa-500 mt-0.5">
                         <span aria-hidden>🖼️</span>
-                        {folder.photo_count} photo
-                        {folder.photo_count === 1 ? "" : "s"}
+                        {photoCountLabel(t, folder.photo_count)}
                       </p>
                     </div>
                   </Link>
