@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
+import { pushToAdmins, pushToCustomer } from "@/lib/push";
 
-// GET  /api/orders/123/messages?phone=...   (customer)
-// GET  /api/orders/123/messages              (admin, cookie)
-// POST /api/orders/123/messages  body: { phone?, message?, attachmentUrl?, attachmentType? }
+// GET  /api/orders/123/messages?role=admin
+// GET  /api/orders/123/messages?role=customer&phone=...
+// POST /api/orders/123/messages  body: { phone?, message?, attachmentUrl?, attachmentType?, role }
+//
+// `role` is what the caller CLAIMS to be. We only trust "admin" if
+// isAdminAuthed() also passes.
 export async function GET(request, { params }) {
   const id = Number(params.id);
-  const admin = await isAdminAuthed();
+  const { searchParams } = new URL(request.url);
+  const roleParam = searchParams.get("role");
+  const admin = roleParam === "admin" && (await isAdminAuthed());
 
   const order = (await sql`SELECT id, phone FROM orders WHERE id = ${id}`)[0];
   if (!order) {
@@ -15,7 +21,6 @@ export async function GET(request, { params }) {
   }
 
   if (!admin) {
-    const { searchParams } = new URL(request.url);
     const phone = (searchParams.get("phone") || "").trim();
     if (!phone || phone !== order.phone) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,14 +42,14 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   const id = Number(params.id);
-  const admin = await isAdminAuthed();
-  const { phone, message, attachmentUrl, attachmentType } = await request.json();
+  const { phone, message, attachmentUrl, attachmentType, role } = await request.json();
+  const admin = role === "admin" && (await isAdminAuthed());
 
   if (!message?.trim() && !attachmentUrl) {
     return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
   }
 
-  const order = (await sql`SELECT id, phone FROM orders WHERE id = ${id}`)[0];
+  const order = (await sql`SELECT id, phone, wechat_name FROM orders WHERE id = ${id}`)[0];
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
@@ -64,6 +69,24 @@ export async function POST(request, { params }) {
     )
     RETURNING *
   `;
+
+  const preview = message?.trim() ? message.trim().slice(0, 80) : "📎 Attachment";
+
+  if (sender === "customer") {
+    await pushToAdmins({
+      title: `💬 订单 #${id} · ${order.wechat_name || "客户"}`,
+      body: preview,
+      url: "/admin/orders",
+      tag: `order-chat-${id}`,
+    });
+  } else {
+    await pushToCustomer(order.phone, {
+      title: `Memory Cake · Order #${id}`,
+      body: preview,
+      url: "/orders",
+      tag: `order-chat-${id}`,
+    });
+  }
 
   return NextResponse.json({ message: rows[0] }, { status: 201 });
 }
