@@ -1,0 +1,14 @@
+{
+  "name": "Memory Cake",
+  "short_name": "Memory Cake",
+  "description": "A sweet place to keep your memories.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F0E6DA",
+  "theme_color": "#3f2f24",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
