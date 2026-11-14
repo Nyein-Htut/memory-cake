@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { uploadChatAttachment } from "@/lib/uploadChatAttachment";
 import { notifyNotificationsChanged } from "@/lib/notifyBus";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function PaperclipIcon(props) {
   return (
@@ -25,9 +26,9 @@ function SendIcon(props) {
 // - On the admin side, the customer's messages are labeled with their real
 //   WeChat name when we have one (falls back to "Customer" otherwise).
 // - On the customer side, the admin's messages are always "Memory Cake".
-function senderLabel(senderRole, viewerRole, customerName) {
-  if (senderRole === viewerRole) return "You";
-  if (viewerRole === "admin") return customerName || "Customer";
+function senderLabel(senderRole, viewerRole, customerName, t) {
+  if (senderRole === viewerRole) return t("chat.you");
+  if (viewerRole === "admin") return customerName || t("chat.customer");
   return "Memory Cake";
 }
 
@@ -37,6 +38,7 @@ function senderLabel(senderRole, viewerRole, customerName) {
 // modal overlay — this keeps the admin support page and notifications
 // panel working exactly as before.
 export default function SupportChatPanel({ phone, role, onClose, embedded = false }) {
+  const { lang, t } = useLang();
   const [messages, setMessages] = useState([]);
   const [customerName, setCustomerName] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
   const fileInputRef = useRef(null);
 
   const isAdmin = role === "admin";
+  const locale = lang === "en" ? "en-GB" : "zh-CN";
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/support/messages?phone=${encodeURIComponent(phone)}&role=${role}`);
@@ -79,7 +82,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Could not send message");
+      throw new Error(data.error || t("chat.sendFail"));
     }
     await load();
   }
@@ -107,7 +110,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
       const { url, type } = await uploadChatAttachment(file);
       await sendMessage({ message: null, attachmentUrl: url, attachmentType: type });
     } catch (err) {
-      setError(err.message || "Could not send attachment");
+      setError(err.message || t("chat.attachFail"));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -119,7 +122,7 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
       <div className="flex items-center justify-between px-5 py-4 bg-cocoa-900 text-cream shrink-0">
         <div className="min-w-0">
           <h2 className="font-serif text-lg leading-none truncate">
-            {isAdmin ? "Chat with customer" : "Chat with us"}
+            {isAdmin ? t("chat.titleAdmin") : t("chat.title")}
           </h2>
           {isAdmin && (
             <p className="text-xs text-cream/60 mt-1 truncate">
@@ -127,24 +130,26 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
             </p>
           )}
         </div>
-        <button onClick={onClose} className="text-cream/70 hover:text-cream text-xl leading-none shrink-0 ml-3">
+        <button
+          onClick={onClose}
+          aria-label={t("common.close")}
+          className="text-cream/70 hover:text-cream text-xl leading-none shrink-0 ml-3"
+        >
           &times;
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#faf6f0]">
         {loading ? (
-          <p className="text-sm text-cocoa-400 text-center py-6">Loading...</p>
+          <p className="text-sm text-cocoa-400 text-center py-6">{t("common.loading")}</p>
         ) : messages.length === 0 ? (
           <p className="text-sm text-cocoa-400 text-center py-6">
-            {isAdmin
-              ? "No messages yet."
-              : "Ask us anything about payment methods, delivery fees, or your order — feel free to attach a receipt or QR code."}
+            {isAdmin ? t("chat.emptyAdmin") : t("chat.emptySupport")}
           </p>
         ) : (
           messages.map((m) => {
             const mine = m.sender === role;
-            const label = senderLabel(m.sender, role, customerName);
+            const label = senderLabel(m.sender, role, customerName, t);
             return (
               <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
@@ -168,19 +173,19 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
                         rel="noopener noreferrer"
                         className={`block mb-1.5 underline text-xs ${mine ? "text-cream" : "text-cocoa-700"}`}
                       >
-                        📎 View attachment
+                        {t("chat.viewAttachment")}
                       </a>
                     )}
                     {m.message && <p className="whitespace-pre-wrap break-words">{m.message}</p>}
                     <p className={`text-[10px] mt-1 ${mine ? "text-cream/60" : "text-cocoa-400"}`}>
-                      {new Date(m.created_at).toLocaleString()}
+                      {new Date(m.created_at).toLocaleString(locale)}
                     </p>
                   </div>
                 </div>
               </div>
             );
           })
-      )}
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -202,19 +207,19 @@ export default function SupportChatPanel({ phone, role, onClose, embedded = fals
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={isAdmin ? "Type a message..." : "Ask about payment, delivery fee..."}
+          placeholder={isAdmin ? t("chat.typeMessage") : t("chat.askSupport")}
           className="flex-1 rounded-full border border-cocoa-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
         />
         <button
           type="submit"
           disabled={sending || !draft.trim()}
-          aria-label="Send"
+          aria-label={t("chat.sendAria")}
           className="shrink-0 w-10 h-10 rounded-full bg-cocoa-800 text-cream flex items-center justify-center hover:bg-cocoa-900 disabled:opacity-40 transition-colors"
         >
           <SendIcon className="w-4 h-4" />
         </button>
       </form>
-      {uploading && <p className="text-xs text-cocoa-400 px-4 pb-2 bg-cream">Uploading attachment...</p>}
+      {uploading && <p className="text-xs text-cocoa-400 px-4 pb-2 bg-cream">{t("chat.uploading")}</p>}
       {error && <p className="text-xs text-red-600 px-4 pb-2 bg-cream">{error}</p>}
     </>
   );
