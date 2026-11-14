@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import SupportChatPanel from "./SupportChatPanel";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function ChatBubbleIcon(props) {
   return (
@@ -21,6 +22,7 @@ function CloseIcon(props) {
 }
 
 export default function ChatWidget() {
+  const { t } = useLang();
   const [mounted, setMounted] = useState(false);
   const [phone, setPhone] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -51,7 +53,7 @@ export default function ChatWidget() {
         )}
         <button
           onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Close chat" : "Chat with us"}
+          aria-label={open ? t("chat.closeAria") : t("chat.open")}
           className="relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-cocoa-700 to-cocoa-900 text-cream shadow-2xl hover:scale-110 active:scale-95 transition-transform duration-300"
         >
           {open ? <CloseIcon className="w-5 h-5" /> : <ChatBubbleIcon className="w-6 h-6" />}
@@ -74,36 +76,34 @@ export default function ChatWidget() {
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-5 py-4 bg-cocoa-900 text-cream shrink-0">
                   <div>
-                    <h2 className="font-serif text-lg leading-none">Chat with us</h2>
-                    <p className="text-xs text-cream/60 mt-1">We usually reply within a few hours</p>
+                    <h2 className="font-serif text-lg leading-none">{t("chat.title")}</h2>
+                    <p className="text-xs text-cream/60 mt-1">{t("chat.reply")}</p>
                   </div>
                   <button
                     onClick={() => setOpen(false)}
                     className="text-cream/70 hover:text-cream text-xl leading-none"
-                    aria-label="Close"
+                    aria-label={t("common.close")}
                   >
                     &times;
                   </button>
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center px-6 py-6 bg-[#faf6f0]">
-                  <p className="text-sm text-cocoa-500 mb-4">
-                    Enter your phone number so we know who we're chatting with.
-                  </p>
+                  <p className="text-sm text-cocoa-500 mb-4">{t("chat.enterPhone")}</p>
                   <form onSubmit={handleStartChat} className="space-y-3">
                     <input
                       type="tel"
                       autoFocus
                       value={phoneInput}
                       onChange={(e) => setPhoneInput(e.target.value)}
-                      placeholder="Your phone number"
+                      placeholder={t("common.yourPhone")}
                       className="w-full rounded-full border border-cocoa-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                     />
                     <button
                       type="submit"
                       className="w-full rounded-full bg-cocoa-800 text-cream py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors"
                     >
-                      Start chat
+                      {t("chat.start")}
                     </button>
                   </form>
                 </div>
