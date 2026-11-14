@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import PublicHeader from "@/components/PublicHeader";
 import PhotoGallery from "@/components/PhotoGallery";
+import { getLang, getT } from "@/lib/i18n/server";
+import { photoCountLabel } from "@/lib/i18n/dictionaries";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,7 @@ async function getFirstPagePhotos(id) {
 }
 
 export default async function FolderPage({ params }) {
+  const t = getT(getLang());
   const folderId = Number(params.id);
 
   if (Number.isNaN(folderId)) notFound();
@@ -57,7 +60,7 @@ export default async function FolderPage({ params }) {
           href="/"
           className="text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
         >
-          &larr; All albums
+          {t("folder.back")}
         </Link>
 
         <div className="mt-5 mb-8 sm:mb-10">
@@ -72,15 +75,13 @@ export default async function FolderPage({ params }) {
           )}
 
           <p className="mt-3 text-xs uppercase tracking-wider text-cocoa-500">
-            {total} photo{total === 1 ? "" : "s"}
+            {photoCountLabel(t, total)}
           </p>
         </div>
 
         {total === 0 ? (
           <div className="py-20 text-center text-cocoa-500">
-            <p className="font-serif text-xl">
-              No photos in this album yet.
-            </p>
+            <p className="font-serif text-xl">{t("folder.empty")}</p>
           </div>
         ) : (
             <PhotoGallery
@@ -98,7 +99,7 @@ export default async function FolderPage({ params }) {
       </main>
 
       <footer className="border-t border-cocoa-300/60 bg-[#F0E6DA] py-6 text-center text-xs text-cocoa-500">
-        Memory Cake &middot; since 2023
+        {t("folder.footer")}
       </footer>
     </div>
   );
