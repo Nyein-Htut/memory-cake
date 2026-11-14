@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import NotificationBell from "./NotificationBell";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function ShoppingBagIcon(props) {
   return (
@@ -39,6 +43,8 @@ function PaletteIcon(props) {
 }
 
 export default function PublicHeader() {
+  const { t } = useLang();
+
   return (
     <header className="sticky top-0 z-20 border-b border-cocoa-200/50 bg-[#F0E6DA]/95 backdrop-blur-md">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-3">
@@ -52,7 +58,7 @@ export default function PublicHeader() {
           />
 
           <span className="font-serif font-semibold text-xl sm:text-3xl text-cocoa-900 tracking-wide truncate">
-            Memory Cake 
+            Memory Cake
           </span>
         </Link>
 
@@ -61,21 +67,23 @@ export default function PublicHeader() {
 
           <Link
             href="/design"
-            aria-label="DIY 蛋糕设计"
+            aria-label={t("nav.designAria")}
             className="flex items-center gap-1.5 shrink-0 rounded-full border border-cocoa-200 bg-white/70 px-2.5 sm:px-3.5 py-2 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
           >
             <PaletteIcon className="w-5 h-5 shrink-0" />
-            <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">DIY 设计</span>
+            <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">{t("nav.design")}</span>
           </Link>
 
           <Link
             href="/orders"
-            aria-label="My Orders"
+            aria-label={t("nav.orders")}
             className="flex items-center gap-1.5 shrink-0 rounded-full border border-cocoa-200 bg-white/70 px-2.5 sm:px-3.5 py-2 text-cocoa-700 hover:text-cocoa-900 hover:border-cocoa-400 hover:bg-white transition-colors"
           >
             <ShoppingBagIcon className="w-5 h-5 shrink-0" />
-            <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">My Orders</span>
+            <span className="hidden sm:inline text-sm font-medium whitespace-nowrap">{t("nav.orders")}</span>
           </Link>
+
+          <LanguageSwitcher />
         </div>
       </div>
     </header>
