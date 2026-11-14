@@ -1,48 +1,50 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 900;
 
 const FROSTING_COLORS = [
-  { label: "奶油白", hex: "#fdf8f0" },
-  { label: "樱花粉", hex: "#f6c9da" },
-  { label: "抹茶绿", hex: "#b7cfa4" },
-  { label: "薄荷蓝", hex: "#aed9e0" },
-  { label: "香草黄", hex: "#f5e2a8" },
-  { label: "薰衣草紫", hex: "#cbb9e0" },
-  { label: "巧克力棕", hex: "#6b4a37" },
-  { label: "热情红", hex: "#c8493f" },
+  { label: "奶油白", en: "Cream White", hex: "#fdf8f0" },
+  { label: "樱花粉", en: "Cherry Pink", hex: "#f6c9da" },
+  { label: "抹茶绿", en: "Matcha Green", hex: "#b7cfa4" },
+  { label: "薄荷蓝", en: "Mint Blue", hex: "#aed9e0" },
+  { label: "香草黄", en: "Vanilla Yellow", hex: "#f5e2a8" },
+  { label: "薰衣草紫", en: "Lavender", hex: "#cbb9e0" },
+  { label: "巧克力棕", en: "Chocolate Brown", hex: "#6b4a37" },
+  { label: "热情红", en: "Passion Red", hex: "#c8493f" },
 ];
 
 const DRIP_COLORS = [
-  { label: "巧克力", hex: "#5c3a24" },
-  { label: "焦糖金", hex: "#c8912a" },
-  { label: "草莓红", hex: "#d1495b" },
-  { label: "纯白", hex: "#fdfdfd" },
+  { label: "巧克力", en: "Chocolate", hex: "#5c3a24" },
+  { label: "焦糖金", en: "Caramel Gold", hex: "#c8912a" },
+  { label: "草莓红", en: "Strawberry Red", hex: "#d1495b" },
+  { label: "纯白", en: "Pure White", hex: "#fdfdfd" },
 ];
 
 const RIBBON_COLORS = [
-  { label: "薰衣草紫", hex: "#cbb9e0" },
-  { label: "金色", hex: "#d4ac86" },
-  { label: "樱花粉", hex: "#f6c9da" },
-  { label: "深棕", hex: "#6b4d36" },
+  { label: "薰衣草紫", en: "Lavender", hex: "#cbb9e0" },
+  { label: "金色", en: "Gold", hex: "#d4ac86" },
+  { label: "樱花粉", en: "Cherry Pink", hex: "#f6c9da" },
+  { label: "深棕", en: "Dark Brown", hex: "#6b4d36" },
 ];
 
 const TOPPER_OPTIONS = [
-  { id: "star", label: "⭐ 星星" },
-  { id: "heart", label: "❤️ 爱心" },
-  { id: "flower", label: "🌸 花朵" },
-  { id: "macarons", label: "🍬 马卡龙围边" },
-  { id: "fruit", label: "🍓 水果围边" },
-  { id: "sprinkles", label: "✨ 彩色糖珠" },
+  { id: "star", label: "⭐ 星星", en: "⭐ Star" },
+  { id: "heart", label: "❤️ 爱心", en: "❤️ Heart" },
+  { id: "flower", label: "🌸 花朵", en: "🌸 Flower" },
+  { id: "macarons", label: "🍬 马卡龙围边", en: "🍬 Macaron border" },
+  { id: "fruit", label: "🍓 水果围边", en: "🍓 Fruit border" },
+  { id: "sprinkles", label: "✨ 彩色糖珠", en: "✨ Sprinkles" },
 ];
 
 const THEMES = [
   {
     id: "birthday",
     label: "🎂 生日派对",
+    en: "🎂 Birthday Party",
     config: {
       shape: "round", tiers: 1, size: "medium",
       frostingColor: "#f6c9da", frostingStyle: "swirl",
@@ -54,6 +56,7 @@ const THEMES = [
   {
     id: "wedding",
     label: "💍 婚礼",
+    en: "💍 Wedding",
     config: {
       shape: "round", tiers: 2, size: "large",
       frostingColor: "#fdf8f0", frostingStyle: "smooth",
@@ -65,6 +68,7 @@ const THEMES = [
   {
     id: "kids",
     label: "🧒 儿童派对",
+    en: "🧒 Kids' Party",
     config: {
       shape: "round", tiers: 1, size: "medium",
       frostingColor: "#aed9e0", frostingStyle: "swirl",
@@ -76,6 +80,7 @@ const THEMES = [
   {
     id: "floral",
     label: "🌸 花卉主题",
+    en: "🌸 Floral",
     config: {
       shape: "heart", tiers: 1, size: "medium",
       frostingColor: "#cbb9e0", frostingStyle: "smooth",
@@ -463,7 +468,7 @@ async function draw(canvas, state) {
   ctx.fillText("MEMORY CAKE", CANVAS_WIDTH / 2, 78);
   ctx.font = "600 19px Inter, sans-serif";
   ctx.fillStyle = "#7a5738";
-  ctx.fillText("记忆蛋糕坊 · DIY 蛋糕设计预览", CANVAS_WIDTH / 2, 108);
+  ctx.fillText(state.texts.subtitle, CANVAS_WIDTH / 2, 108);
 
   const sizeScale = { small: 0.82, medium: 1, large: 1.16 }[state.size] || 1;
   const baseWidth = 400 * sizeScale;
@@ -530,10 +535,13 @@ async function draw(canvas, state) {
   ctx.textAlign = "center";
   ctx.font = "500 15px Inter, sans-serif";
   ctx.fillStyle = "#9c8064";
-  ctx.fillText("仅供设计预览 · 实际成品可能因手工制作略有差异", CANVAS_WIDTH / 2, CANVAS_HEIGHT - 40);
+  ctx.fillText(state.texts.footer, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 40);
 }
 
 export default function CakeDesigner() {
+  const { lang, t } = useLang();
+  const L = (item) => (lang === "en" ? item.en : item.label);
+
   const canvasRef = useRef(null);
   const [shape, setShape] = useState("round");
   const [tiers, setTiers] = useState(1);
@@ -555,15 +563,16 @@ export default function CakeDesigner() {
     draw(canvasRef.current, {
       shape, tiers, size, frostingColor, frostingStyle, addDrip, dripColor,
       pipedBorder, ribbon, ribbonColor, toppers, candleCount, message,
+      texts: { subtitle: t("design.canvasSub"), footer: t("design.canvasFooter") },
     }).finally(() => setRendering(false));
-  }, [shape, tiers, size, frostingColor, frostingStyle, addDrip, dripColor, pipedBorder, ribbon, ribbonColor, toppers, candleCount, message]);
+  }, [shape, tiers, size, frostingColor, frostingStyle, addDrip, dripColor, pipedBorder, ribbon, ribbonColor, toppers, candleCount, message, t]);
 
   useEffect(() => {
     redraw();
   }, [redraw]);
 
   function toggleTopper(id) {
-    setToppers((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+    setToppers((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   function applyTheme(c) {
@@ -603,7 +612,7 @@ export default function CakeDesigner() {
       const blob = await res.blob();
       const file = new File([blob], "memory-cake-diy-design.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: "我的DIY蛋糕设计", text: "看看我在Memory Cake设计的蛋糕！" });
+        await navigator.share({ files: [file], title: t("design.shareTitle"), text: t("design.shareText") });
         return;
       }
     } catch {
@@ -611,6 +620,11 @@ export default function CakeDesigner() {
     }
     handleSave();
   }
+
+  const segBtn = (active) =>
+    `flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
+      active ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"
+    }`;
 
   return (
     <div className="grid lg:grid-cols-[1fr_420px] gap-8">
@@ -621,88 +635,74 @@ export default function CakeDesigner() {
           </div>
           <div className="flex gap-3 mt-4">
             <button onClick={handleSave} className="flex-1 rounded-lg bg-cocoa-800 text-cream py-2.5 text-sm font-medium hover:bg-cocoa-900 transition-colors">
-              💾 保存图片
+              {t("design.save")}
             </button>
             <button onClick={handleShare} className="flex-1 rounded-lg border border-cocoa-300 text-cocoa-800 py-2.5 text-sm font-medium hover:bg-cocoa-50 transition-colors">
-              📤 分享设计
+              {t("design.share")}
             </button>
           </div>
-          <p className="text-xs text-cocoa-400 mt-3 text-center">
-            这是一个DIY设计预览工具，暂不支持直接下单。若您喜欢这个设计，欢迎截图后通过客服联系我们 🎂
-          </p>
+          <p className="text-xs text-cocoa-400 mt-3 text-center">{t("design.note")}</p>
         </div>
       </div>
 
       <div className="order-1 lg:order-2 space-y-6">
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">✨ 快速主题</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.themes")}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {THEMES.map((t) => (
+            {THEMES.map((th) => (
               <button
-                key={t.id}
-                onClick={() => applyTheme(t.config)}
+                key={th.id}
+                onClick={() => applyTheme(th.config)}
                 className="rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-700 hover:border-cocoa-500 hover:bg-cocoa-50 transition-colors text-left"
               >
-                {t.label}
+                {L(th)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">形状</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.shape")}</h3>
           <div className="flex gap-2">
-            {[["round", "圆形"], ["square", "方形"], ["heart", "心形"]].map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => setShape(val)}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${shape === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
-              >
-                {label}
+            {[["round", "design.round"], ["square", "design.square"], ["heart", "design.heart"]].map(([val, key]) => (
+              <button key={val} onClick={() => setShape(val)} className={segBtn(shape === val)}>
+                {t(key)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">层数</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.tiers")}</h3>
           <div className="flex gap-2">
-            {[[1, "单层"], [2, "双层"]].map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => setTiers(val)}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${tiers === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
-              >
-                {label}
+            {[[1, "design.single"], [2, "design.double"]].map(([val, key]) => (
+              <button key={val} onClick={() => setTiers(val)} className={segBtn(tiers === val)}>
+                {t(key)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">大小</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.size")}</h3>
           <div className="flex gap-2">
-            {[["small", "小"], ["medium", "中"], ["large", "大"]].map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => setSize(val)}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${size === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
-              >
-                {label}
+            {[["small", "design.small"], ["medium", "design.medium"], ["large", "design.large"]].map(([val, key]) => (
+              <button key={val} onClick={() => setSize(val)} className={segBtn(size === val)}>
+                {t(key)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">奶油颜色</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.frostingColor")}</h3>
           <div className="flex flex-wrap gap-2">
             {FROSTING_COLORS.map((c) => (
               <button
                 key={c.hex}
                 onClick={() => setFrostingColor(c.hex)}
-                title={c.label}
-                aria-label={c.label}
+                title={L(c)}
+                aria-label={L(c)}
                 className={`w-9 h-9 rounded-full border-2 transition-transform ${frostingColor === c.hex ? "border-cocoa-800 scale-110" : "border-white"} shadow-sm`}
                 style={{ backgroundColor: c.hex }}
               />
@@ -711,15 +711,11 @@ export default function CakeDesigner() {
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">奶油质感</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.frostingTexture")}</h3>
           <div className="flex gap-2">
-            {[["smooth", "顺滑"], ["swirl", "奶油纹理"]].map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => setFrostingStyle(val)}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${frostingStyle === val ? "border-cocoa-800 bg-cocoa-800 text-cream" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
-              >
-                {label}
+            {[["smooth", "design.smooth"], ["swirl", "design.swirl"]].map(([val, key]) => (
+              <button key={val} onClick={() => setFrostingStyle(val)} className={segBtn(frostingStyle === val)}>
+                {t(key)}
               </button>
             ))}
           </div>
@@ -728,7 +724,7 @@ export default function CakeDesigner() {
         <div className="bg-white border border-cocoa-100 rounded-xl p-4 space-y-3">
           <label className="flex items-center gap-2 text-sm text-cocoa-700">
             <input type="checkbox" checked={addDrip} onChange={(e) => setAddDrip(e.target.checked)} className="accent-cocoa-800" />
-            淋面滴落效果
+            {t("design.drip")}
           </label>
           {addDrip && (
             <div className="flex flex-wrap gap-2 pl-6">
@@ -736,7 +732,8 @@ export default function CakeDesigner() {
                 <button
                   key={c.hex}
                   onClick={() => setDripColor(c.hex)}
-                  title={c.label}
+                  title={L(c)}
+                  aria-label={L(c)}
                   className={`w-7 h-7 rounded-full border-2 ${dripColor === c.hex ? "border-cocoa-800 scale-110" : "border-white"} shadow-sm`}
                   style={{ backgroundColor: c.hex }}
                 />
@@ -746,12 +743,12 @@ export default function CakeDesigner() {
 
           <label className="flex items-center gap-2 text-sm text-cocoa-700">
             <input type="checkbox" checked={pipedBorder} onChange={(e) => setPipedBorder(e.target.checked)} className="accent-cocoa-800" />
-            贝壳花边（底部）
+            {t("design.border")}
           </label>
 
           <label className="flex items-center gap-2 text-sm text-cocoa-700">
             <input type="checkbox" checked={ribbon} onChange={(e) => setRibbon(e.target.checked)} className="accent-cocoa-800" />
-            丝带装饰
+            {t("design.ribbon")}
           </label>
           {ribbon && (
             <div className="flex flex-wrap gap-2 pl-6">
@@ -759,7 +756,8 @@ export default function CakeDesigner() {
                 <button
                   key={c.hex}
                   onClick={() => setRibbonColor(c.hex)}
-                  title={c.label}
+                  title={L(c)}
+                  aria-label={L(c)}
                   className={`w-7 h-7 rounded-full border-2 ${ribbonColor === c.hex ? "border-cocoa-800 scale-110" : "border-white"} shadow-sm`}
                   style={{ backgroundColor: c.hex }}
                 />
@@ -769,22 +767,22 @@ export default function CakeDesigner() {
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">装饰配件</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.toppers")}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {TOPPER_OPTIONS.map((t) => (
+            {TOPPER_OPTIONS.map((tp) => (
               <button
-                key={t.id}
-                onClick={() => toggleTopper(t.id)}
-                className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors ${toppers.includes(t.id) ? "border-cocoa-800 bg-cocoa-50 text-cocoa-900" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
+                key={tp.id}
+                onClick={() => toggleTopper(tp.id)}
+                className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors ${toppers.includes(tp.id) ? "border-cocoa-800 bg-cocoa-50 text-cocoa-900" : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"}`}
               >
-                {t.label}
+                {L(tp)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">蜡烛数量：{candleCount}</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.candles", { n: candleCount })}</h3>
           <input
             type="range"
             min={0}
@@ -796,18 +794,18 @@ export default function CakeDesigner() {
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">蛋糕文字</h3>
+          <h3 className="text-sm font-semibold text-cocoa-800 mb-2">{t("design.message")}</h3>
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, 24))}
-            placeholder="例如：Happy Birthday"
+            placeholder={t("design.messagePh")}
             className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
           />
-          <p className="text-xs text-cocoa-400 mt-1">最多24个字符</p>
+          <p className="text-xs text-cocoa-400 mt-1">{t("design.messageMax")}</p>
         </div>
 
-        {rendering && <p className="text-xs text-cocoa-400">正在生成预览...</p>}
+        {rendering && <p className="text-xs text-cocoa-400">{t("design.rendering")}</p>}
       </div>
     </div>
   );
