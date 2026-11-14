@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function FacebookIcon(props) {
   return (
@@ -32,6 +33,7 @@ function WeChatIcon(props) {
 }
 
 export default function Footer() {
+  const { t } = useLang();
   const [copied, setCopied] = useState(false);
 
   function copyWeChatId() {
@@ -62,25 +64,24 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm leading-relaxed text-cream/60 max-w-xs">
-              Handcrafted cakes, made with care and dressed to remember.
-              Every order is a small ceremony — we treat it like one.
+              {t("footer.tagline")}
             </p>
           </div>
 
           {/* Quick links */}
           <div>
             <h3 className="font-serif text-lg text-cream mb-4 tracking-wide">
-              Explore
+              {t("footer.explore")}
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link href="/" className="text-cream/60 hover:text-[#e8d1b8] transition-colors">
-                  Albums
+                  {t("footer.albums")}
                 </Link>
               </li>
               <li>
                 <a href="#albums" className="text-cream/60 hover:text-[#e8d1b8] transition-colors">
-                  Our Work
+                  {t("footer.work")}
                 </a>
               </li>
             </ul>
@@ -89,7 +90,7 @@ export default function Footer() {
           {/* Connect */}
           <div>
             <h3 className="font-serif text-lg text-cream mb-4 tracking-wide">
-              Connect
+              {t("footer.connect")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
@@ -127,9 +128,9 @@ export default function Footer() {
                     <WeChatIcon className="w-4 h-4" />
                   </span>
                   <span>
-                    WeChat: Memorycake2023
+                    {t("footer.wechat")}Memorycake2023
                     <span className="block text-[11px] text-cream/35 group-hover:text-[#e8d1b8]/70">
-                      {copied ? "Copied!" : "Tap to copy ID"}
+                      {copied ? t("footer.copied") : t("footer.tapCopy")}
                     </span>
                   </span>
                 </button>
@@ -140,10 +141,10 @@ export default function Footer() {
 
         <div className="mt-12 sm:mt-14 pt-6 border-t border-cream/10 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-cream/40 text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Memory Cake. All rights reserved.
+            &copy; {new Date().getFullYear()} Memory Cake. {t("footer.rights")}
           </p>
           <p className="font-serif text-xs tracking-[0.25em] uppercase text-[#d4ac86]/70">
-            Crafted with care, since 2023
+            {t("footer.crafted")}
           </p>
         </div>
       </div>
