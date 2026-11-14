@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { uploadChatAttachment } from "@/lib/uploadChatAttachment";
 import { notifyNotificationsChanged } from "@/lib/notifyBus";
+import { useLang } from "@/lib/i18n/LanguageProvider";
 
 function PaperclipIcon(props) {
   return (
@@ -25,13 +26,14 @@ function PaperclipIcon(props) {
 // - On the admin side, the customer's messages are labeled with their real
 //   WeChat name (customerName, sourced from the order) when we have one.
 // - On the customer side, the admin's messages are always "Memory Cake".
-function senderLabel(senderRole, viewerRole, customerName) {
-  if (senderRole === viewerRole) return "You";
-  if (viewerRole === "admin") return customerName || "Customer";
+function senderLabel(senderRole, viewerRole, customerName, t) {
+  if (senderRole === viewerRole) return t("chat.you");
+  if (viewerRole === "admin") return customerName || t("chat.customer");
   return "Memory Cake";
 }
 
 export default function OrderChatPanel({ orderId, role, phone, customerName, onClose }) {
+  const { lang, t } = useLang();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -43,6 +45,7 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
   const fileInputRef = useRef(null);
 
   const isAdmin = role === "admin";
+  const locale = lang === "en" ? "en-GB" : "zh-CN";
 
   const load = useCallback(async () => {
     const qs = isAdmin
@@ -74,7 +77,6 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
     });
   }, [messages]);
 
-
   async function sendMessage({ message, attachmentUrl, attachmentType }) {
     setError("");
 
@@ -86,12 +88,11 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Could not send message");
+      throw new Error(data.error || t("chat.sendFail"));
     }
 
     await load();
   }
-
 
   async function handleSend(e) {
     e.preventDefault();
@@ -101,20 +102,14 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
     setSending(true);
 
     try {
-      await sendMessage({
-        message: draft.trim(),
-      });
-
+      await sendMessage({ message: draft.trim() });
       setDraft("");
-
     } catch (err) {
       setError(err.message);
-
     } finally {
       setSending(false);
     }
   }
-
 
   async function handleFileSelected(e) {
     const file = e.target.files?.[0];
@@ -125,23 +120,16 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
     setError("");
 
     try {
-      const { url, type } =
-        await uploadChatAttachment(file);
+      const { url, type } = await uploadChatAttachment(file);
 
       await sendMessage({
         message: null,
         attachmentUrl: url,
         attachmentType: type,
       });
-
     } catch (err) {
-
-      setError(
-        err.message || "Could not send attachment"
-      );
-
+      setError(err.message || t("chat.attachFail"));
     } finally {
-
       setUploading(false);
 
       if (fileInputRef.current) {
@@ -150,215 +138,96 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
     }
   }
 
-
   return (
     <div
-      className="
-        fixed inset-0 z-[60]
-        bg-black/50 backdrop-blur-sm
-        flex items-end sm:items-center
-        justify-center
-        px-0 sm:px-4
-      "
+      className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center px-0 sm:px-4"
       onClick={onClose}
     >
-
       <div
-        className="
-          w-full sm:max-w-md
-          bg-cream
-          rounded-t-2xl sm:rounded-2xl
-          shadow-soft
-          flex flex-col
-          h-[80vh] sm:h-[70vh]
-        "
+        className="w-full sm:max-w-md bg-cream rounded-t-2xl sm:rounded-2xl shadow-soft flex flex-col h-[80vh] sm:h-[70vh]"
         onClick={(e) => e.stopPropagation()}
       >
-
-
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-cocoa-200/60">
           <div className="min-w-0">
             <h2 className="font-serif text-lg text-cocoa-900">
-              {isAdmin ? "Message customer" : "Message us"}
+              {isAdmin ? t("chat.messageCustomer") : t("chat.messageUs")}
             </h2>
             {isAdmin && customerName && (
-              <p className="text-xs text-cocoa-400 mt-0.5 truncate">微信: {customerName}</p>
+              <p className="text-xs text-cocoa-400 mt-0.5 truncate">
+                {t("chat.wechatLabel", { name: customerName })}
+              </p>
             )}
           </div>
-          <button onClick={onClose} className="text-cocoa-400 hover:text-cocoa-800 text-xl leading-none">
+          <button
+            onClick={onClose}
+            aria-label={t("common.close")}
+            className="text-cocoa-400 hover:text-cocoa-800 text-xl leading-none"
+          >
             &times;
           </button>
         </div>
 
-
         {/* MESSAGE AREA */}
-        <div
-          className="
-            flex-1
-            overflow-y-auto
-            px-4 py-3
-            space-y-3
-          "
-        >
-
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {loading ? (
-
-            <p className="text-sm text-cocoa-400 text-center py-6">
-              Loading...
-            </p>
-
-
+            <p className="text-sm text-cocoa-400 text-center py-6">{t("common.loading")}</p>
           ) : messages.length === 0 ? (
-
             <p className="text-sm text-cocoa-400 text-center py-6">
-              {isAdmin
-                ? "No messages yet."
-                : "Ask us anything about your order."}
+              {isAdmin ? t("chat.emptyAdmin") : t("chat.askOrder")}
             </p>
-
-
           ) : (
-
             messages.map((m) => {
-
               const mine = m.sender === role;
 
               return (
-
-                <div
-                  key={m.id}
-                  className={`
-                    flex
-                    ${mine
-                      ? "justify-end"
-                      : "justify-start"}
-                  `}
-                >
-
-                  <div
-                    className={`
-                      max-w-[80%]
-                      flex flex-col
-                      ${mine ? "items-end" : "items-start"}
-                    `}
-                  >
-
-                    <span
-                      className="
-                        text-[10px]
-                        text-cocoa-400
-                        mb-1
-                      "
-                    >
-                      {senderLabel(
-                        m.sender,
-                        role,
-                        customerName
-                      )}
+                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                    <span className="text-[10px] text-cocoa-400 mb-1">
+                      {senderLabel(m.sender, role, customerName, t)}
                     </span>
 
-
                     <div
-                      className={`
-                        rounded-2xl
-                        px-3.5 py-2
-                        text-sm
-                        ${
-                          mine
+                      className={`rounded-2xl px-3.5 py-2 text-sm ${
+                        mine
                           ? "bg-cocoa-800 text-cream"
                           : "bg-white border border-cocoa-200 text-cocoa-900"
-                        }
-                      `}
+                      }`}
                     >
+                      {m.attachment_url && m.attachment_type === "image" && (
+                        <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
+                          <img src={m.attachment_url} alt="attachment" className="rounded-lg max-h-48 mb-2" />
+                        </a>
+                      )}
 
-                      {m.attachment_url &&
-                      m.attachment_type === "image" && (
+                      {m.attachment_url && m.attachment_type === "file" && (
                         <a
                           href={m.attachment_url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          className="underline text-xs block mb-2"
                         >
-
-                          <img
-                            src={m.attachment_url}
-                            alt="attachment"
-                            className="
-                              rounded-lg
-                              max-h-48
-                              mb-2
-                            "
-                          />
-
+                          {t("chat.viewAttachment")}
                         </a>
                       )}
 
-
-                      {m.attachment_url &&
-                      m.attachment_type === "file" && (
-                        <a
-                          href={m.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="
-                            underline
-                            text-xs
-                            block
-                            mb-2
-                          "
-                        >
-                          📎 View attachment
-                        </a>
-
-                      )}
-
-
-                      {m.message && (
-
-                        <p className="whitespace-pre-wrap break-words">
-                          {m.message}
-                        </p>
-
-                      )}
-
+                      {m.message && <p className="whitespace-pre-wrap break-words">{m.message}</p>}
 
                       <p className="text-[10px] mt-1 opacity-60">
-                        {new Date(
-                          m.created_at
-                        ).toLocaleString()}
+                        {new Date(m.created_at).toLocaleString(locale)}
                       </p>
-
-
                     </div>
-
                   </div>
-
                 </div>
-
               );
-
             })
-
           )}
 
-
           <div ref={bottomRef} />
-
         </div>
 
-
-
         {/* INPUT */}
-        <form
-          onSubmit={handleSend}
-          className="
-            p-3
-            border-t border-cocoa-200/60
-            flex gap-2
-            items-center
-          "
-        >
-
+        <form onSubmit={handleSend} className="p-3 border-t border-cocoa-200/60 flex gap-2 items-center">
           <input
             ref={fileInputRef}
             type="file"
@@ -368,71 +237,33 @@ export default function OrderChatPanel({ orderId, role, phone, customerName, onC
             id={`order-attach-${orderId}-${role}`}
           />
 
-
           <label
             htmlFor={`order-attach-${orderId}-${role}`}
-            className="
-              w-9 h-9
-              rounded-full
-              border
-              flex
-              items-center
-              justify-center
-              cursor-pointer
-            "
+            className="w-9 h-9 rounded-full border flex items-center justify-center cursor-pointer"
           >
-            <PaperclipIcon className="w-4 h-4"/>
+            <PaperclipIcon className="w-4 h-4" />
           </label>
-
 
           <input
             value={draft}
-            onChange={(e)=>setDraft(e.target.value)}
-            placeholder="Type a message..."
-            className="
-              flex-1
-              rounded-full
-              border
-              px-4 py-2
-              text-sm
-            "
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={t("chat.typeMessage")}
+            className="flex-1 rounded-full border px-4 py-2 text-sm"
           />
-
 
           <button
             type="submit"
             disabled={sending}
-            className="
-              rounded-full
-              bg-cocoa-800
-              text-cream
-              px-4 py-2
-              text-sm
-            "
+            className="rounded-full bg-cocoa-800 text-cream px-4 py-2 text-sm"
           >
-            Send
+            {t("chat.send")}
           </button>
-
-
         </form>
 
+        {uploading && <p className="text-xs text-cocoa-400 px-4 pb-2">{t("chat.uploading")}</p>}
 
-        {uploading && (
-          <p className="text-xs text-cocoa-400 px-4 pb-2">
-            Uploading attachment...
-          </p>
-        )}
-
-
-        {error && (
-          <p className="text-xs text-red-600 px-4 pb-2">
-            {error}
-          </p>
-        )}
-
-
+        {error && <p className="text-xs text-red-600 px-4 pb-2">{error}</p>}
       </div>
-
     </div>
   );
 }
