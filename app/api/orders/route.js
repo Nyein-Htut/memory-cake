@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/require-auth";
+import { pushToAdmins } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,19 @@ export async function POST(request) {
     RETURNING *
   `;
 
-  return NextResponse.json({ order: rows[0] }, { status: 201 });
+  const order = rows[0];
+
+  // Must be awaited — on Vercel the function stops once the response is sent.
+  await pushToAdmins({
+    title: "🎂 新订单",
+    body: `${wechatName.trim()} · ${sizeLabel}${cleanQuantity > 1 ? ` × ${cleanQuantity}` : ""}${
+      deliveryDate ? ` · ${deliveryDate}` : ""
+    }`,
+    url: "/admin/orders",
+    tag: `order-${order.id}`,
+  });
+
+  return NextResponse.json({ order }, { status: 201 });
 }
 
 export async function GET(request) {
