@@ -42,6 +42,9 @@ export default function OrderReceiptCard({ order, photoUrl }) {
   const [generating, setGenerating] = useState(true);
   const [failed, setFailed] = useState(false);
 
+  // English text when in English mode and the admin filled it in.
+  const L = (zh, en) => (lang === "en" && en ? en : zh);
+
   useEffect(() => {
     generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,9 +177,9 @@ export default function OrderReceiptCard({ order, photoUrl }) {
           loadImageSafe(order.filling2ImageUrl),
         ]);
 
-        drawOptionChip(photoY, order.flavor, flavorImg, "🍫");
-        drawOptionChip(photoY + chipHeight + chipGap, order.filling1, filling1Img, "🍓");
-        drawOptionChip(photoY + (chipHeight + chipGap) * 2, order.filling2, filling2Img, "🫐");
+        drawOptionChip(photoY, L(order.flavor, order.flavorEn), flavorImg, "🍫");
+        drawOptionChip(photoY + chipHeight + chipGap, L(order.filling1, order.filling1En), filling1Img, "🍓");
+        drawOptionChip(photoY + (chipHeight + chipGap) * 2, L(order.filling2, order.filling2En), filling2Img, "🫐");
       }
 
       // ==========================================
@@ -260,7 +263,11 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       // Render Order Detail Rows
       renderDetailRow(t("receipt.wechat"), order.wechatName);
-      renderPriceRow(isDessert ? t("receipt.item") : t("receipt.size"), order.sizeLabel, order.sizePrice);
+      renderPriceRow(
+        isDessert ? t("receipt.item") : t("receipt.size"),
+        L(order.sizeLabel, order.sizeLabelEn),
+        order.sizePrice
+      );
 
       if (isDessert && order.quantity) {
         renderDetailRow(t("receipt.qty"), t("receipt.qtyValue", { n: order.quantity }));
