@@ -5,6 +5,7 @@ import PublicHeader from "@/components/PublicHeader";
 import PhotoGallery from "@/components/PhotoGallery";
 import { getLang, getT } from "@/lib/i18n/server";
 import { photoCountLabel } from "@/lib/i18n/dictionaries";
+import { pickLang } from "@/lib/i18n/pick";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,8 @@ async function getFirstPagePhotos(id) {
 }
 
 export default async function FolderPage({ params }) {
-  const t = getT(getLang());
+  const lang = getLang();
+  const t = getT(lang);
   const folderId = Number(params.id);
 
   if (Number.isNaN(folderId)) notFound();
@@ -50,6 +52,9 @@ export default async function FolderPage({ params }) {
   if (!folder) notFound();
 
   const { photos, total } = await getFirstPagePhotos(folderId);
+
+  const displayName = pickLang(lang, folder.name, folder.name_en);
+  const displayDescription = pickLang(lang, folder.description, folder.description_en);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0E6DA]">
@@ -65,12 +70,12 @@ export default async function FolderPage({ params }) {
 
         <div className="mt-5 mb-8 sm:mb-10">
           <h1 className="font-serif font-semibold text-3xl sm:text-4xl md:text-5xl text-cocoa-900">
-            {folder.name}
+            {displayName}
           </h1>
 
-          {folder.description && (
+          {displayDescription && (
             <p className="mt-3 max-w-2xl text-sm sm:text-base text-cocoa-600">
-              {folder.description}
+              {displayDescription}
             </p>
           )}
 
@@ -84,9 +89,10 @@ export default async function FolderPage({ params }) {
             <p className="font-serif text-xl">{t("folder.empty")}</p>
           </div>
         ) : (
-            <PhotoGallery
+          <PhotoGallery
             folderId={folderId}
             folderName={folder.name}
+            folderNameEn={folder.name_en || ""}
             orderable={folder.orderable !== false}
             orderFormType={folder.order_form_type || "cake"}
             dessertOptions={folder.dessert_options || []}
