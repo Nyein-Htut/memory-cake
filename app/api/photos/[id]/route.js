@@ -9,10 +9,13 @@ export async function PATCH(request, { params }) {
   }
 
   const id = Number(params.id);
-  const { caption } = await request.json();
+  const { caption, captionEn } = await request.json();
 
   const rows = await sql`
-    UPDATE photos SET caption = ${caption || null} WHERE id = ${id} RETURNING *
+    UPDATE photos
+    SET caption = ${caption || null}, caption_en = ${captionEn?.trim() || null}
+    WHERE id = ${id}
+    RETURNING *
   `;
 
   if (rows.length === 0) {
