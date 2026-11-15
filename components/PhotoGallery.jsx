@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { cldThumb, cldFull } from "@/lib/cloudinary-url";
 import OrderModal from "@/components/OrderModal";
 import { useLang } from "@/lib/i18n/LanguageProvider";
+import { pickLang } from "@/lib/i18n/pick";
 
 function ShareIcon(props) {
   return (
@@ -53,7 +54,8 @@ async function sharePhoto(photo, folderName, t) {
 
 export default function PhotoGallery({
   folderId,
-  folderName,
+  folderName: folderNameZh,
+  folderNameEn = "",
   orderable = true,
   orderFormType = "cake",
   dessertOptions = [],
@@ -62,8 +64,16 @@ export default function PhotoGallery({
   total,
   pageSize = 24,
 }) {
-  const { t } = useLang();
-  const [photos, setPhotos] = useState(initialPhotos);
+  const { lang, t } = useLang();
+  const folderName = pickLang(lang, folderNameZh, folderNameEn);
+
+  const [rawPhotos, setPhotos] = useState(initialPhotos);
+  // Swap in the English caption when the visitor is in English.
+  const photos = useMemo(
+    () => rawPhotos.map((p) => ({ ...p, caption: pickLang(lang, p.caption, p.caption_en) })),
+    [rawPhotos, lang]
+  );
+
   const [activeIndex, setActiveIndex] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [orderingPhoto, setOrderingPhoto] = useState(null);
@@ -284,12 +294,14 @@ export default function PhotoGallery({
         </div>
       )}
 
-      {/* ORDER MODAL */}
+      {/* ORDER MODAL — the order itself always saves the original (Chinese)
+          folder name; the English name is passed only for display. */}
       {orderable && orderingPhoto && (
         <OrderModal
           photo={orderingPhoto}
           folderId={folderId}
-          folderName={folderName}
+          folderName={folderNameZh}
+          folderNameEn={folderNameEn}
           orderFormType={orderFormType}
           dessertOptions={dessertOptions}
           minQuantity={dessertMinQuantity}
