@@ -6,18 +6,20 @@ import { useRouter } from "next/navigation";
 import { cldThumb } from "@/lib/cloudinary-url";
 import OrderReceiptCard from "@/components/OrderReceiptCard";
 import { useLang } from "@/lib/i18n/LanguageProvider";
+import { pickLang } from "@/lib/i18n/pick";
 
 export default function OrderModal({
   photo,
   folderId,
   folderName,
+  folderNameEn = "",
   orderFormType = "cake",
   dessertOptions = [],
   minQuantity = 6,
   onClose,
 }) {
   const router = useRouter();
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const isDessert = orderFormType === "dessert";
 
   const [options, setOptions] = useState(null);
@@ -80,6 +82,11 @@ export default function OrderModal({
   const selectedFlavorOption = options?.flavors?.find((f) => f.label === flavor);
   const selectedFilling1Option = options?.fillings?.find((f) => f.label === filling1);
   const selectedFilling2Option = options?.fillings?.find((f) => f.label === filling2);
+
+  // Display text only. What gets saved with the order is always the
+  // original (Chinese) label, so the admin side keeps working unchanged.
+  const labelOf = (item) => pickLang(lang, item.label, item.labelEn);
+  const sizeText = (s) => (isDessert ? pickLang(lang, s.label, folderNameEn) : labelOf(s));
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -144,10 +151,14 @@ export default function OrderModal({
         createdAt: data.order.created_at,
         wechatName: wechatName.trim(),
         sizeLabel,
+        sizeLabelEn: isDessert ? folderNameEn : selectedSize?.labelEn || "",
         sizePrice: selectedSize?.price,
         flavor: isDessert ? "" : flavor,
+        flavorEn: isDessert ? "" : selectedFlavorOption?.labelEn || "",
         filling1: isDessert ? "" : filling1,
+        filling1En: isDessert ? "" : selectedFilling1Option?.labelEn || "",
         filling2: isDessert ? "" : filling2,
+        filling2En: isDessert ? "" : selectedFilling2Option?.labelEn || "",
         flavorImageUrl: isDessert ? null : selectedFlavorOption?.imageUrl || null,
         filling1ImageUrl: isDessert ? null : selectedFilling1Option?.imageUrl || null,
         filling2ImageUrl: isDessert ? null : selectedFilling2Option?.imageUrl || null,
@@ -271,7 +282,7 @@ export default function OrderModal({
                             : "border-cocoa-200 bg-white text-cocoa-700 hover:border-cocoa-400"
                         }`}
                       >
-                        <div className="font-medium">{s.label}</div>
+                        <div className="font-medium">{sizeText(s)}</div>
                         <div className={`text-[11px] mt-0.5 ${sizeLabel === s.label ? "text-cream/80" : "text-cocoa-400"}`}>
                           MMK{s.price}
                         </div>
@@ -341,13 +352,13 @@ export default function OrderModal({
                       >
                         <div className="relative w-full aspect-square bg-cocoa-100">
                           {f.imageUrl ? (
-                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={labelOf(f)} fill sizes="120px" className="object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">🍰</div>
                           )}
                         </div>
                         <div className={`py-1.5 text-xs font-medium ${flavor === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
-                          {f.label}
+                          {labelOf(f)}
                         </div>
                       </button>
                     ))}
@@ -374,13 +385,13 @@ export default function OrderModal({
                       >
                         <div className="relative w-full aspect-square bg-cocoa-100">
                           {f.imageUrl ? (
-                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={labelOf(f)} fill sizes="120px" className="object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">🍓</div>
                           )}
                         </div>
                         <div className={`py-1.5 text-xs font-medium ${filling1 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
-                          {f.label}
+                          {labelOf(f)}
                         </div>
                       </button>
                     ))}
@@ -407,13 +418,13 @@ export default function OrderModal({
                       >
                         <div className="relative w-full aspect-square bg-cocoa-100">
                           {f.imageUrl ? (
-                            <Image src={cldThumb(f.imageUrl, 200)} alt={f.label} fill sizes="120px" className="object-cover" />
+                            <Image src={cldThumb(f.imageUrl, 200)} alt={labelOf(f)} fill sizes="120px" className="object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-cocoa-300 text-2xl">🫐</div>
                           )}
                         </div>
                         <div className={`py-1.5 text-xs font-medium ${filling2 === f.label ? "bg-cocoa-800 text-cream" : "bg-white text-cocoa-700"}`}>
-                          {f.label}
+                          {labelOf(f)}
                         </div>
                       </button>
                     ))}
