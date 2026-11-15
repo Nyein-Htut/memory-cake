@@ -36,7 +36,7 @@ export default function AdminSettingsPage() {
   }
 
   function addSize() {
-    setSizes((prev) => [...prev, { label: "", price: 0 }]);
+    setSizes((prev) => [...prev, { label: "", labelEn: "", price: 0 }]);
   }
 
   function removeSize(i) {
@@ -50,7 +50,7 @@ export default function AdminSettingsPage() {
     setFlavors((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)));
   }
   function addFlavor() {
-    setFlavors((prev) => [...prev, { label: "", imageUrl: null }]);
+    setFlavors((prev) => [...prev, { label: "", labelEn: "", imageUrl: null }]);
   }
   function removeFlavor(i) {
     setFlavors((prev) => prev.filter((_, idx) => idx !== i));
@@ -72,7 +72,7 @@ export default function AdminSettingsPage() {
     setFillings((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)));
   }
   function addFilling() {
-    setFillings((prev) => [...prev, { label: "", imageUrl: null }]);
+    setFillings((prev) => [...prev, { label: "", labelEn: "", imageUrl: null }]);
   }
   function removeFilling(i) {
     setFillings((prev) => prev.filter((_, idx) => idx !== i));
@@ -130,7 +130,7 @@ export default function AdminSettingsPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 mb-2">订购设置</h1>
         <p className="text-xs sm:text-sm text-cocoa-400 mb-6 sm:mb-8">
-          管理下单表单中可供顾客选择的尺寸、价格、口味和夹心/水果选项
+          管理下单表单中可供顾客选择的尺寸、价格、口味和夹心/水果选项。英文名称为选填，留空则英文模式下显示中文。
         </p>
 
         {/* 尺寸与价格 Section */}
@@ -140,33 +140,41 @@ export default function AdminSettingsPage() {
             {sizes.map((s, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100"
+                className="p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100 space-y-2"
               >
-                <input
-                  value={s.label}
-                  onChange={(e) => updateSize(i, "label", e.target.value)}
-                  placeholder="例如：6寸"
-                  className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
-                />
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
+                <div className="flex items-center gap-2">
                   <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={s.price}
-                    onChange={(e) => updateSizePrice(i, e.target.value)}
-                    className="w-20 sm:w-28 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    value={s.label}
+                    onChange={(e) => updateSize(i, "label", e.target.value)}
+                    placeholder="中文：6寸"
+                    className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  />
+                  <input
+                    value={s.labelEn || ""}
+                    onChange={(e) => updateSize(i, "labelEn", e.target.value)}
+                    placeholder="English: 6 inch"
+                    className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                   />
                 </div>
-
-                <button
-                  onClick={() => removeSize(i)}
-                  className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
-                >
-                  删除
-                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={s.price}
+                      onChange={(e) => updateSizePrice(i, e.target.value)}
+                      className="w-28 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    />
+                  </div>
+                  <button
+                    onClick={() => removeSize(i)}
+                    className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
+                  >
+                    删除
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -199,12 +207,20 @@ export default function AdminSettingsPage() {
                     onChange={(e) => handleFlavorImage(i, e.target.files?.[0])}
                   />
                 </label>
-                <input
-                  value={f.label}
-                  onChange={(e) => updateFlavor(i, "label", e.target.value)}
-                  placeholder="例如：巧克力"
-                  className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
-                />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <input
+                    value={f.label}
+                    onChange={(e) => updateFlavor(i, "label", e.target.value)}
+                    placeholder="中文：巧克力"
+                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  />
+                  <input
+                    value={f.labelEn || ""}
+                    onChange={(e) => updateFlavor(i, "labelEn", e.target.value)}
+                    placeholder="English: Chocolate"
+                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  />
+                </div>
                 <button
                   onClick={() => removeFlavor(i)}
                   className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
@@ -244,12 +260,20 @@ export default function AdminSettingsPage() {
                     onChange={(e) => handleFillingImage(i, e.target.files?.[0])}
                   />
                 </label>
-                <input
-                  value={f.label}
-                  onChange={(e) => updateFilling(i, "label", e.target.value)}
-                  placeholder="例如：草莓"
-                  className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
-                />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <input
+                    value={f.label}
+                    onChange={(e) => updateFilling(i, "label", e.target.value)}
+                    placeholder="中文：草莓"
+                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  />
+                  <input
+                    value={f.labelEn || ""}
+                    onChange={(e) => updateFilling(i, "labelEn", e.target.value)}
+                    placeholder="English: Strawberry"
+                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                  />
+                </div>
                 <button
                   onClick={() => removeFilling(i)}
                   className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
