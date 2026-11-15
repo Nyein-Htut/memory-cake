@@ -21,16 +21,28 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const cleanSizes = sizes
-    .map((s) => ({ label: String(s.label || "").trim(), price: Number(s.price) || 0 }))
+   const cleanSizes = sizes
+    .map((s) => ({
+      label: String(s.label || "").trim(),
+      labelEn: String(s.labelEn || "").trim(),
+      price: Number(s.price) || 0,
+    }))
     .filter((s) => s.label);
   const cleanFlavors = flavors
-    .map((f) => ({ label: String(f.label || "").trim(), imageUrl: f.imageUrl || null }))
+    .map((f) => ({
+      label: String(f.label || "").trim(),
+      labelEn: String(f.labelEn || "").trim(),
+      imageUrl: f.imageUrl || null,
+    }))
     .filter((f) => f.label);
   const cleanFillings = fillings
-    .map((f) => ({ label: String(f.label || "").trim(), imageUrl: f.imageUrl || null }))
+    .map((f) => ({
+      label: String(f.label || "").trim(),
+      labelEn: String(f.labelEn || "").trim(),
+      imageUrl: f.imageUrl || null,
+    }))
     .filter((f) => f.label);
-
+  
   const rows = await sql`
     INSERT INTO order_options (id, sizes, flavors, fillings, updated_at)
     VALUES (1, ${JSON.stringify(cleanSizes)}, ${JSON.stringify(cleanFlavors)}, ${JSON.stringify(cleanFillings)}, now())
