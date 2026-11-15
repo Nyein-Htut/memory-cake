@@ -113,6 +113,9 @@ await sql`
     );
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_phone ON support_messages(phone, created_at);`;
+  await sql`ALTER TABLE folders ADD COLUMN IF NOT EXISTS name_en TEXT;`;
+  await sql`ALTER TABLE folders ADD COLUMN IF NOT EXISTS description_en TEXT;`;
+  await sql`ALTER TABLE photos ADD COLUMN IF NOT EXISTS caption_en TEXT;`;
   console.log("Done! All tables ('folders', 'photos', 'order_options', 'orders') are ready.");
 }
 
