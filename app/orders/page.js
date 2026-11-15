@@ -34,7 +34,43 @@ export default function MyOrdersPage() {
   const [chatOrderId, setChatOrderId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
 
+  // Chinese → English lookup built from the admin's saved translations
+  // (sizes, flavors, fillings, folder names). Orders store the original
+  // Chinese label, so we translate at display time.
+  const [enMap, setEnMap] = useState({});
+
   const locale = lang === "en" ? "en-GB" : "zh-CN";
+  const tr = (text) => (lang === "en" && text && enMap[text]) || text;
+
+  useEffect(() => {
+    async function loadTranslations() {
+      try {
+        const [optRes, folderRes] = await Promise.all([
+          fetch("/api/order-options", { cache: "no-store" }),
+          fetch("/api/folders", { cache: "no-store" }),
+        ]);
+        const map = {};
+        if (optRes.ok) {
+          const { options } = await optRes.json();
+          for (const group of [options?.sizes, options?.flavors, options?.fillings]) {
+            for (const item of group || []) {
+              if (item.label && item.labelEn) map[item.label] = item.labelEn;
+            }
+          }
+        }
+        if (folderRes.ok) {
+          const { folders } = await folderRes.json();
+          for (const f of folders || []) {
+            if (f.name && f.name_en) map[f.name] = f.name_en;
+          }
+        }
+        setEnMap(map);
+      } catch {
+        // fall back to the original text
+      }
+    }
+    loadTranslations();
+  }, []);
 
   const lookup = useCallback(async (phoneToLookup) => {
     const p = (phoneToLookup ?? phone).trim();
@@ -181,14 +217,14 @@ export default function MyOrdersPage() {
                       <div>
                         <p className="text-xs text-cocoa-400">
                           {new Date(order.created_at).toLocaleString(locale)}
-                          {order.folder_name ? ` · ${order.folder_name}` : ""}
+                          {order.folder_name ? ` · ${tr(order.folder_name)}` : ""}
                         </p>
                         <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
-                          {order.size_label} {order.size_price ? `· MMK ${order.size_price}` : ""}
+                          {tr(order.size_label)} {order.size_price ? `· MMK ${order.size_price}` : ""}
                           {order.quantity > 1 ? ` × ${order.quantity}` : ""}
                         </p>
                         <p className="text-sm text-cocoa-700 mt-1">
-                          {[order.flavor, order.filling1, order.filling2].filter(Boolean).join(" · ") || t("orders.noFlavor")}
+                          {[order.flavor, order.filling1, order.filling2].filter(Boolean).map(tr).join(" · ") || t("orders.noFlavor")}
                         </p>
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[order.status] || "bg-cocoa-100 text-cocoa-700"}`}>
