@@ -41,7 +41,7 @@ export async function PATCH(request, { params }) {
   }
 
   const id = Number(params.id);
-  const { name, description, orderable, orderFormType } = await request.json();
+  const { name, nameEn, description, descriptionEn, orderable, orderFormType } = await request.json();
 
   if (!name || !name.trim()) {
     return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
@@ -52,7 +52,9 @@ export async function PATCH(request, { params }) {
   const rows = await sql`
     UPDATE folders
     SET name = ${name.trim()},
+        name_en = ${nameEn?.trim() || null},
         description = ${description || null},
+        description_en = ${descriptionEn?.trim() || null},
         orderable = COALESCE(${typeof orderable === "boolean" ? orderable : null}, orderable),
         order_form_type = COALESCE(${cleanFormType}, order_form_type),
         updated_at = now()
