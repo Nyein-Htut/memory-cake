@@ -14,7 +14,9 @@ export default function AdminDashboardPage() {
   // ---- Create-folder modal state ----
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newNameEn, setNewNameEn] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newDescriptionEn, setNewDescriptionEn] = useState("");
   const [newOrderable, setNewOrderable] = useState(true);
   const [newFormType, setNewFormType] = useState("cake");
   // Single price for dessert-type folders — the folder name IS the item
@@ -26,7 +28,9 @@ export default function AdminDashboardPage() {
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [editNameEn, setEditNameEn] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editDescriptionEn, setEditDescriptionEn] = useState("");
   const [editOrderable, setEditOrderable] = useState(true);
   const [editFormType, setEditFormType] = useState("cake");
   const [savingEdit, setSavingEdit] = useState(false);
@@ -59,7 +63,9 @@ export default function AdminDashboardPage() {
 
   function openCreateModal() {
     setNewName("");
+    setNewNameEn("");
     setNewDescription("");
+    setNewDescriptionEn("");
     setNewOrderable(true);
     setNewFormType("cake");
     setNewDessertPrice("");
@@ -86,7 +92,9 @@ export default function AdminDashboardPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: newName.trim(),
+        nameEn: newNameEn.trim(),
         description: newDescription.trim(),
+        descriptionEn: newDescriptionEn.trim(),
         orderable: newOrderable,
         orderFormType: newFormType,
         dessertOptions:
@@ -112,7 +120,9 @@ export default function AdminDashboardPage() {
   function startEditing(folder) {
     setEditingId(folder.id);
     setEditName(folder.name);
+    setEditNameEn(folder.name_en || "");
     setEditDescription(folder.description || "");
+    setEditDescriptionEn(folder.description_en || "");
     setEditOrderable(folder.orderable !== false);
     setEditFormType(folder.order_form_type === "dessert" ? "dessert" : "cake");
   }
@@ -125,7 +135,9 @@ export default function AdminDashboardPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: editName.trim(),
+        nameEn: editNameEn,
         description: editDescription,
+        descriptionEn: editDescriptionEn,
         orderable: editOrderable,
         orderFormType: editFormType,
       }),
@@ -230,13 +242,28 @@ export default function AdminDashboardPage() {
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                          placeholder="Folder name"
+                          placeholder="中文名称 Folder name"
+                        />
+
+                        <input
+                          value={editNameEn}
+                          onChange={(e) => setEditNameEn(e.target.value)}
+                          className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          placeholder="English name (optional)"
                         />
 
                         <textarea
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           placeholder="Description shown under the album title (optional)"
+                          rows={2}
+                          className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                        />
+
+                        <textarea
+                          value={editDescriptionEn}
+                          onChange={(e) => setEditDescriptionEn(e.target.value)}
+                          placeholder="English description (optional)"
                           rows={2}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
@@ -317,6 +344,9 @@ export default function AdminDashboardPage() {
                               {folder.name}
                             </h2>
                           </Link>
+                          {folder.name_en && (
+                            <p className="text-xs text-cocoa-400 truncate">{folder.name_en}</p>
+                          )}
                           {folder.description && (
                             <p className="text-xs text-cocoa-500 mt-0.5 line-clamp-2">
                               {folder.description}
@@ -388,12 +418,38 @@ export default function AdminDashboardPage() {
 
               <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  英文名称（可选）
+                </label>
+                <input
+                  type="text"
+                  value={newNameEn}
+                  onChange={(e) => setNewNameEn(e.target.value)}
+                  placeholder="e.g. Birthday Cakes"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
                   描述（可选）
                 </label>
                 <textarea
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="这段文字会显示在相册标题下方，向顾客介绍这个系列"
+                  rows={3}
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  英文描述（可选）
+                </label>
+                <textarea
+                  value={newDescriptionEn}
+                  onChange={(e) => setNewDescriptionEn(e.target.value)}
+                  placeholder="English description shown under the album title"
                   rows={3}
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
