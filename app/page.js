@@ -8,18 +8,15 @@ import ChatWidget from "@/components/ChatWidget";
 import { sql } from "@/lib/db";
 import { getLang, getT } from "@/lib/i18n/server";
 import { photoCountLabel } from "@/lib/i18n/dictionaries";
+import { pickLang } from "@/lib/i18n/pick";
 
 export const dynamic = "force-dynamic";
 
-// Was previously self-fetching `${NEXT_PUBLIC_SITE_URL}/api/folders` from a
-// server component — if that env var is missing/wrong on whatever host
-// you're on, the fetch fails silently (caught by `if (!res.ok) return []`)
-// and the homepage just shows "No albums yet" with no error. Querying the
-// database directly removes that dependency entirely, same pattern already
-// used below for hero slides.
+// Querying the database directly (instead of self-fetching /api/folders)
+// removes any dependency on NEXT_PUBLIC_SITE_URL being set correctly.
 async function getFolders() {
   const folders = await sql`
-    SELECT f.id, f.name, f.description, f.cover_url, f.position, f.orderable,
+    SELECT f.id, f.name, f.name_en, f.description, f.description_en, f.cover_url, f.position, f.orderable,
            f.order_form_type, f.dessert_options, f.dessert_min_quantity, f.created_at,
            COUNT(p.id)::int AS photo_count
     FROM folders f
@@ -55,7 +52,8 @@ function StackIcon(props) {
 }
 
 export default async function HomePage() {
-  const t = getT(getLang());
+  const lang = getLang();
+  const t = getT(lang);
   const [folders, heroSlides] = await Promise.all([
     getFolders(),
     getHeroSlides(),
@@ -87,18 +85,17 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-8 gap-y-8 pr-6 sm:pr-8">
             {folders.map((folder) => {
               const hasMultiple = folder.photo_count > 1;
+              const displayName = pickLang(lang, folder.name, folder.name_en);
 
               return (
                 <div key={folder.id} className="relative group">
-                  {/* Subtle 3-Layer Deck (Matches your target design closely without overflow) */}
+                  {/* Subtle 3-Layer Deck */}
                   {hasMultiple && (
                     <>
-                      {/* Backmost Layer (Layer 3) */}
                       <div
                         aria-hidden="true"
                         className="absolute inset-0 rounded-2xl bg-white/70 border border-cocoa-200/50 shadow-sm translate-x-3 -translate-y-1 scale-[0.96] z-0"
                       />
-                      {/* Middle Layer (Layer 2) */}
                       <div
                         aria-hidden="true"
                         className="absolute inset-0 rounded-2xl bg-white/90 border border-cocoa-200/80 shadow-sm translate-x-1.5 -translate-y-0.5 scale-[0.98] z-[5]"
@@ -106,7 +103,7 @@ export default async function HomePage() {
                     </>
                   )}
 
-                  {/* Main Foreground Card (Layer 1) */}
+                  {/* Main Foreground Card */}
                   <Link
                     href={`/folder/${folder.id}`}
                     className="relative block rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300 z-10"
@@ -115,7 +112,7 @@ export default async function HomePage() {
                       {folder.cover_url ? (
                         <Image
                           src={cldThumb(folder.cover_url, 500)}
-                          alt={folder.name}
+                          alt={displayName}
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -139,7 +136,7 @@ export default async function HomePage() {
 
                     <div className="p-3 bg-white">
                       <h3 className="font-serif font-medium text-sm sm:text-base text-cocoa-900 truncate">
-                        {folder.name}
+                        {displayName}
                       </h3>
                       <p className="flex items-center gap-1 text-[11px] sm:text-xs text-cocoa-500 mt-0.5">
                         <span aria-hidden>🖼️</span>
