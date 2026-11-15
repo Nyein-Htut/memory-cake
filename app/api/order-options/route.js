@@ -21,7 +21,7 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-   const cleanSizes = sizes
+  const cleanSizes = sizes
     .map((s) => ({
       label: String(s.label || "").trim(),
       labelEn: String(s.labelEn || "").trim(),
@@ -42,7 +42,7 @@ export async function PATCH(request) {
       imageUrl: f.imageUrl || null,
     }))
     .filter((f) => f.label);
-  
+
   const rows = await sql`
     INSERT INTO order_options (id, sizes, flavors, fillings, updated_at)
     VALUES (1, ${JSON.stringify(cleanSizes)}, ${JSON.stringify(cleanFlavors)}, ${JSON.stringify(cleanFillings)}, now())
