@@ -25,13 +25,16 @@ export default function AdminFolderPage({ params }) {
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [nameEnDraft, setNameEnDraft] = useState("");
   const [descDraft, setDescDraft] = useState("");
+  const [descEnDraft, setDescEnDraft] = useState("");
   const [editOrderable, setEditOrderable] = useState(true);
   const [editFormType, setEditFormType] = useState("cake");
   const [savingInfo, setSavingInfo] = useState(false);
 
   const [editingCaptionId, setEditingCaptionId] = useState(null);
   const [captionDraft, setCaptionDraft] = useState("");
+  const [captionEnDraft, setCaptionEnDraft] = useState("");
 
   const [settingCoverId, setSettingCoverId] = useState(null);
 
@@ -73,7 +76,9 @@ export default function AdminFolderPage({ params }) {
       setTotal(data.total || 0);
       setHasMore(data.hasMore || false);
       setNameDraft(data.folder.name);
+      setNameEnDraft(data.folder.name_en || "");
       setDescDraft(data.folder.description || "");
+      setDescEnDraft(data.folder.description_en || "");
       setEditOrderable(data.folder.orderable !== false);
       setEditFormType(data.folder.order_form_type === "dessert" ? "dessert" : "cake");
       const existingPrice = data.folder.dessert_options?.[0]?.price;
@@ -123,7 +128,9 @@ export default function AdminFolderPage({ params }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: nameDraft.trim(),
+        nameEn: nameEnDraft.trim(),
         description: descDraft,
+        descriptionEn: descEnDraft,
         orderable: editOrderable,
         orderFormType: editFormType,
       }),
@@ -273,7 +280,7 @@ export default function AdminFolderPage({ params }) {
     const res = await fetch(`/api/photos/${photoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caption: captionDraft }),
+      body: JSON.stringify({ caption: captionDraft, captionEn: captionEnDraft }),
     });
 
     if (!res.ok) {
@@ -319,7 +326,9 @@ export default function AdminFolderPage({ params }) {
 
   function startEditingInfo() {
     setNameDraft(folder.name);
+    setNameEnDraft(folder.name_en || "");
     setDescDraft(folder.description || "");
+    setDescEnDraft(folder.description_en || "");
     setEditOrderable(folder.orderable !== false);
     setEditFormType(folder.order_form_type === "dessert" ? "dessert" : "cake");
     setEditingName(true);
@@ -359,13 +368,29 @@ export default function AdminFolderPage({ params }) {
                 <input
                   value={nameDraft}
                   onChange={(e) => setNameDraft(e.target.value)}
+                  placeholder="中文名称"
                   className="w-full rounded-lg border border-cocoa-200 px-3 py-2.5 font-serif text-lg sm:text-xl focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+
+                <input
+                  value={nameEnDraft}
+                  onChange={(e) => setNameEnDraft(e.target.value)}
+                  placeholder="English name (optional)"
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
 
                 <textarea
                   value={descDraft}
                   onChange={(e) => setDescDraft(e.target.value)}
                   placeholder="Optional description"
+                  rows={2}
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+
+                <textarea
+                  value={descEnDraft}
+                  onChange={(e) => setDescEnDraft(e.target.value)}
+                  placeholder="English description (optional)"
                   rows={2}
                   className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
@@ -457,8 +482,16 @@ export default function AdminFolderPage({ params }) {
                   {folder.name}
                 </h1>
 
+                {folder.name_en && (
+                  <p className="text-sm text-cocoa-400 mt-0.5 truncate">{folder.name_en}</p>
+                )}
+
                 {folder.description && (
                   <p className="text-cocoa-500 mt-1 text-sm sm:text-base">{folder.description}</p>
+                )}
+
+                {folder.description_en && (
+                  <p className="text-cocoa-400 mt-1 text-xs sm:text-sm">{folder.description_en}</p>
                 )}
 
                 <p className="text-xs text-cocoa-400 mt-1.5">
@@ -482,7 +515,7 @@ export default function AdminFolderPage({ params }) {
 
         {folder.orderable === false && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            此相册为「仅展示价格」模式：顾客无法在线下单，"订购此蛋糕"按钮会被替换成每张照片的说明文字。请为下方每张照片点击 "Edit" 填写价格信息。
+            此相册为「仅展示价格」模式：顾客无法在线下单，"订购此蛋糕"按钮会被替换成每张照片的说明文字。请为下方每张照片点击 "Edit" 填写价格信息（可同时填写中文和英文说明）。
           </div>
         )}
 
@@ -616,7 +649,14 @@ export default function AdminFolderPage({ params }) {
                             autoFocus
                             value={captionDraft}
                             onChange={(e) => setCaptionDraft(e.target.value)}
-                            placeholder="Caption (optional)"
+                            placeholder="中文说明 (optional)"
+                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          />
+
+                          <input
+                            value={captionEnDraft}
+                            onChange={(e) => setCaptionEnDraft(e.target.value)}
+                            placeholder="English caption (optional)"
                             className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                           />
 
@@ -632,12 +672,16 @@ export default function AdminFolderPage({ params }) {
                       ) : (
                         <div className="space-y-1.5">
                           <p className="text-xs text-cocoa-500 truncate">{photo.caption || "No caption"}</p>
+                          {photo.caption_en && (
+                            <p className="text-[11px] text-cocoa-400 truncate">{photo.caption_en}</p>
+                          )}
 
                           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
                             <button
                               onClick={() => {
                                 setEditingCaptionId(photo.id);
                                 setCaptionDraft(photo.caption || "");
+                                setCaptionEnDraft(photo.caption_en || "");
                               }}
                               className="text-cocoa-500 hover:text-cocoa-800 py-1"
                             >
