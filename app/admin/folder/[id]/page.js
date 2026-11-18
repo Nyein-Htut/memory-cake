@@ -621,9 +621,12 @@ export default function AdminFolderPage({ params }) {
                       touchAction: "pan-y",
                       WebkitTouchCallout: "none",
                       WebkitUserSelect: "none",
+                      willChange: draggingId === photo.id ? "visibility" : "auto",
                     }}
-                    className={`rounded-xl overflow-hidden bg-white border shadow-card select-none cursor-grab active:cursor-grabbing ${
-                      draggingId === photo.id ? "border-cocoa-500" : "border-cocoa-100"
+                    className={`rounded-xl overflow-hidden bg-white border shadow-card select-none ${
+                      draggingId === photo.id
+                        ? "cursor-grabbing border-cocoa-500"
+                        : "cursor-grab border-cocoa-100"
                     }`}
                   >
                     <div className="relative aspect-square bg-cocoa-100">
