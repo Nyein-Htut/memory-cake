@@ -193,6 +193,7 @@ export default function AdminDashboardPage() {
                     touchAction: "pan-y",
                     WebkitTouchCallout: "none",
                     WebkitUserSelect: "none",
+                    willChange: draggingId === folder.id ? "visibility" : "auto",
                   }}
                   className={`relative rounded-2xl overflow-hidden bg-white shadow-card border select-none cursor-grab active:cursor-grabbing ${
                     draggingId === folder.id ? "border-cocoa-500" : "border-cocoa-100"
