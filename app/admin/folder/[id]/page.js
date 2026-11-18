@@ -618,7 +618,7 @@ export default function AdminFolderPage({ params }) {
                     onPointerDown={handlePointerDown(photo.id)}
                     onContextMenu={(e) => e.preventDefault()}
                     style={{
-                      touchAction: "pan-y pinch-zoom",
+                      touchAction: "pan-y",
                       WebkitTouchCallout: "none",
                       WebkitUserSelect: "none",
                     }}
