@@ -621,7 +621,6 @@ export default function AdminFolderPage({ params }) {
                       touchAction: "pan-y",
                       WebkitTouchCallout: "none",
                       WebkitUserSelect: "none",
-                      willChange: draggingId === photo.id ? "visibility" : "auto",
                     }}
                     className={`rounded-xl overflow-hidden bg-white border shadow-card select-none ${
                       draggingId === photo.id
