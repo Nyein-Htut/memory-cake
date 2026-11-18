@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
 import AdminHeader from "@/components/AdminHeader";
-import { cldThumb } from "@/lib/cloudinary";
+import { cldThumb } from "@/lib/cloudinary-url";
 import { useDragReorder } from "@/lib/useDragReorder";
 
 export default function AdminDashboardPage() {
