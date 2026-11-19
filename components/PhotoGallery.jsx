@@ -74,6 +74,13 @@ export default function PhotoGallery({
     [rawPhotos, lang]
   );
 
+  // Only reserve the caption area on cards when at least one photo needs it
+  // (a caption exists, or this is a price-only album showing "ask us").
+  const showCaptionArea = useMemo(
+    () => !orderable || photos.some((p) => p.caption && p.caption.trim()),
+    [photos, orderable]
+  );
+
   const [activeIndex, setActiveIndex] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [orderingPhoto, setOrderingPhoto] = useState(null);
@@ -154,51 +161,67 @@ export default function PhotoGallery({
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
-        {photos.map((photo, i) => (
-          <div
-            key={photo.id}
-            className="group rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-          >
-            <button
-              onClick={() => setActiveIndex(i)}
-              className="relative aspect-square w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-            >
-              <Image
-                src={cldThumb(photo.url, 400)}
-                alt={photo.caption || "Memory Cake photo"}
-                fill
-                sizes="(max-width:640px) 50vw, 25vw"
-                className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-              />
-            </button>
+        {photos.map((photo, i) => {
+          const captionText =
+            (photo.caption && photo.caption.trim()) || (!orderable ? t("gallery.askPrice") : "");
+          const hasCaption = Boolean(photo.caption && photo.caption.trim());
 
-            {/* ACTION ROW */}
-            <div className="p-2 sm:p-3 flex items-center gap-1.5 sm:gap-2">
+          return (
+            <div
+              key={photo.id}
+              className="group flex flex-col rounded-2xl overflow-hidden bg-white border border-cocoa-200 shadow-card hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            >
               <button
-                onClick={() => sharePhoto(photo, folderName, t)}
-                className="flex-1 min-w-0 flex items-center justify-center gap-1 rounded-lg border border-cocoa-300 bg-white text-cocoa-700 text-xs px-2 py-2 font-medium hover:bg-cocoa-50 hover:border-cocoa-400 transition-colors whitespace-nowrap"
+                onClick={() => setActiveIndex(i)}
+                className="relative aspect-square w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-cocoa-500"
               >
-                <ShareIcon className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{t("gallery.share")}</span>
+                <Image
+                  src={cldThumb(photo.url, 400)}
+                  alt={photo.caption || "Memory Cake photo"}
+                  fill
+                  sizes="(max-width:640px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                />
               </button>
-              {orderable ? (
-                <button
-                  onClick={() => setOrderingPhoto(photo)}
-                  className="shrink-0 rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm px-3 py-2 font-medium hover:bg-cocoa-900 transition-colors whitespace-nowrap"
-                >
-                  {t("gallery.order")}
-                </button>
-              ) : (
-                <div
-                  className="flex-1 min-w-0 rounded-lg bg-cocoa-50 border border-cocoa-200 text-cocoa-800 text-xs sm:text-sm py-2 text-center truncate"
-                  title={photo.caption || undefined}
-                >
-                  {photo.caption || t("gallery.askPrice")}
+
+              {/* CAPTION (price info etc.) — always visible on the card */}
+              {showCaptionArea && (
+                <div className="flex-1 px-2.5 sm:px-3 pt-2.5 sm:pt-3">
+                  {captionText && (
+                    <p
+                      className={`text-xs sm:text-sm leading-snug whitespace-pre-line break-words ${
+                        hasCaption
+                          ? "font-semibold text-cocoa-900"
+                          : "text-cocoa-500"
+                      }`}
+                    >
+                      {captionText}
+                    </p>
+                  )}
                 </div>
               )}
+
+              {/* ACTION ROW */}
+              <div className="p-2 sm:p-3 flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={() => sharePhoto(photo, folderName, t)}
+                  className="flex-1 min-w-0 flex items-center justify-center gap-1 rounded-lg border border-cocoa-300 bg-white text-cocoa-700 text-xs px-2 py-2 font-medium hover:bg-cocoa-50 hover:border-cocoa-400 transition-colors whitespace-nowrap"
+                >
+                  <ShareIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{t("gallery.share")}</span>
+                </button>
+                {orderable && (
+                  <button
+                    onClick={() => setOrderingPhoto(photo)}
+                    className="shrink-0 rounded-lg bg-cocoa-800 text-cream text-xs sm:text-sm px-3 py-2 font-medium hover:bg-cocoa-900 transition-colors whitespace-nowrap"
+                  >
+                    {t("gallery.order")}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {hasMore && (
