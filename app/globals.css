@@ -21,3 +21,14 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* iOS Safari zooms the page when a focused field has font-size < 16px.
+   Force 16px on touch devices only (desktop keeps the compact sizes).
+   !important is needed to beat Tailwind's text-sm / text-xs utilities. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
