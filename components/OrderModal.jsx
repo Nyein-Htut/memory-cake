@@ -5,8 +5,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cldThumb } from "@/lib/cloudinary-url";
 import OrderReceiptCard from "@/components/OrderReceiptCard";
+import TownshipSelect from "@/components/TownshipSelect";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 import { pickLang } from "@/lib/i18n/pick";
+
+const fmtMMK = (n) => `MMK ${Number(n || 0).toLocaleString("en-US")}`;
 
 export default function OrderModal({
   photo,
@@ -33,6 +36,7 @@ export default function OrderModal({
   const [quantity, setQuantity] = useState(1);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
+  const [township, setTownship] = useState("");
   const [deliveryPlace, setDeliveryPlace] = useState("");
   const [phone, setPhone] = useState("");
   const [remark, setRemark] = useState("");
@@ -45,21 +49,28 @@ export default function OrderModal({
     if (isDessert) {
       if (dessertOptions?.length) setSizeLabel(dessertOptions[0].label);
       setQuantity(minQuantity);
-      setLoadingOptions(false);
-    } else {
-      fetch("/api/order-options")
-        .then((res) => res.json())
-        .then((data) => {
-          setOptions(data.options);
+    }
+
+    // Always load the options: cake forms need sizes/flavors/fillings, and
+    // both form types need the list of deliverable townships.
+    fetch("/api/order-options", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        setOptions(data.options);
+        if (!isDessert) {
           if (data.options?.sizes?.length) setSizeLabel(data.options.sizes[0].label);
           if (data.options?.flavors?.length) setFlavor(data.options.flavors[0].label);
           if (data.options?.fillings?.length) {
             setFilling1(data.options.fillings[0].label);
             setFilling2(data.options.fillings[1]?.label || data.options.fillings[0].label);
           }
-        })
-        .finally(() => setLoadingOptions(false));
-    }
+        }
+        const savedTownship = localStorage.getItem("memory_cake_township");
+        if (savedTownship && data.options?.townships?.some((x) => x.label === savedTownship)) {
+          setTownship(savedTownship);
+        }
+      })
+      .finally(() => setLoadingOptions(false));
 
     const savedPhone = localStorage.getItem("memory_cake_phone");
     if (savedPhone) setPhone(savedPhone);
@@ -78,10 +89,18 @@ export default function OrderModal({
   }, [onClose]);
 
   const sizeChoices = isDessert ? dessertOptions : options?.sizes || [];
+  const townships = options?.townships || [];
   const selectedSize = sizeChoices.find((s) => s.label === sizeLabel);
+  const selectedTownship = townships.find((x) => x.label === township);
   const selectedFlavorOption = options?.flavors?.find((f) => f.label === flavor);
   const selectedFilling1Option = options?.fillings?.find((f) => f.label === filling1);
   const selectedFilling2Option = options?.fillings?.find((f) => f.label === filling2);
+
+  // Payment = item price + delivery fee. Display only — the server
+  // recalculates both from the database when the order is saved.
+  const itemTotal = (Number(selectedSize?.price) || 0) * (isDessert ? quantity : 1);
+  const deliveryFee = selectedTownship ? Number(selectedTownship.fee) || 0 : null;
+  const grandTotal = deliveryFee === null ? null : itemTotal + deliveryFee;
 
   // Display text only. What gets saved with the order is always the
   // original (Chinese) label, so the admin side keeps working unchanged.
@@ -102,6 +121,10 @@ export default function OrderModal({
     }
     if (isDessert && quantity < minQuantity) {
       setError(t("order.errMinQty", { n: minQuantity }));
+      return;
+    }
+    if (!selectedTownship) {
+      setError(t("order.errTownship"));
       return;
     }
     if (!deliveryPlace.trim() || !phone.trim()) {
@@ -129,30 +152,37 @@ export default function OrderModal({
           quantity: isDessert ? quantity : 1,
           deliveryDate,
           deliveryTime,
+          township: selectedTownship.label,
           deliveryPlace: deliveryPlace.trim(),
           phone: phone.trim(),
           remark: remark.trim(),
         }),
       });
 
-      localStorage.setItem("memory_cake_phone", phone.trim());
-      localStorage.setItem("memory_cake_wechat_name", wechatName.trim());
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || t("order.errSubmit"));
       }
 
+      localStorage.setItem("memory_cake_phone", phone.trim());
+      localStorage.setItem("memory_cake_wechat_name", wechatName.trim());
+      localStorage.setItem("memory_cake_township", selectedTownship.label);
+
       const data = await res.json();
       router.refresh();
 
+      const saved = data.order;
+      const savedFee = Number(saved.delivery_fee) || 0;
+      const unit = Number(saved.size_price) || Number(selectedSize?.price) || 0;
+      const subtotal = unit * (isDessert ? quantity : 1);
+
       setSubmittedOrder({
-        id: data.order.id,
-        createdAt: data.order.created_at,
+        id: saved.id,
+        createdAt: saved.created_at,
         wechatName: wechatName.trim(),
         sizeLabel,
         sizeLabelEn: isDessert ? folderNameEn : selectedSize?.labelEn || "",
-        sizePrice: selectedSize?.price,
+        sizePrice: unit,
         flavor: isDessert ? "" : flavor,
         flavorEn: isDessert ? "" : selectedFlavorOption?.labelEn || "",
         filling1: isDessert ? "" : filling1,
@@ -163,7 +193,11 @@ export default function OrderModal({
         filling1ImageUrl: isDessert ? null : selectedFilling1Option?.imageUrl || null,
         filling2ImageUrl: isDessert ? null : selectedFilling2Option?.imageUrl || null,
         quantity: isDessert ? quantity : 1,
-        totalPrice: isDessert && selectedSize?.price ? selectedSize.price * quantity : null,
+        subtotal,
+        deliveryFee: savedFee,
+        totalPrice: Number(saved.total_price) || subtotal + savedFee,
+        township: selectedTownship.label,
+        townshipEn: selectedTownship.labelEn || "",
         deliveryDate,
         deliveryTime,
         deliveryPlace: deliveryPlace.trim(),
@@ -325,11 +359,6 @@ export default function OrderModal({
                       ? t("order.minQtyLow", { n: minQuantity })
                       : t("order.minQtyOk", { n: minQuantity })}
                   </p>
-                  {selectedSize?.price ? (
-                    <p className="text-sm text-cocoa-700 mt-2 font-medium">
-                      {t("order.subtotal", { p: selectedSize.price * quantity })}
-                    </p>
-                  ) : null}
                 </div>
               )}
 
@@ -458,6 +487,13 @@ export default function OrderModal({
               </div>
 
               <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-2">
+                  {t("order.township")}
+                </label>
+                <TownshipSelect townships={townships} value={township} onChange={setTownship} />
+              </div>
+
+              <div>
                 <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
                   {t("order.address")}
                 </label>
@@ -510,11 +546,42 @@ export default function OrderModal({
                 />
               </div>
 
+              {/* Payment summary: item price + delivery fee = total */}
+              <div className="rounded-xl border border-cocoa-200 bg-white overflow-hidden shadow-card">
+                <div className="px-4 py-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between text-cocoa-600">
+                    <span>
+                      {t("order.itemPrice")}
+                      {isDessert && quantity > 1 ? ` × ${quantity}` : ""}
+                    </span>
+                    <span className="font-medium text-cocoa-900">{fmtMMK(itemTotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-cocoa-600">
+                    <span>{t("order.deliveryFee")}</span>
+                    {deliveryFee === null ? (
+                      <span className="text-cocoa-300">—</span>
+                    ) : deliveryFee > 0 ? (
+                      <span className="font-medium text-cocoa-900">{fmtMMK(deliveryFee)}</span>
+                    ) : (
+                      <span className="font-medium text-green-700">{t("order.free")}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-4 py-3 bg-cocoa-800 text-cream">
+                  <span className="text-sm">{t("order.totalPay")}</span>
+                  {grandTotal === null ? (
+                    <span className="text-xs text-cream/60">{t("order.pickTownshipFirst")}</span>
+                  ) : (
+                    <span className="font-serif font-semibold text-xl">{fmtMMK(grandTotal)}</span>
+                  )}
+                </div>
+              </div>
+
               {error && <p className="text-sm text-red-600">{error}</p>}
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || townships.length === 0}
                 className="w-full rounded-lg bg-cocoa-800 text-cream py-3 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60"
               >
                 {submitting ? t("order.submitting") : t("order.submit")}

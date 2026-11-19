@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n/LanguageProvider";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1550;
+const CARD_HEIGHT = 1700;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -261,6 +261,36 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         currentY += 56;
       }
 
+      // Final payment row: dashed divider, then the grand total in the accent colour.
+      function renderTotalRow(label, amount) {
+        const leftX = 75;
+        const rightXPos = CARD_WIDTH - 75;
+
+        ctx.save();
+        ctx.strokeStyle = "#d9c7ae";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.moveTo(leftX, currentY - 26);
+        ctx.lineTo(rightXPos, currentY - 26);
+        ctx.stroke();
+        ctx.restore();
+
+        currentY += 18;
+
+        ctx.textAlign = "left";
+        ctx.font = "700 25px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "#63472d";
+        ctx.fillText(label, leftX, currentY);
+
+        ctx.textAlign = "right";
+        ctx.font = "700 48px 'Cormorant Garamond', Georgia, serif";
+        ctx.fillStyle = "#7a2a16";
+        ctx.fillText(`MMK ${Number(amount).toLocaleString("en-US")}`, rightXPos, currentY + 4);
+
+        currentY += 74;
+      }
+
       // Render Order Detail Rows
       renderDetailRow(t("receipt.wechat"), order.wechatName);
       renderPriceRow(
@@ -271,15 +301,27 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
       if (isDessert && order.quantity) {
         renderDetailRow(t("receipt.qty"), t("receipt.qtyValue", { n: order.quantity }));
-        if (order.totalPrice) {
-          renderPriceRow(t("receipt.total"), t("receipt.totalOf", { n: order.quantity }), order.totalPrice);
+        if (order.subtotal) {
+          renderPriceRow(t("receipt.subtotal"), t("receipt.totalOf", { n: order.quantity }), order.subtotal);
         }
       }
 
       renderDetailRow(t("receipt.date"), [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
+      renderDetailRow(t("receipt.township"), L(order.township, order.townshipEn));
       renderDetailRow(t("receipt.address"), order.deliveryPlace);
       renderDetailRow(t("receipt.phone"), order.phone);
       if (order.remark) renderDetailRow(t("receipt.note"), order.remark);
+
+      // Payment: delivery fee + total (item price + delivery fee)
+      if (order.totalPrice != null) {
+        renderDetailRow(
+          t("receipt.deliveryFee"),
+          Number(order.deliveryFee) > 0
+            ? `MMK ${Number(order.deliveryFee).toLocaleString("en-US")}`
+            : t("receipt.free")
+        );
+        renderTotalRow(t("receipt.totalPay"), order.totalPrice);
+      }
 
       // ==========================================
       // FOOTER SECTION
