@@ -12,6 +12,8 @@ const STATUS_LABELS = {
   cancelled: "已取消",
 };
 
+const mmk = (n) => Number(n || 0).toLocaleString("en-US");
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,16 +41,16 @@ export default function AdminOrdersPage() {
       }
 
       const data = await res.json();
-    setOrders(data.orders || []);
-    notifyNotificationsChanged();
-  } catch (err) {
-    setError("Network error while loading orders.");
-    setOrders([]);
-  } finally {
-    setLoading(false);
+      setOrders(data.orders || []);
+      notifyNotificationsChanged();
+    } catch (err) {
+      setError("Network error while loading orders.");
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   }
-}
-  
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,6 +117,8 @@ export default function AdminOrdersPage() {
           <div className="space-y-4">
             {orders.map((o) => {
               const cakeImage = o.photo_url || o.photo_path || o.photoUrl;
+              const hasTotal = o.total_price !== null && o.total_price !== undefined;
+              const fee = Number(o.delivery_fee) || 0;
 
               return (
                 <div key={o.id} className="bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-5">
@@ -167,7 +171,7 @@ export default function AdminOrdersPage() {
                           </p>
                           {o.quantity > 1 && (o.size_price || o.sizePrice) && (
                             <p className="text-xs text-cocoa-500 mt-0.5">
-                              总价 MMK {(o.size_price || o.sizePrice) * o.quantity}
+                              商品小计 MMK {(o.size_price || o.sizePrice) * o.quantity}
                             </p>
                           )}
                           <p className="text-sm font-medium text-cocoa-700 mt-1">
@@ -191,10 +195,21 @@ export default function AdminOrdersPage() {
                       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 text-sm text-cocoa-700 pt-2 border-t border-cocoa-100/60">
                         <p><span className="text-cocoa-400">微信：</span>{o.wechat_name || "未填写"}</p>
                         <p><span className="text-cocoa-400">配送日期：</span>{o.delivery_date || "未填写"} {o.delivery_time || ""}</p>
-                        <p><span className="text-cocoa-400">配送地址：</span>{o.delivery_place || "未填写"}</p>
+                        <p><span className="text-cocoa-400">配送区域：</span>{o.township || "未填写"}</p>
                         <p><span className="text-cocoa-400">联系电话：</span>{o.phone || "未填写"}</p>
+                        <p className="sm:col-span-2"><span className="text-cocoa-400">配送地址：</span>{o.delivery_place || "未填写"}</p>
                       </div>
 
+                      {hasTotal && (
+                        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-cocoa-800 text-cream px-3.5 py-2.5">
+                          <span className="text-xs text-cream/70">
+                            配送费 {fee > 0 ? `MMK ${mmk(fee)}` : "免费"}
+                          </span>
+                          <span className="font-serif font-semibold text-base sm:text-lg">
+                            应付 MMK {mmk(o.total_price)}
+                          </span>
+                        </div>
+                      )}
 
                       {o.remark && (
                         <p className="mt-2 text-sm text-cocoa-700 bg-cocoa-50/80 border border-cocoa-100 rounded-lg px-3 py-1.5">
