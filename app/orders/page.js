@@ -23,6 +23,8 @@ function canCancel(order) {
   return hoursUntil >= 24;
 }
 
+const mmk = (n) => Number(n || 0).toLocaleString("en-US");
+
 export default function MyOrdersPage() {
   const { lang, t } = useLang();
   const [phone, setPhone] = useState("");
@@ -35,8 +37,8 @@ export default function MyOrdersPage() {
   const [previewImage, setPreviewImage] = useState(null);
 
   // Chinese → English lookup built from the admin's saved translations
-  // (sizes, flavors, fillings, folder names). Orders store the original
-  // Chinese label, so we translate at display time.
+  // (sizes, flavors, fillings, townships, folder names). Orders store the
+  // original Chinese label, so we translate at display time.
   const [enMap, setEnMap] = useState({});
 
   const locale = lang === "en" ? "en-GB" : "zh-CN";
@@ -52,7 +54,7 @@ export default function MyOrdersPage() {
         const map = {};
         if (optRes.ok) {
           const { options } = await optRes.json();
-          for (const group of [options?.sizes, options?.flavors, options?.fillings]) {
+          for (const group of [options?.sizes, options?.flavors, options?.fillings, options?.townships]) {
             for (const item of group || []) {
               if (item.label && item.labelEn) map[item.label] = item.labelEn;
             }
@@ -188,6 +190,8 @@ export default function MyOrdersPage() {
           {orders.map((order) => {
             const cancellable = canCancel(order);
             const cakeImage = order.photo_url;
+            const hasTotal = order.total_price !== null && order.total_price !== undefined;
+            const fee = Number(order.delivery_fee) || 0;
 
             return (
               <div key={order.id} className="bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-5">
@@ -234,8 +238,22 @@ export default function MyOrdersPage() {
 
                     <div className="mt-3 pt-3 border-t border-cocoa-100/60 text-sm text-cocoa-700 space-y-1">
                       <p><span className="text-cocoa-400">{t("orders.delivery")}</span> {order.delivery_date || t("orders.notSet")} {order.delivery_time || ""}</p>
-                      <p><span className="text-cocoa-400">{t("orders.addressLabel")}</span> {order.delivery_place}</p>
+                      <p>
+                        <span className="text-cocoa-400">{t("orders.addressLabel")}</span>{" "}
+                        {[order.township ? tr(order.township) : "", order.delivery_place].filter(Boolean).join(" · ")}
+                      </p>
                     </div>
+
+                    {hasTotal && (
+                      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-cocoa-800 text-cream px-3.5 py-2.5">
+                        <span className="text-xs text-cream/70">
+                          {t("orders.deliveryFee")} · {fee > 0 ? `MMK ${mmk(fee)}` : t("orders.free")}
+                        </span>
+                        <span className="font-serif font-semibold text-base sm:text-lg">
+                          {t("orders.total")} MMK {mmk(order.total_price)}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <button
