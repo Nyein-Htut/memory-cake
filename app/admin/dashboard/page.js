@@ -11,6 +11,24 @@ export default function AdminDashboardPage() {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ---- Create-folder modal state ----
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newNameEn, setNewNameEn] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newDescriptionEn, setNewDescriptionEn] = useState("");
+  const [newOrderable, setNewOrderable] = useState(true);
+  const [newFormType, setNewFormType] = useState("cake");
+
+  // Single price for dessert-type folders — the folder name IS the item
+  // name, so there's no separate label to fill in.
+  const [newDessertPrice, setNewDessertPrice] = useState("");
+  const [newMinQuantity, setNewMinQuantity] = useState(6);
+
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+
+  // ---- Edit-folder state ----
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editNameEn, setEditNameEn] = useState("");
@@ -18,15 +36,10 @@ export default function AdminDashboardPage() {
   const [editDescriptionEn, setEditDescriptionEn] = useState("");
   const [editOrderable, setEditOrderable] = useState(true);
   const [editFormType, setEditFormType] = useState("cake");
-
   const [savingEdit, setSavingEdit] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
 
-  /*
-   * IMPORTANT:
-   * This is the SAME shared drag hook used by the photo page.
-   * Do not modify useDragReorder.js.
-   */
+  // ---- Shared drag/reorder hook ----
+  // IMPORTANT: Do not change useDragReorder.js.
   const {
     draggingId,
     handlePointerDown,
@@ -36,90 +49,134 @@ export default function AdminDashboardPage() {
     folders,
     setFolders,
     async (orderedIds) => {
-      try {
-        const response = await fetch("/api/folders/reorder", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            orderedIds,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to save folder order");
-        }
-      } catch (error) {
-        console.error(
-          "Failed to save folder order:",
-          error
-        );
-      }
+      await fetch("/api/folders/reorder", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderedIds }),
+      });
     }
   );
 
-  /*
-   * Load folders
-   */
-  useEffect(() => {
-    let cancelled = false;
+  async function loadFolders() {
+    setLoading(true);
 
-    async function loadFolders() {
-      try {
-        setLoading(true);
+    try {
+      const res = await fetch("/api/folders");
+      const data = await res.json();
 
-        const response = await fetch("/api/folders", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to load folders");
-        }
-
-        const data = await response.json();
-
-        if (!cancelled) {
-          /*
-           * Supports either:
-           *   { folders: [...] }
-           * or
-           *   [...]
-           */
-          const loadedFolders = Array.isArray(data)
-            ? data
-            : data.folders || [];
-
-          setFolders(loadedFolders);
-        }
-      } catch (error) {
-        console.error(
-          "Failed to load folders:",
-          error
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+      setFolders(data.folders || []);
+    } catch (err) {
+      console.error("Failed to load folders:", err);
+    } finally {
+      setLoading(false);
     }
+  }
 
+  useEffect(() => {
     loadFolders();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  /*
-   * Start editing a folder
-   */
+  function updateNewDessertPrice(rawValue) {
+    const digits = rawValue.replace(/[^0-9]/g, "");
+    setNewDessertPrice(digits);
+  }
+
+  function openCreateModal() {
+    setNewName("");
+    setNewNameEn("");
+    setNewDescription("");
+    setNewDescriptionEn("");
+    setNewOrderable(true);
+    setNewFormType("cake");
+    setNewDessertPrice("");
+    setNewMinQuantity(6);
+    setError("");
+    setShowCreateModal(true);
+  }
+
+  function closeCreateModal() {
+    if (creating) return;
+    setShowCreateModal(false);
+  }
+
+  async function handleCreate(e) {
+    e.preventDefault();
+
+    if (!newName.trim()) return;
+
+    setCreating(true);
+    setError("");
+
+    const price = Number(newDessertPrice) || 0;
+
+    try {
+      const res = await fetch("/api/folders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newName.trim(),
+          nameEn: newNameEn.trim(),
+          description: newDescription.trim(),
+          descriptionEn: newDescriptionEn.trim(),
+          orderable: newOrderable,
+          orderFormType: newFormType,
+          dessertOptions:
+            newOrderable &&
+            newFormType === "dessert" &&
+            price > 0
+              ? [
+                  {
+                    label: newName.trim(),
+                    price,
+                  },
+                ]
+              : [],
+          minQuantity: newMinQuantity,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res
+          .json()
+          .catch(() => ({}));
+
+        setError(
+          data.error ||
+            "Could not create folder"
+        );
+
+        return;
+      }
+
+      setShowCreateModal(false);
+
+      await loadFolders();
+    } catch (err) {
+      console.error(
+        "Failed to create folder:",
+        err
+      );
+
+      setError(
+        "Could not create folder"
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
   function startEditing(folder) {
     setEditingId(folder.id);
 
-    setEditName(folder.name || "");
+    setEditName(folder.name);
     setEditNameEn(folder.name_en || "");
-    setEditDescription(folder.description || "");
+    setEditDescription(
+      folder.description || ""
+    );
     setEditDescriptionEn(
       folder.description_en || ""
     );
@@ -129,216 +186,116 @@ export default function AdminDashboardPage() {
     );
 
     setEditFormType(
-      folder.order_form_type || "cake"
+      folder.order_form_type === "dessert"
+        ? "dessert"
+        : "cake"
     );
   }
 
-  /*
-   * Save folder edit
-   */
-  async function handleSaveEdit(folderId) {
-    if (!editName.trim()) {
-      return;
-    }
+  async function handleSaveEdit(id) {
+    if (!editName.trim()) return;
+
+    setSavingEdit(true);
 
     try {
-      setSavingEdit(true);
-
-      const response = await fetch(
-        `/api/folders/${folderId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: editName.trim(),
-            name_en: editNameEn.trim(),
-            description: editDescription.trim(),
-            description_en:
-              editDescriptionEn.trim(),
-            orderable: editOrderable,
-            order_form_type: editOrderable
-              ? editFormType
-              : null,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "Failed to update folder"
-        );
-      }
-
-      const data = await response.json();
-
-      const updatedFolder =
-        data.folder || data;
-
-      setFolders((current) =>
-        current.map((folder) =>
-          folder.id === folderId
-            ? {
-                ...folder,
-                ...updatedFolder,
-                name:
-                  updatedFolder.name ??
-                  editName.trim(),
-                name_en:
-                  updatedFolder.name_en ??
-                  editNameEn.trim(),
-                description:
-                  updatedFolder.description ??
-                  editDescription.trim(),
-                description_en:
-                  updatedFolder.description_en ??
-                  editDescriptionEn.trim(),
-                orderable:
-                  updatedFolder.orderable ??
-                  editOrderable,
-                order_form_type:
-                  updatedFolder.order_form_type ??
-                  (editOrderable
-                    ? editFormType
-                    : null),
-              }
-            : folder
-        )
-      );
+      await fetch(`/api/folders/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: editName.trim(),
+          nameEn: editName,
+          description: editDescription,
+          descriptionEn: editDescriptionEn,
+          orderable: editOrderable,
+          orderFormType: editFormType,
+        }),
+      });
 
       setEditingId(null);
-    } catch (error) {
+
+      await loadFolders();
+    } catch (err) {
       console.error(
         "Failed to save folder:",
-        error
+        err
       );
     } finally {
       setSavingEdit(false);
     }
   }
 
-  /*
-   * Delete folder
-   */
-  async function handleDelete(folderId, folderName) {
-    const confirmed = window.confirm(
-      `Delete "${folderName}"?\n\nThis cannot be undone.`
-    );
-
-    if (!confirmed) {
+  async function handleDelete(id, name) {
+    if (
+      !confirm(
+        `Delete "${name}" and all photos inside it? This cannot be undone.`
+      )
+    ) {
       return;
     }
 
     try {
-      setDeletingId(folderId);
+      await fetch(`/api/folders/${id}`, {
+        method: "DELETE",
+      });
 
-      const response = await fetch(
-        `/api/folders/${folderId}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "Failed to delete folder"
-        );
-      }
-
-      setFolders((current) =>
-        current.filter(
-          (folder) => folder.id !== folderId
-        )
-      );
-    } catch (error) {
+      await loadFolders();
+    } catch (err) {
       console.error(
         "Failed to delete folder:",
-        error
+        err
       );
-    } finally {
-      setDeletingId(null);
     }
   }
 
   return (
-    <div className="min-h-screen bg-cream-50">
+    <div className="min-h-screen bg-cream">
       <AdminHeader />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* HEADER */}
+      <main className="max-w-5xl mx-auto px-6 py-10">
+        {/* ============================================================
+            HEADER
+            ============================================================ */}
 
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-cocoa-400 mb-2">
-              Admin
-            </p>
+        <div className="flex items-center justify-between mb-6 gap-3">
+          <h1 className="font-serif font-medium text-3xl text-cocoa-900">
+            Your Albums
+          </h1>
 
-            <h1 className="font-serif text-3xl sm:text-4xl text-cocoa-900">
-              Folders
-            </h1>
-
-            <p className="text-sm text-cocoa-500 mt-2">
-              Manage your photo folders and
-              customer ordering options.
-            </p>
-          </div>
-
-          <div className="text-sm text-cocoa-400">
-            {folders.length} folder
-            {folders.length === 1 ? "" : "s"}
-          </div>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="shrink-0 rounded-lg bg-cocoa-800 text-cream px-5 py-2.5 font-medium hover:bg-cocoa-900 transition-colors whitespace-nowrap"
+          >
+            + New Folder
+          </button>
         </div>
 
-        {/* LOADING */}
+        {/* ============================================================
+            FOLDER LIST
+            ============================================================ */}
 
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map(
-              (_, index) => (
-                <div
-                  key={index}
-                  className="rounded-2xl overflow-hidden bg-white border border-cocoa-100 shadow-card animate-pulse"
-                >
-                  <div className="aspect-[4/3] bg-cocoa-100" />
-
-                  <div className="p-4 space-y-2">
-                    <div className="h-5 bg-cocoa-100 rounded w-2/3" />
-                    <div className="h-3 bg-cocoa-100 rounded w-1/2" />
-                    <div className="h-3 bg-cocoa-100 rounded w-1/3" />
-                  </div>
-                </div>
-              )
-            )}
-          </div>
+          <p className="text-cocoa-400">
+            Loading albums...
+          </p>
         ) : folders.length === 0 ? (
-          /* EMPTY STATE */
-
-          <div className="rounded-2xl border border-dashed border-cocoa-200 bg-white px-6 py-16 text-center">
-            <h2 className="font-serif text-2xl text-cocoa-900">
-              No folders yet
-            </h2>
-
-            <p className="text-sm text-cocoa-500 mt-2">
-              Create your first folder to start
-              organizing your photos.
-            </p>
-          </div>
+          <p className="text-cocoa-400">
+            No folders yet. Create your first one
+            above.
+          </p>
         ) : (
-          /* FOLDER GRID */
+          <>
+            {folders.length > 1 && (
+              <p className="text-xs text-cocoa-400 mb-3">
+                Press and hold a card, then drag
+                to reorder albums.
+              </p>
+            )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {folders.map((folder) => {
-              const isDragging =
-                draggingId === folder.id;
-
-              const isDeleting =
-                deletingId === folder.id;
-
-              const isEditing =
-                editingId === folder.id;
-
-              return (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {folders.map((folder) => (
                 <div
                   key={folder.id}
                   ref={registerItemRef(
@@ -351,47 +308,34 @@ export default function AdminDashboardPage() {
                     e.preventDefault()
                   }
                   style={{
-                    /*
-                     * VERY IMPORTANT:
-                     *
-                     * pan-y keeps normal vertical
-                     * page scrolling on mobile.
-                     *
-                     * Do NOT change this to
-                     * touchAction: "none".
-                     */
                     touchAction: "pan-y",
-
                     WebkitTouchCallout:
                       "none",
-
                     WebkitUserSelect:
                       "none",
                   }}
-                  className={`
-                    relative
-                    rounded-2xl
-                    overflow-hidden
-                    bg-white
-                    shadow-card
-                    border
-                    select-none
-                    cursor-grab
-                    active:cursor-grabbing
-                    ${
-                      isDragging
-                        ? "border-cocoa-500"
-                        : "border-cocoa-100"
-                    }
-                  `}
+                  className={`relative rounded-2xl overflow-hidden bg-white shadow-card border select-none cursor-grab active:cursor-grabbing ${
+                    draggingId === folder.id
+                      ? "border-cocoa-500"
+                      : "border-cocoa-100"
+                  }`}
                 >
                   {/* ==================================================
-                      IMAGE
+                      IMAGE / DRAG AREA
+
+                      IMPORTANT:
+                      The Link no longer WRAPS the image.
+
+                      The Image itself is pointer-events-none,
+                      allowing the folder card's pointerdown handler
+                      to receive the gesture.
+
+                      The transparent Link sits above it for normal
+                      tap/click navigation.
                       ================================================== */}
 
                   <div className="relative aspect-[4/3] bg-cocoa-100">
-                    {folder.orderable ===
-                      false ? (
+                    {folder.orderable === false ? (
                       <div className="absolute top-2 left-2 z-10 rounded-full bg-cocoa-900/80 text-cream text-[10px] uppercase tracking-wide px-2 py-1 pointer-events-none">
                         仅展示价格
                       </div>
@@ -408,12 +352,9 @@ export default function AdminDashboardPage() {
                           folder.cover_url,
                           500
                         )}
-                        alt={
-                          folder.name ||
-                          "Folder"
-                        }
+                        alt={folder.name}
                         fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 400px"
+                        sizes="33vw"
                         className="object-cover pointer-events-none"
                         draggable={false}
                       />
@@ -423,24 +364,9 @@ export default function AdminDashboardPage() {
                       </div>
                     )}
 
-                    {/*
-                     * IMPORTANT:
-                     *
-                     * The Link is NOT wrapping the image.
-                     *
-                     * The image has pointer-events-none,
-                     * so pointerdown reaches the draggable
-                     * folder card.
-                     *
-                     * This is the main difference that
-                     * fixes the folder drag interaction.
-                     */}
                     <Link
                       href={`/admin/folder/${folder.id}`}
-                      aria-label={`Open ${
-                        folder.name ||
-                        "folder"
-                      }`}
+                      aria-label={`Open ${folder.name}`}
                       className="absolute inset-0 z-20"
                       onClick={(e) => {
                         if (
@@ -455,14 +381,12 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* ==================================================
-                      FOLDER INFORMATION
+                      CARD INFORMATION
                       ================================================== */}
 
                   <div className="p-4">
-                    {isEditing ? (
+                    {editingId === folder.id ? (
                       <div className="space-y-3">
-                        {/* Chinese name */}
-
                         <input
                           autoFocus
                           value={editName}
@@ -475,8 +399,6 @@ export default function AdminDashboardPage() {
                           placeholder="中文名称 Folder name"
                         />
 
-                        {/* English name */}
-
                         <input
                           value={editNameEn}
                           onChange={(e) =>
@@ -487,8 +409,6 @@ export default function AdminDashboardPage() {
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                           placeholder="English name (optional)"
                         />
-
-                        {/* Chinese description */}
 
                         <textarea
                           value={
@@ -504,8 +424,6 @@ export default function AdminDashboardPage() {
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
 
-                        {/* English description */}
-
                         <textarea
                           value={
                             editDescriptionEn
@@ -519,8 +437,6 @@ export default function AdminDashboardPage() {
                           rows={2}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
-
-                        {/* Orderable */}
 
                         <label className="flex items-start gap-2 text-xs text-cocoa-600 bg-cocoa-50/60 border border-cocoa-100 rounded-lg px-3 py-2.5">
                           <input
@@ -541,17 +457,8 @@ export default function AdminDashboardPage() {
                             <span className="block font-medium text-cocoa-800">
                               顾客可直接下单
                             </span>
-
-                            <span className="block text-[11px] text-cocoa-400 mt-0.5">
-                              Customers can
-                              submit an
-                              order from
-                              this folder.
-                            </span>
                           </span>
                         </label>
-
-                        {/* Form type */}
 
                         {editOrderable ? (
                           <div className="space-y-1.5">
@@ -560,21 +467,12 @@ export default function AdminDashboardPage() {
                             </span>
 
                             <label
-                              className={`
-                                block
-                                rounded-lg
-                                border
-                                px-3
-                                py-2
-                                text-xs
-                                cursor-pointer
-                                ${
-                                  editFormType ===
-                                  "cake"
-                                    ? "border-cocoa-800 bg-cocoa-50"
-                                    : "border-cocoa-200"
-                                }
-                              `}
+                              className={`block rounded-lg border px-3 py-2 text-xs cursor-pointer ${
+                                editFormType ===
+                                "cake"
+                                  ? "border-cocoa-800 bg-cocoa-50"
+                                  : "border-cocoa-200"
+                              }`}
                             >
                               <input
                                 type="radio"
@@ -597,21 +495,12 @@ export default function AdminDashboardPage() {
                             </label>
 
                             <label
-                              className={`
-                                block
-                                rounded-lg
-                                border
-                                px-3
-                                py-2
-                                text-xs
-                                cursor-pointer
-                                ${
-                                  editFormType ===
-                                  "dessert"
-                                    ? "border-cocoa-800 bg-cocoa-50"
-                                    : "border-cocoa-200"
-                                }
-                              `}
+                              className={`block rounded-lg border px-3 py-2 text-xs cursor-pointer ${
+                                editFormType ===
+                                "dessert"
+                                  ? "border-cocoa-800 bg-cocoa-50"
+                                  : "border-cocoa-200"
+                              }`}
                             >
                               <input
                                 type="radio"
@@ -648,8 +537,6 @@ export default function AdminDashboardPage() {
                           </p>
                         )}
 
-                        {/* Edit buttons */}
-
                         <div className="flex gap-3 pt-1">
                           <button
                             type="button"
@@ -675,24 +562,15 @@ export default function AdminDashboardPage() {
                                 null
                               )
                             }
-                            disabled={
-                              savingEdit
-                            }
-                            className="text-xs text-cocoa-400 disabled:opacity-50"
+                            className="text-xs text-cocoa-400"
                           >
                             Cancel
                           </button>
                         </div>
                       </div>
                     ) : (
-                      /* ==================================================
-                         NORMAL FOLDER INFORMATION
-                         ================================================== */
-
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          {/* Folder name */}
-
                           <Link
                             href={`/admin/folder/${folder.id}`}
                             onClick={(e) => {
@@ -700,7 +578,6 @@ export default function AdminDashboardPage() {
                                 wasDragRef.current
                               ) {
                                 e.preventDefault();
-
                                 wasDragRef.current =
                                   false;
                               }
@@ -711,8 +588,6 @@ export default function AdminDashboardPage() {
                             </h2>
                           </Link>
 
-                          {/* English name */}
-
                           {folder.name_en && (
                             <p className="text-xs text-cocoa-400 truncate">
                               {
@@ -721,8 +596,6 @@ export default function AdminDashboardPage() {
                             </p>
                           )}
 
-                          {/* Description */}
-
                           {folder.description && (
                             <p className="text-xs text-cocoa-500 mt-0.5 line-clamp-2">
                               {
@@ -730,8 +603,6 @@ export default function AdminDashboardPage() {
                               }
                             </p>
                           )}
-
-                          {/* Photo count */}
 
                           <p className="text-xs text-cocoa-400 mt-0.5">
                             {
@@ -752,8 +623,6 @@ export default function AdminDashboardPage() {
                               : ""}
                           </p>
                         </div>
-
-                        {/* ACTIONS */}
 
                         <div className="flex flex-col items-end gap-1 text-xs shrink-0">
                           <button
@@ -776,33 +645,342 @@ export default function AdminDashboardPage() {
                                 folder.name
                               )
                             }
-                            disabled={
-                              isDeleting
-                            }
-                            className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                            className="text-red-500 hover:text-red-700"
                           >
-                            {isDeleting
-                              ? "Deleting..."
-                              : "Delete"}
+                            Delete
                           </button>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* SMALL MOBILE HINT */}
-
-        {!loading && folders.length > 0 && (
-          <p className="text-center text-[11px] text-cocoa-300 mt-8">
-            Press and hold a folder to move it.
-          </p>
+              ))}
+            </div>
+          </>
         )}
       </main>
+
+      {/* ================================================================
+          CREATE FOLDER MODAL
+          ================================================================ */}
+
+      {showCreateModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center px-0 sm:px-4"
+          onClick={closeCreateModal}
+        >
+          <div
+            className="w-full sm:max-w-md bg-cream rounded-t-2xl sm:rounded-2xl shadow-soft max-h-[90vh] overflow-y-auto"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+            {/* Modal header */}
+
+            <div className="flex items-center justify-between px-5 py-4 border-b border-cocoa-200/60 sticky top-0 bg-cream z-10">
+              <h2 className="font-serif font-medium text-xl text-cocoa-900">
+                New Album
+              </h2>
+
+              <button
+                type="button"
+                onClick={closeCreateModal}
+                className="text-cocoa-400 hover:text-cocoa-800 text-xl leading-none"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Create form */}
+
+            <form
+              onSubmit={handleCreate}
+              className="p-5 space-y-4"
+            >
+              {/* Chinese name */}
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  相册名称 *
+                </label>
+
+                <input
+                  type="text"
+                  autoFocus
+                  value={newName}
+                  onChange={(e) =>
+                    setNewName(
+                      e.target.value
+                    )
+                  }
+                  placeholder="例如：生日蛋糕"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                  required
+                />
+              </div>
+
+              {/* English name */}
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  英文名称（可选）
+                </label>
+
+                <input
+                  type="text"
+                  value={newNameEn}
+                  onChange={(e) =>
+                    setNewNameEn(
+                      e.target.value
+                    )
+                  }
+                  placeholder="e.g. Birthday Cakes"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
+
+              {/* Chinese description */}
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  描述（可选）
+                </label>
+
+                <textarea
+                  value={newDescription}
+                  onChange={(e) =>
+                    setNewDescription(
+                      e.target.value
+                    )
+                  }
+                  placeholder="这段文字会显示在相册标题下方，向顾客介绍这个系列"
+                  rows={3}
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
+
+              {/* English description */}
+
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                  英文描述（可选）
+                </label>
+
+                <textarea
+                  value={
+                    newDescriptionEn
+                  }
+                  onChange={(e) =>
+                    setNewDescriptionEn(
+                      e.target.value
+                    )
+                  }
+                  placeholder="English description shown under the album title"
+                  rows={3}
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
+
+              {/* Orderable */}
+
+              <label className="flex items-start gap-2.5 text-sm text-cocoa-600 bg-white border border-cocoa-200 rounded-lg px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={newOrderable}
+                  onChange={(e) =>
+                    setNewOrderable(
+                      e.target.checked
+                    )
+                  }
+                  className="mt-0.5 accent-cocoa-800"
+                />
+
+                <span>
+                  <span className="block font-medium text-cocoa-800">
+                    顾客可直接下单
+                  </span>
+
+                  <span className="block text-xs text-cocoa-400 mt-0.5">
+                    取消勾选后，此相册仅展示价格（使用每张照片的说明文字），顾客无法在线下单。
+                  </span>
+                </span>
+              </label>
+
+              {/* Form type */}
+
+              {newOrderable ? (
+                <div className="bg-white border border-cocoa-200 rounded-lg px-4 py-3">
+                  <span className="block text-sm font-medium text-cocoa-800 mb-2">
+                    下单表单类型
+                  </span>
+
+                  <div className="flex flex-col gap-2">
+                    {/* Cake */}
+
+                    <label
+                      className={`rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
+                        newFormType ===
+                        "cake"
+                          ? "border-cocoa-800 bg-cocoa-50"
+                          : "border-cocoa-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="new-form-type"
+                        className="mr-2 accent-cocoa-800"
+                        checked={
+                          newFormType ===
+                          "cake"
+                        }
+                        onChange={() =>
+                          setNewFormType(
+                            "cake"
+                          )
+                        }
+                      />
+
+                      蛋糕表单（默认）
+                      — 尺寸 + 口味 +
+                      两种夹心
+                    </label>
+
+                    {/* Dessert */}
+
+                    <label
+                      className={`rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
+                        newFormType ===
+                        "dessert"
+                          ? "border-cocoa-800 bg-cocoa-50"
+                          : "border-cocoa-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="new-form-type"
+                        className="mr-2 accent-cocoa-800"
+                        checked={
+                          newFormType ===
+                          "dessert"
+                        }
+                        onChange={() =>
+                          setNewFormType(
+                            "dessert"
+                          )
+                        }
+                      />
+
+                      甜品表单 — 单一价格
+                    </label>
+                  </div>
+
+                  {/* Dessert settings */}
+
+                  {newFormType ===
+                    "dessert" && (
+                    <div className="mt-4 pt-4 border-t border-cocoa-100 flex flex-wrap items-end gap-4">
+                      {/* Price */}
+
+                      <div>
+                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                          价格
+                        </label>
+
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-cocoa-500 text-xs font-medium">
+                            MMK
+                          </span>
+
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={
+                              newDessertPrice
+                            }
+                            onChange={(e) =>
+                              updateNewDessertPrice(
+                                e.target
+                                  .value
+                              )
+                            }
+                            placeholder="0"
+                            className="w-32 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Minimum quantity */}
+
+                      <div>
+                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
+                          最少购买数量
+                        </label>
+
+                        <input
+                          type="number"
+                          min={1}
+                          value={
+                            newMinQuantity
+                          }
+                          onChange={(e) =>
+                            setNewMinQuantity(
+                              Number(
+                                e.target
+                                  .value
+                              )
+                            )
+                          }
+                          className="w-28 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-cocoa-400 px-1">
+                  已取消勾选「顾客可直接下单」，此相册不会显示下单表单。
+                </p>
+              )}
+
+              {/* Error */}
+
+              {error && (
+                <p className="text-sm text-red-600">
+                  {error}
+                </p>
+              )}
+
+              {/* Buttons */}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={
+                    creating ||
+                    !newName.trim()
+                  }
+                  className="flex-1 rounded-lg bg-cocoa-800 text-cream py-2.5 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60"
+                >
+                  {creating
+                    ? "Creating..."
+                    : "Create Album"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeCreateModal}
+                  disabled={creating}
+                  className="rounded-lg border border-cocoa-200 text-cocoa-500 px-4 py-2.5 text-sm hover:bg-cocoa-50 transition-colors disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
