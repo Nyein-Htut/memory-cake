@@ -4,21 +4,46 @@ import { useEffect, useState } from "react";
 import AdminHeader from "@/components/AdminHeader";
 import { uploadOptionImage } from "@/lib/uploadOptionImage";
 
+function PinIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+function TruckIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M3 6h11v10H3z" />
+      <path d="M14 10h4l3 3v3h-7" />
+      <circle cx="7.5" cy="17.5" r="1.8" />
+      <circle cx="17.5" cy="17.5" r="1.8" />
+    </svg>
+  );
+}
+
+const digitsOnly = (v) => v.replace(/[^0-9]/g, "");
+
 export default function AdminSettingsPage() {
   const [sizes, setSizes] = useState([]);
   const [flavors, setFlavors] = useState([]);
   const [fillings, setFillings] = useState([]);
+  const [townships, setTownships] = useState([]);
+  const [newTownship, setNewTownship] = useState({ label: "", labelEn: "", fee: "" });
+  const [townshipError, setTownshipError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("/api/order-options")
+    fetch("/api/order-options", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         setSizes(data.options?.sizes || []);
         setFlavors(data.options?.flavors || []);
         setFillings(data.options?.fillings || []);
+        setTownships(data.options?.townships || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -31,7 +56,7 @@ export default function AdminSettingsPage() {
   // type="number" input reformats on every keystroke (cursor/leading-zero
   // jumps) and silently changes value on scroll-wheel — this avoids both.
   function updateSizePrice(i, rawValue) {
-    const digits = rawValue.replace(/[^0-9]/g, "");
+    const digits = digitsOnly(rawValue);
     updateSize(i, "price", digits === "" ? "" : Number(digits));
   }
 
@@ -90,6 +115,32 @@ export default function AdminSettingsPage() {
     }
   }
 
+  // ---- Delivery townships ----
+  function updateTownship(i, field, value) {
+    setTownships((prev) => prev.map((x, idx) => (idx === i ? { ...x, [field]: value } : x)));
+  }
+  function removeTownship(i) {
+    setTownships((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function handleAddTownship(e) {
+    e.preventDefault();
+    const label = newTownship.label.trim();
+    if (!label) {
+      setTownshipError("请填写区域名称");
+      return;
+    }
+    if (townships.some((x) => x.label.trim() === label)) {
+      setTownshipError("该区域已存在");
+      return;
+    }
+    setTownships((prev) => [
+      ...prev,
+      { label, labelEn: newTownship.labelEn.trim(), fee: newTownship.fee === "" ? 0 : Number(newTownship.fee) },
+    ]);
+    setNewTownship({ label: "", labelEn: "", fee: "" });
+    setTownshipError("");
+  }
+
   async function handleSave() {
     setSaving(true);
     setMessage("");
@@ -101,6 +152,9 @@ export default function AdminSettingsPage() {
         sizes: sizes.filter((s) => s.label.trim()),
         flavors: flavors.filter((f) => f.label.trim()),
         fillings: fillings.filter((f) => f.label.trim()),
+        townships: townships
+          .filter((x) => x.label.trim())
+          .map((x) => ({ ...x, fee: Number(x.fee) || 0 })),
       }),
     });
 
@@ -289,6 +343,143 @@ export default function AdminSettingsPage() {
           >
             + 添加夹心/水果
           </button>
+        </section>
+
+        {/* 配送区域 Section */}
+        <section className="mb-6 sm:mb-8 bg-white rounded-2xl border border-cocoa-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-gradient-to-br from-cocoa-800 to-cocoa-950 text-cream">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-cream/15 shrink-0">
+                <TruckIcon className="w-5 h-5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-serif text-lg sm:text-xl leading-tight">配送区域</h2>
+                <p className="text-[11px] text-cream/60">仅限已添加的区域可配送</p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-cream/15 px-3 py-1 text-xs font-medium">
+              {townships.length} 个区域
+            </span>
+          </div>
+
+          <div className="p-4 sm:p-6">
+            {/* Add form */}
+            <form
+              onSubmit={handleAddTownship}
+              className="rounded-xl border border-dashed border-cocoa-300 bg-cocoa-50/40 p-3 sm:p-4 mb-5"
+            >
+              <p className="text-xs font-medium text-cocoa-600 mb-2.5">新增区域</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  value={newTownship.label}
+                  onChange={(e) => {
+                    setNewTownship((p) => ({ ...p, label: e.target.value }));
+                    setTownshipError("");
+                  }}
+                  placeholder="中文：茵雅湖"
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                />
+                <input
+                  value={newTownship.labelEn}
+                  onChange={(e) => setNewTownship((p) => ({ ...p, labelEn: e.target.value }))}
+                  placeholder="English: Inya Lake"
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0 rounded-lg border border-cocoa-200 bg-white pl-3 focus-within:ring-2 focus-within:ring-cocoa-500">
+                  <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={newTownship.fee}
+                    onChange={(e) => setNewTownship((p) => ({ ...p, fee: digitsOnly(e.target.value) }))}
+                    placeholder="配送费（0 = 免费）"
+                    className="w-full min-w-0 bg-transparent px-1 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-lg bg-cocoa-800 text-cream px-5 py-2 text-sm font-medium hover:bg-cocoa-900 transition-colors active:scale-95"
+                >
+                  + 添加
+                </button>
+              </div>
+              {townshipError && <p className="text-xs text-red-600 mt-2">{townshipError}</p>}
+            </form>
+
+            {/* List */}
+            {townships.length === 0 ? (
+              <div className="rounded-xl border border-cocoa-100 bg-cocoa-50/30 py-8 text-center">
+                <PinIcon className="w-7 h-7 mx-auto text-cocoa-300 mb-2" />
+                <p className="text-sm text-cocoa-400">暂无配送区域</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {townships.map((x, i) => {
+                  const free = !(Number(x.fee) > 0);
+                  return (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-cocoa-100 bg-white shadow-sm hover:border-cocoa-300 transition-colors p-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-full bg-cocoa-100 text-cocoa-600 shrink-0">
+                          <PinIcon className="w-4 h-4" />
+                        </span>
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <input
+                              value={x.label}
+                              onChange={(e) => updateTownship(i, "label", e.target.value)}
+                              placeholder="中文名称"
+                              className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                            />
+                            <input
+                              value={x.labelEn || ""}
+                              onChange={(e) => updateTownship(i, "labelEn", e.target.value)}
+                              placeholder="English name"
+                              className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={x.fee}
+                                  onChange={(e) => {
+                                    const d = digitsOnly(e.target.value);
+                                    updateTownship(i, "fee", d === "" ? "" : Number(d));
+                                  }}
+                                  className="w-28 rounded-lg border border-cocoa-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                                />
+                              </div>
+                              {free && (
+                                <span className="rounded-full bg-green-50 text-green-700 text-[11px] font-medium px-2 py-0.5 whitespace-nowrap">
+                                  免费
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => removeTownship(i)}
+                              className="text-red-500 hover:text-red-700 text-xs sm:text-sm px-1.5 py-1 shrink-0 font-medium"
+                            >
+                              删除
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Save Bar (Sticky on Mobile) */}
