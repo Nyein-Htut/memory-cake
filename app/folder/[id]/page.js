@@ -53,18 +53,15 @@ export default async function FolderPage({ params }) {
 
   const { photos, total } = await getFirstPagePhotos(folderId);
 
-  const displayName = pickLang(lang, folder.name, folder.name_en);
-  const displayDescription = pickLang(lang, folder.description, folder.description_en);
+  const displayName = pickLang(lang, folder.name, folder.name_en, folder.name_my);
+  const displayDescription = pickLang(lang, folder.description, folder.description_en, folder.description_my);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0E6DA]">
       <PublicHeader />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-12">
-        <Link
-          href="/"
-          className="text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors"
-        >
+        <Link href="/" className="text-sm text-cocoa-500 hover:text-cocoa-800 transition-colors">
           {t("folder.back")}
         </Link>
 
@@ -74,14 +71,10 @@ export default async function FolderPage({ params }) {
           </h1>
 
           {displayDescription && (
-            <p className="mt-3 max-w-2xl text-sm sm:text-base text-cocoa-600">
-              {displayDescription}
-            </p>
+            <p className="mt-3 max-w-2xl text-sm sm:text-base text-cocoa-600">{displayDescription}</p>
           )}
 
-          <p className="mt-3 text-xs uppercase tracking-wider text-cocoa-500">
-            {photoCountLabel(t, total)}
-          </p>
+          <p className="mt-3 text-xs uppercase tracking-wider text-cocoa-500">{photoCountLabel(t, total)}</p>
         </div>
 
         {total === 0 ? (
@@ -93,6 +86,7 @@ export default async function FolderPage({ params }) {
             folderId={folderId}
             folderName={folder.name}
             folderNameEn={folder.name_en || ""}
+            folderNameMy={folder.name_my || ""}
             orderable={folder.orderable !== false}
             orderFormType={folder.order_form_type || "cake"}
             dessertOptions={folder.dessert_options || []}
