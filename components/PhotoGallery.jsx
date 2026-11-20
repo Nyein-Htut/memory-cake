@@ -56,6 +56,7 @@ export default function PhotoGallery({
   folderId,
   folderName: folderNameZh,
   folderNameEn = "",
+  folderNameMy = "",
   orderable = true,
   orderFormType = "cake",
   dessertOptions = [],
@@ -65,12 +66,12 @@ export default function PhotoGallery({
   pageSize = 24,
 }) {
   const { lang, t } = useLang();
-  const folderName = pickLang(lang, folderNameZh, folderNameEn);
+  const folderName = pickLang(lang, folderNameZh, folderNameEn, folderNameMy);
 
   const [rawPhotos, setPhotos] = useState(initialPhotos);
-  // Swap in the English caption when the visitor is in English.
+  // Swap in the English / Burmese caption when the visitor uses that language.
   const photos = useMemo(
-    () => rawPhotos.map((p) => ({ ...p, caption: pickLang(lang, p.caption, p.caption_en) })),
+    () => rawPhotos.map((p) => ({ ...p, caption: pickLang(lang, p.caption, p.caption_en, p.caption_my) })),
     [rawPhotos, lang]
   );
 
@@ -119,17 +120,11 @@ export default function PhotoGallery({
 
   const close = useCallback(() => setActiveIndex(null), []);
   const showPrev = useCallback(
-    () =>
-      setActiveIndex((i) =>
-        i === null ? null : (i - 1 + photos.length) % photos.length
-      ),
+    () => setActiveIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length)),
     [photos.length]
   );
   const showNext = useCallback(
-    () =>
-      setActiveIndex((i) =>
-        i === null ? null : (i + 1) % photos.length
-      ),
+    () => setActiveIndex((i) => (i === null ? null : (i + 1) % photos.length)),
     [photos.length]
   );
 
@@ -190,9 +185,7 @@ export default function PhotoGallery({
                   {captionText && (
                     <p
                       className={`text-xs sm:text-sm leading-snug whitespace-pre-line break-words ${
-                        hasCaption
-                          ? "font-semibold text-cocoa-900"
-                          : "text-cocoa-500"
+                        hasCaption ? "font-semibold text-cocoa-900" : "text-cocoa-500"
                       }`}
                     >
                       {captionText}
@@ -239,23 +232,26 @@ export default function PhotoGallery({
           onTouchEnd={handleTouchEnd}
         >
           <button
-            onClick={(e) => { e.stopPropagation(); close(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              close();
+            }}
             className="absolute top-5 right-5 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-3xl transition z-10"
             aria-label={t("common.close")}
           >
             &times;
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); showPrev(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              showPrev();
+            }}
             className="absolute left-4 sm:left-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
             aria-label={t("common.prev")}
           >
             &#8249;
           </button>
-          <div
-            className="relative w-full max-w-5xl h-[65vh] sm:h-[75vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative w-full max-w-5xl h-[65vh] sm:h-[75vh]" onClick={(e) => e.stopPropagation()}>
             <Image
               src={cldFull(photos[activeIndex].url, 1600)}
               alt={photos[activeIndex].caption || "Memory Cake photo"}
@@ -266,7 +262,10 @@ export default function PhotoGallery({
             />
           </div>
           <button
-            onClick={(e) => { e.stopPropagation(); showNext(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              showNext();
+            }}
             className="absolute right-4 sm:right-8 w-12 h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-4xl transition z-10"
             aria-label={t("common.next")}
           >
@@ -318,13 +317,14 @@ export default function PhotoGallery({
       )}
 
       {/* ORDER MODAL — the order itself always saves the original (Chinese)
-          folder name; the English name is passed only for display. */}
+          folder name; the English/Burmese names are passed only for display. */}
       {orderable && orderingPhoto && (
         <OrderModal
           photo={orderingPhoto}
           folderId={folderId}
           folderName={folderNameZh}
           folderNameEn={folderNameEn}
+          folderNameMy={folderNameMy}
           orderFormType={orderFormType}
           dessertOptions={dessertOptions}
           minQuantity={dessertMinQuantity}
