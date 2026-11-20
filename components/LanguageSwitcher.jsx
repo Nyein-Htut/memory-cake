@@ -61,9 +61,22 @@ function FlagGB({ className }) {
   );
 }
 
+// Myanmar: yellow / green / red stripes with a white star.
+function FlagMM({ className }) {
+  return (
+    <svg viewBox="0 0 30 20" className={className} aria-hidden="true">
+      <rect width="30" height="20" fill="#FECB00" />
+      <rect y="6.67" width="30" height="13.33" fill="#34B233" />
+      <rect y="13.33" width="30" height="6.67" fill="#EA2839" />
+      <polygon points={starPoints(15, 10.8, 6.6)} fill="#fff" />
+    </svg>
+  );
+}
+
 const OPTIONS = [
   { code: "zh", label: "中文", Flag: FlagCN },
   { code: "en", label: "English", Flag: FlagGB },
+  { code: "my", label: "မြန်မာ", Flag: FlagMM },
 ];
 
 export default function LanguageSwitcher() {
