@@ -41,7 +41,8 @@ export async function PATCH(request, { params }) {
   }
 
   const id = Number(params.id);
-  const { name, nameEn, description, descriptionEn, orderable, orderFormType } = await request.json();
+  const { name, nameEn, nameMy, description, descriptionEn, descriptionMy, orderable, orderFormType } =
+    await request.json();
 
   if (!name || !name.trim()) {
     return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
@@ -49,12 +50,19 @@ export async function PATCH(request, { params }) {
 
   const cleanFormType = orderFormType === "cake" || orderFormType === "dessert" ? orderFormType : null;
 
+  // Burmese fields: if the caller doesn't send them at all, leave the saved
+  // value alone (so older callers can't accidentally wipe Burmese text).
+  const hasNameMy = nameMy !== undefined;
+  const hasDescMy = descriptionMy !== undefined;
+
   const rows = await sql`
     UPDATE folders
     SET name = ${name.trim()},
         name_en = ${nameEn?.trim() || null},
+        name_my = CASE WHEN ${hasNameMy}::boolean THEN ${nameMy?.trim() || null} ELSE name_my END,
         description = ${description || null},
         description_en = ${descriptionEn?.trim() || null},
+        description_my = CASE WHEN ${hasDescMy}::boolean THEN ${descriptionMy?.trim() || null} ELSE description_my END,
         orderable = COALESCE(${typeof orderable === "boolean" ? orderable : null}, orderable),
         order_form_type = COALESCE(${cleanFormType}, order_form_type),
         updated_at = now()
