@@ -2,6 +2,7 @@ import "./globals.css";
 import PushPrompt from "@/components/PushPrompt";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import { getLang, getT } from "@/lib/i18n/server";
+import { htmlLang } from "@/lib/i18n/dictionaries";
 
 export function generateMetadata() {
   const t = getT(getLang());
@@ -29,7 +30,7 @@ export default function RootLayout({ children }) {
   const lang = getLang();
 
   return (
-    <html lang={lang === "en" ? "en" : "zh-CN"}>
+    <html lang={htmlLang(lang)}>
       <body className="min-h-screen bg-cream text-cocoa-900 antialiased">
         <LanguageProvider initialLang={lang}>
           {children}
