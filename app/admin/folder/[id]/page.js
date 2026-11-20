@@ -593,3 +593,144 @@ export default function AdminFolderPage({ params }) {
           <p className="text-xs text-cocoa-400 mt-2">You can select multiple photos at once.</p>
 
           {error && !editingName && (
+            <p className="text-sm text-red-600 mt-3 whitespace-pre-wrap break-words">{error}</p>
+          )}
+        </div>
+
+        {photos.length === 0 ? (
+          <p className="text-cocoa-400">No photos in this album yet.</p>
+        ) : (
+          <>
+            {photos.length > 1 && (
+              <p className="text-xs text-cocoa-400 mb-3">
+                Press and hold a photo, then drag to reorder. Use "Set as cover" to choose the album thumbnail.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              {photos.map((photo) => {
+                const isCover = folder.cover_url === photo.url;
+
+                return (
+                  <div
+                    key={photo.id}
+                    ref={registerItemRef(photo.id)}
+                    onPointerDown={handlePointerDown(photo.id)}
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{ touchAction: "pan-y", WebkitTouchCallout: "none", WebkitUserSelect: "none" }}
+                    className={`rounded-xl overflow-hidden bg-white border shadow-card select-none ${
+                      draggingId === photo.id ? "cursor-grabbing border-cocoa-500" : "cursor-grab border-cocoa-100"
+                    }`}
+                  >
+                    <div className="relative aspect-square bg-cocoa-100">
+                      {isCover && (
+                        <div className="absolute top-2 right-2 z-10 rounded-full bg-cocoa-800 text-cream text-[10px] uppercase tracking-wide px-2 py-1">
+                          Cover
+                        </div>
+                      )}
+
+                      <Image
+                        src={cldThumb(photo.url, 400)}
+                        alt={photo.caption || "photo"}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover pointer-events-none"
+                      />
+                    </div>
+
+                    <div className="p-2.5">
+                      {editingCaptionId === photo.id ? (
+                        <div className="space-y-1.5">
+                          <input
+                            autoFocus
+                            value={captionDraft}
+                            onChange={(e) => setCaptionDraft(e.target.value)}
+                            placeholder="中文说明 (optional)"
+                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          />
+
+                          <input
+                            value={captionEnDraft}
+                            onChange={(e) => setCaptionEnDraft(e.target.value)}
+                            placeholder="English caption (optional)"
+                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          />
+
+                          <input
+                            value={captionMyDraft}
+                            onChange={(e) => setCaptionMyDraft(e.target.value)}
+                            placeholder="မြန်မာ caption (optional)"
+                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          />
+
+                          <div className="flex gap-3 text-xs">
+                            <button onClick={() => handleSaveCaption(photo.id)} className="text-cocoa-700 font-medium py-1">
+                              Save
+                            </button>
+                            <button onClick={() => setEditingCaptionId(null)} className="text-cocoa-400 py-1">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <p className="text-xs text-cocoa-500 truncate">{photo.caption || "No caption"}</p>
+                          {photo.caption_en && (
+                            <p className="text-[11px] text-cocoa-400 truncate">{photo.caption_en}</p>
+                          )}
+                          {photo.caption_my && (
+                            <p className="text-[11px] text-cocoa-400 truncate">{photo.caption_my}</p>
+                          )}
+
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                            <button
+                              onClick={() => {
+                                setEditingCaptionId(photo.id);
+                                setCaptionDraft(photo.caption || "");
+                                setCaptionEnDraft(photo.caption_en || "");
+                                setCaptionMyDraft(photo.caption_my || "");
+                              }}
+                              className="text-cocoa-500 hover:text-cocoa-800 py-1"
+                            >
+                              Edit
+                            </button>
+
+                            {!isCover && (
+                              <button
+                                onClick={() => handleSetCover(photo)}
+                                disabled={settingCoverId === photo.id}
+                                className="text-cocoa-500 hover:text-cocoa-800 py-1 disabled:opacity-60"
+                              >
+                                {settingCoverId === photo.id ? "Setting..." : "Set as cover"}
+                              </button>
+                            )}
+
+                            <button onClick={() => handleDeletePhoto(photo.id)} className="text-red-500 hover:text-red-700 py-1">
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {hasMore && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={loadMorePhotos}
+                  disabled={loadingMore}
+                  className="rounded-lg border border-cocoa-300 text-cocoa-700 px-5 py-2 text-sm font-medium hover:bg-cocoa-50 disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading..." : `Load more (${photos.length} of ${total})`}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
