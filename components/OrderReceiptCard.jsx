@@ -2,9 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n/LanguageProvider";
+import { pickLang } from "@/lib/i18n/pick";
+import { localeOf } from "@/lib/i18n/dictionaries";
 
 const CARD_WIDTH = 900;
 const CARD_HEIGHT = 1700;
+
+// Cormorant/Inter have no Myanmar glyphs, so every canvas font stack falls
+// back to Noto Sans Myanmar (loaded in globals.css).
+const SANS = "Inter, 'Noto Sans Myanmar', system-ui, sans-serif";
+const SERIF = "'Cormorant Garamond', 'Noto Sans Myanmar', Georgia, serif";
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -35,6 +42,16 @@ async function loadImageSafe(src) {
   }
 }
 
+// Split text into user-perceived characters so Burmese syllables (base letter
+// + stacked marks) are never cut in half when a line wraps.
+function graphemes(text) {
+  const str = String(text);
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    return Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(str), (s) => s.segment);
+  }
+  return Array.from(str);
+}
+
 export default function OrderReceiptCard({ order, photoUrl }) {
   const { lang, t } = useLang();
   const canvasRef = useRef(null);
@@ -42,8 +59,8 @@ export default function OrderReceiptCard({ order, photoUrl }) {
   const [generating, setGenerating] = useState(true);
   const [failed, setFailed] = useState(false);
 
-  // English text when in English mode and the admin filled it in.
-  const L = (zh, en) => (lang === "en" && en ? en : zh);
+  // Picks the visitor's language: Burmese -> English -> Chinese fallback chain.
+  const L = (zh, en, my) => pickLang(lang, zh, en, my);
 
   useEffect(() => {
     generate();
@@ -58,6 +75,8 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       await Promise.all([
         document.fonts.load("700 44px 'Cormorant Garamond'").catch(() => {}),
         document.fonts.load("600 24px 'Inter'").catch(() => {}),
+        // Sample Burmese text so the browser fetches the Myanmar subset.
+        document.fonts.load("700 26px 'Noto Sans Myanmar'", "မြန်မာ").catch(() => {}),
       ]);
 
       const canvas = canvasRef.current;
@@ -84,10 +103,10 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       // Header Block
       ctx.textAlign = "center";
       ctx.fillStyle = "#1a130e";
-      ctx.font = "700 48px 'Cormorant Garamond', Georgia, serif";
+      ctx.font = `700 48px ${SERIF}`;
       ctx.fillText("MEMORY CAKE", CARD_WIDTH / 2, 105);
 
-      ctx.font = "600 22px Inter, sans-serif";
+      ctx.font = `600 22px ${SANS}`;
       ctx.fillStyle = "#7a5738";
       ctx.fillText(t("receipt.subtitle"), CARD_WIDTH / 2, 142);
 
@@ -166,7 +185,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
           }
 
           ctx.textAlign = "center";
-          ctx.font = "700 22px Inter, system-ui, sans-serif";
+          ctx.font = `700 22px ${SANS}`;
           ctx.fillStyle = "#221912";
           ctx.fillText(label || "—", chipX + chipWidth / 2, yPos + chipHeight + 30);
         }
@@ -177,9 +196,19 @@ export default function OrderReceiptCard({ order, photoUrl }) {
           loadImageSafe(order.filling2ImageUrl),
         ]);
 
-        drawOptionChip(photoY, L(order.flavor, order.flavorEn), flavorImg, "🍫");
-        drawOptionChip(photoY + chipHeight + chipGap, L(order.filling1, order.filling1En), filling1Img, "🍓");
-        drawOptionChip(photoY + (chipHeight + chipGap) * 2, L(order.filling2, order.filling2En), filling2Img, "🫐");
+        drawOptionChip(photoY, L(order.flavor, order.flavorEn, order.flavorMy), flavorImg, "🍫");
+        drawOptionChip(
+          photoY + chipHeight + chipGap,
+          L(order.filling1, order.filling1En, order.filling1My),
+          filling1Img,
+          "🍓"
+        );
+        drawOptionChip(
+          photoY + (chipHeight + chipGap) * 2,
+          L(order.filling2, order.filling2En, order.filling2My),
+          filling2Img,
+          "🫐"
+        );
       }
 
       // ==========================================
@@ -188,7 +217,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       let currentY = photoY + photoHeight + 110;
 
       function wrapRightText(text, rightXPos, startY, maxWidth, lineHeight) {
-        const chars = String(text).split("");
+        const chars = graphemes(text);
         let line = "";
         const lines = [];
         for (const ch of chars) {
@@ -213,12 +242,12 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         const maxValWidth = CARD_WIDTH - 320;
 
         ctx.textAlign = "left";
-        ctx.font = "700 23px Inter, system-ui, sans-serif";
+        ctx.font = `700 23px ${SANS}`;
         ctx.fillStyle = "#63472d";
         ctx.fillText(label, leftX, currentY);
 
         ctx.textAlign = "right";
-        ctx.font = "700 26px Inter, system-ui, sans-serif";
+        ctx.font = `700 26px ${SANS}`;
         ctx.fillStyle = "#1e1610";
 
         const lineHeight = 38;
@@ -235,7 +264,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         const rightXPos = CARD_WIDTH - 75;
 
         ctx.textAlign = "left";
-        ctx.font = "700 23px Inter, system-ui, sans-serif";
+        ctx.font = `700 23px ${SANS}`;
         ctx.fillStyle = "#63472d";
         ctx.fillText(label, leftX, currentY);
 
@@ -246,15 +275,15 @@ export default function OrderReceiptCard({ order, photoUrl }) {
 
         if (parts.length > 1) {
           ctx.fillStyle = "#221912";
-          ctx.font = "700 38px 'Cormorant Garamond', Georgia, serif";
+          ctx.font = `700 38px ${SERIF}`;
           ctx.fillText(parts[0], rightXPos - ctx.measureText(`MMK ${parts[1]}`).width, currentY);
 
           ctx.fillStyle = "#7a2a16";
-          ctx.font = "700 34px 'Cormorant Garamond', Georgia, serif";
+          ctx.font = `700 34px ${SERIF}`;
           ctx.fillText(`MMK ${parts[1]}`, rightXPos, currentY);
         } else {
           ctx.fillStyle = "#221912";
-          ctx.font = "700 36px 'Cormorant Garamond', Georgia, serif";
+          ctx.font = `700 36px ${SERIF}`;
           ctx.fillText(fullText, rightXPos, currentY);
         }
 
@@ -279,12 +308,12 @@ export default function OrderReceiptCard({ order, photoUrl }) {
         currentY += 18;
 
         ctx.textAlign = "left";
-        ctx.font = "700 25px Inter, system-ui, sans-serif";
+        ctx.font = `700 25px ${SANS}`;
         ctx.fillStyle = "#63472d";
         ctx.fillText(label, leftX, currentY);
 
         ctx.textAlign = "right";
-        ctx.font = "700 48px 'Cormorant Garamond', Georgia, serif";
+        ctx.font = `700 48px ${SERIF}`;
         ctx.fillStyle = "#7a2a16";
         ctx.fillText(`MMK ${Number(amount).toLocaleString("en-US")}`, rightXPos, currentY + 4);
 
@@ -295,7 +324,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       renderDetailRow(t("receipt.wechat"), order.wechatName);
       renderPriceRow(
         isDessert ? t("receipt.item") : t("receipt.size"),
-        L(order.sizeLabel, order.sizeLabelEn),
+        L(order.sizeLabel, order.sizeLabelEn, order.sizeLabelMy),
         order.sizePrice
       );
 
@@ -307,7 +336,7 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       }
 
       renderDetailRow(t("receipt.date"), [order.deliveryDate, order.deliveryTime].filter(Boolean).join("  "));
-      renderDetailRow(t("receipt.township"), L(order.township, order.townshipEn));
+      renderDetailRow(t("receipt.township"), L(order.township, order.townshipEn, order.townshipMy));
       renderDetailRow(t("receipt.address"), order.deliveryPlace);
       renderDetailRow(t("receipt.phone"), order.phone);
       if (order.remark) renderDetailRow(t("receipt.note"), order.remark);
@@ -329,18 +358,18 @@ export default function OrderReceiptCard({ order, photoUrl }) {
       const orderDate = new Date(order.createdAt || Date.now());
 
       ctx.textAlign = "center";
-      ctx.font = "600 20px Inter, sans-serif";
+      ctx.font = `600 20px ${SANS}`;
       ctx.fillStyle = "#7a5738";
       ctx.fillText(
         t("receipt.orderNo", {
           id: order.id || "8",
-          date: orderDate.toLocaleDateString(lang === "en" ? "en-GB" : "zh-CN"),
+          date: orderDate.toLocaleDateString(localeOf(lang)),
         }),
         CARD_WIDTH / 2,
         CARD_HEIGHT - 95
       );
 
-      ctx.font = "600 22px 'Cormorant Garamond', Georgia, serif";
+      ctx.font = `600 22px ${SERIF}`;
       ctx.fillStyle = "#593d24";
       ctx.fillText(t("receipt.thanks"), CARD_WIDTH / 2, CARD_HEIGHT - 60);
 
