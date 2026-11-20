@@ -25,12 +25,15 @@ function TruckIcon(props) {
 
 const digitsOnly = (v) => v.replace(/[^0-9]/g, "");
 
+const inputCls =
+  "w-full min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white";
+
 export default function AdminSettingsPage() {
   const [sizes, setSizes] = useState([]);
   const [flavors, setFlavors] = useState([]);
   const [fillings, setFillings] = useState([]);
   const [townships, setTownships] = useState([]);
-  const [newTownship, setNewTownship] = useState({ label: "", labelEn: "", fee: "" });
+  const [newTownship, setNewTownship] = useState({ label: "", labelEn: "", labelMy: "", fee: "" });
   const [townshipError, setTownshipError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,7 +64,7 @@ export default function AdminSettingsPage() {
   }
 
   function addSize() {
-    setSizes((prev) => [...prev, { label: "", labelEn: "", price: 0 }]);
+    setSizes((prev) => [...prev, { label: "", labelEn: "", labelMy: "", price: 0 }]);
   }
 
   function removeSize(i) {
@@ -75,7 +78,7 @@ export default function AdminSettingsPage() {
     setFlavors((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)));
   }
   function addFlavor() {
-    setFlavors((prev) => [...prev, { label: "", labelEn: "", imageUrl: null }]);
+    setFlavors((prev) => [...prev, { label: "", labelEn: "", labelMy: "", imageUrl: null }]);
   }
   function removeFlavor(i) {
     setFlavors((prev) => prev.filter((_, idx) => idx !== i));
@@ -97,7 +100,7 @@ export default function AdminSettingsPage() {
     setFillings((prev) => prev.map((f, idx) => (idx === i ? { ...f, [field]: value } : f)));
   }
   function addFilling() {
-    setFillings((prev) => [...prev, { label: "", labelEn: "", imageUrl: null }]);
+    setFillings((prev) => [...prev, { label: "", labelEn: "", labelMy: "", imageUrl: null }]);
   }
   function removeFilling(i) {
     setFillings((prev) => prev.filter((_, idx) => idx !== i));
@@ -135,9 +138,14 @@ export default function AdminSettingsPage() {
     }
     setTownships((prev) => [
       ...prev,
-      { label, labelEn: newTownship.labelEn.trim(), fee: newTownship.fee === "" ? 0 : Number(newTownship.fee) },
+      {
+        label,
+        labelEn: newTownship.labelEn.trim(),
+        labelMy: newTownship.labelMy.trim(),
+        fee: newTownship.fee === "" ? 0 : Number(newTownship.fee),
+      },
     ]);
-    setNewTownship({ label: "", labelEn: "", fee: "" });
+    setNewTownship({ label: "", labelEn: "", labelMy: "", fee: "" });
     setTownshipError("");
   }
 
@@ -184,7 +192,7 @@ export default function AdminSettingsPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 mb-2">订购设置</h1>
         <p className="text-xs sm:text-sm text-cocoa-400 mb-6 sm:mb-8">
-          管理下单表单中可供顾客选择的尺寸、价格、口味和夹心/水果选项。英文名称为选填，留空则英文模式下显示中文。
+          管理下单表单中可供顾客选择的尺寸、价格、口味和夹心/水果选项。英文和缅文名称为选填，留空时缅文模式显示英文，英文模式显示中文。
         </p>
 
         {/* 尺寸与价格 Section */}
@@ -192,24 +200,27 @@ export default function AdminSettingsPage() {
           <h2 className="font-serif text-lg sm:text-xl text-cocoa-900 mb-4">尺寸与价格</h2>
           <div className="space-y-3">
             {sizes.map((s, i) => (
-              <div
-                key={i}
-                className="p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100 space-y-2"
-              >
+              <div key={i} className="p-2.5 sm:p-3 bg-cocoa-50/30 rounded-xl border border-cocoa-100 space-y-2">
                 <div className="flex items-center gap-2">
                   <input
                     value={s.label}
                     onChange={(e) => updateSize(i, "label", e.target.value)}
                     placeholder="中文：6寸"
-                    className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    className={`flex-1 ${inputCls}`}
                   />
                   <input
                     value={s.labelEn || ""}
                     onChange={(e) => updateSize(i, "labelEn", e.target.value)}
                     placeholder="English: 6 inch"
-                    className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    className={`flex-1 ${inputCls}`}
                   />
                 </div>
+                <input
+                  value={s.labelMy || ""}
+                  onChange={(e) => updateSize(i, "labelMy", e.target.value)}
+                  placeholder="မြန်မာ: ၆ လက်မ"
+                  className={inputCls}
+                />
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1">
                     <span className="text-cocoa-500 text-xs font-medium shrink-0">MMK</span>
@@ -266,13 +277,19 @@ export default function AdminSettingsPage() {
                     value={f.label}
                     onChange={(e) => updateFlavor(i, "label", e.target.value)}
                     placeholder="中文：巧克力"
-                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    className={inputCls}
                   />
                   <input
                     value={f.labelEn || ""}
                     onChange={(e) => updateFlavor(i, "labelEn", e.target.value)}
                     placeholder="English: Chocolate"
-                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    className={inputCls}
+                  />
+                  <input
+                    value={f.labelMy || ""}
+                    onChange={(e) => updateFlavor(i, "labelMy", e.target.value)}
+                    placeholder="မြန်မာ: ချော့ကလက်"
+                    className={inputCls}
                   />
                 </div>
                 <button
@@ -319,13 +336,19 @@ export default function AdminSettingsPage() {
                     value={f.label}
                     onChange={(e) => updateFilling(i, "label", e.target.value)}
                     placeholder="中文：草莓"
-                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    className={inputCls}
                   />
                   <input
                     value={f.labelEn || ""}
                     onChange={(e) => updateFilling(i, "labelEn", e.target.value)}
                     placeholder="English: Strawberry"
-                    className="w-full rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                    className={inputCls}
+                  />
+                  <input
+                    value={f.labelMy || ""}
+                    onChange={(e) => updateFilling(i, "labelMy", e.target.value)}
+                    placeholder="မြန်မာ: စတော်ဘယ်ရီ"
+                    className={inputCls}
                   />
                 </div>
                 <button
@@ -369,7 +392,7 @@ export default function AdminSettingsPage() {
               className="rounded-xl border border-dashed border-cocoa-300 bg-cocoa-50/40 p-3 sm:p-4 mb-5"
             >
               <p className="text-xs font-medium text-cocoa-600 mb-2.5">新增区域</p>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <input
                   value={newTownship.label}
                   onChange={(e) => {
@@ -383,6 +406,12 @@ export default function AdminSettingsPage() {
                   value={newTownship.labelEn}
                   onChange={(e) => setNewTownship((p) => ({ ...p, labelEn: e.target.value }))}
                   placeholder="English: Inya Lake"
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                />
+                <input
+                  value={newTownship.labelMy}
+                  onChange={(e) => setNewTownship((p) => ({ ...p, labelMy: e.target.value }))}
+                  placeholder="မြန်မာ: အင်းယားကန်"
                   className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                 />
               </div>
@@ -429,18 +458,24 @@ export default function AdminSettingsPage() {
                           <PinIcon className="w-4 h-4" />
                         </span>
                         <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="grid gap-2 sm:grid-cols-3">
                             <input
                               value={x.label}
                               onChange={(e) => updateTownship(i, "label", e.target.value)}
                               placeholder="中文名称"
-                              className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                              className={inputCls}
                             />
                             <input
                               value={x.labelEn || ""}
                               onChange={(e) => updateTownship(i, "labelEn", e.target.value)}
                               placeholder="English name"
-                              className="flex-1 min-w-0 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                              className={inputCls}
+                            />
+                            <input
+                              value={x.labelMy || ""}
+                              onChange={(e) => updateTownship(i, "labelMy", e.target.value)}
+                              placeholder="မြန်မာအမည်"
+                              className={inputCls}
                             />
                           </div>
                           <div className="flex items-center justify-between gap-2">
