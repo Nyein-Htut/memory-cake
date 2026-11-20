@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const folders = await sql`
-    SELECT f.id, f.name, f.name_en, f.description, f.description_en, f.cover_url, f.position, f.orderable,
+    SELECT f.id, f.name, f.name_en, f.name_my, f.description, f.description_en, f.description_my,
+           f.cover_url, f.position, f.orderable,
            f.order_form_type, f.dessert_options, f.dessert_min_quantity, f.created_at,
            COUNT(p.id)::int AS photo_count
     FROM folders f
@@ -22,8 +23,11 @@ export async function POST(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, nameEn, description, descriptionEn, orderable, orderFormType, dessertOptions, minQuantity } =
-    await request.json();
+  const {
+    name, nameEn, nameMy,
+    description, descriptionEn, descriptionMy,
+    orderable, orderFormType, dessertOptions, minQuantity,
+  } = await request.json();
 
   if (!name || !name.trim()) {
     return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
@@ -47,10 +51,12 @@ export async function POST(request) {
 
   const rows = await sql`
     INSERT INTO folders (
-      name, name_en, description, description_en, position, orderable, order_form_type, dessert_options, dessert_min_quantity
+      name, name_en, name_my, description, description_en, description_my,
+      position, orderable, order_form_type, dessert_options, dessert_min_quantity
     )
     VALUES (
-      ${name.trim()}, ${nameEn?.trim() || null}, ${description || null}, ${descriptionEn?.trim() || null},
+      ${name.trim()}, ${nameEn?.trim() || null}, ${nameMy?.trim() || null},
+      ${description || null}, ${descriptionEn?.trim() || null}, ${descriptionMy?.trim() || null},
       ${nextPosition}, ${orderable === false ? false : true},
       ${cleanFormType}, ${JSON.stringify(cleanDessertOptions)}, ${cleanMinQuantity}
     )
