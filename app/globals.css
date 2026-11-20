@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&family=Noto+Sans+Myanmar:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -21,6 +21,37 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---- Burmese ----
+   Cormorant/Inter have no Myanmar glyphs, so use Noto Sans Myanmar for
+   everything (headings included). Burmese script is tall and stacks marks
+   above/below the line, so it needs more line height than Latin or Chinese,
+   and must never be letter-spaced. Tight line-heights are loosened so
+   truncated text (overflow hidden) doesn't clip the marks. */
+html[lang="my"] body,
+html[lang="my"] .font-serif {
+  font-family: "Noto Sans Myanmar", "Myanmar Text", "Inter", system-ui, sans-serif;
+}
+html[lang="my"] body {
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+html[lang="my"] .leading-none,
+html[lang="my"] .leading-tight,
+html[lang="my"] .leading-snug {
+  line-height: 1.55;
+}
+html[lang="my"] .truncate {
+  line-height: 1.7;
+}
+html[lang="my"] [class*="tracking-"] {
+  letter-spacing: normal;
+}
+/* Burmese is unreadable at 10px — bump the tiniest labels slightly. */
+html[lang="my"] .text-\[10px\],
+html[lang="my"] .text-\[11px\] {
+  font-size: 11px;
+}
 
 /* iOS Safari zooms the page when a focused field has font-size < 16px.
    Force 16px on touch devices only (desktop keeps the compact sizes).
