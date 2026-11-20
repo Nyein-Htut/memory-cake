@@ -45,6 +45,8 @@ function SearchIcon(props) {
 }
 
 // Lowercase + strip accents so "Mingalar" / "mingalar" / "Mingalár" all match.
+// (NFD also splits some Burmese vowel marks, but the same happens to the
+// query, so Burmese matching stays consistent.)
 const norm = (s) =>
   String(s || "")
     .normalize("NFD")
@@ -89,17 +91,19 @@ export default function TownshipSelect({ townships = [], value, onChange }) {
   const searchRef = useRef(null);
 
   const selected = townships.find((x) => x.label === value);
-  const nameOf = (x) => pickLang(lang, x.label, x.labelEn);
+  const nameOf = (x) => pickLang(lang, x.label, x.labelEn, x.labelMy);
   const feeText = (fee) =>
     Number(fee) > 0 ? `MMK ${Number(fee).toLocaleString("en-US")}` : t("order.free");
 
-  // Search both the Chinese and English names, whatever language the UI is in.
+  // Search the Chinese, English and Burmese names, whatever language the UI is in.
   const results = useMemo(() => {
     const q = norm(query);
     if (!q) return townships;
     return townships
       .map((x) => {
-        const scores = [matchScore(x.label, q), matchScore(x.labelEn, q)].filter((s) => s !== null);
+        const scores = [matchScore(x.label, q), matchScore(x.labelEn, q), matchScore(x.labelMy, q)].filter(
+          (s) => s !== null
+        );
         return scores.length ? { x, score: Math.min(...scores) } : null;
       })
       .filter(Boolean)
@@ -232,10 +236,14 @@ export default function TownshipSelect({ townships = [], value, onChange }) {
                 const active = tp.label === value;
                 const free = !(Number(tp.fee) > 0);
                 const name = nameOf(tp);
-                // If the match was on the other language's name, show it as a subtitle.
-                const other = lang === "en" ? tp.label : tp.labelEn;
-                const showOther =
-                  query.trim() && other && other !== name && norm(other).includes(norm(query)) && !norm(name).includes(norm(query));
+                // If the match was on a different language's name, show it as a subtitle.
+                const nq = norm(query);
+                const other = nq
+                  ? [tp.label, tp.labelEn, tp.labelMy].find(
+                      (n) => n && n !== name && norm(n).includes(nq)
+                    )
+                  : null;
+                const showOther = other && !norm(name).includes(nq);
                 return (
                   <li key={tp.label}>
                     <button
