@@ -1,310 +1,245 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import PublicHeader from "@/components/PublicHeader";
-import Footer from "@/components/Footer";
+import { useEffect, useState } from "react";
+import AdminHeader from "@/components/AdminHeader";
 import OrderChatPanel from "@/components/OrderChatPanel";
-import ChatWidget from "@/components/ChatWidget";
-import { useLang } from "@/lib/i18n/LanguageProvider";
-import { localeOf } from "@/lib/i18n/dictionaries";
+import { notifyNotificationsChanged } from "@/lib/notifyBus";
 
-const STATUS_STYLES = {
-  new: "bg-amber-100 text-amber-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  done: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-700",
+const STATUS_LABELS = {
+  new: "新订单",
+  confirmed: "已确认",
+  done: "已完成",
+  cancelled: "已取消",
 };
-
-function canCancel(order) {
-  if (order.status === "cancelled" || order.status === "done") return false;
-  if (!order.delivery_date) return true;
-  const deliveryAt = new Date(`${order.delivery_date}T${order.delivery_time || "00:00"}:00`);
-  if (Number.isNaN(deliveryAt.getTime())) return true;
-  const hoursUntil = (deliveryAt.getTime() - Date.now()) / (1000 * 60 * 60);
-  return hoursUntil >= 24;
-}
 
 const mmk = (n) => Number(n || 0).toLocaleString("en-US");
 
-export default function MyOrdersPage() {
-  const { lang, t } = useLang();
-  const [phone, setPhone] = useState("");
-  const [submittedPhone, setSubmittedPhone] = useState("");
+export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [cancellingId, setCancellingId] = useState(null);
-  const [chatOrderId, setChatOrderId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
+  const [chatOrder, setChatOrder] = useState(null);
+  const [error, setError] = useState("");
 
-  // Chinese → English / Burmese lookups built from the admin's saved
-  // translations (sizes, flavors, fillings, townships, folder names).
-  // Orders store the original Chinese label, so we translate at display time.
-  const [enMap, setEnMap] = useState({});
-  const [myMap, setMyMap] = useState({});
-
-  const locale = localeOf(lang);
-  const tr = (text) => {
-    if (!text) return text;
-    if (lang === "en") return enMap[text] || text;
-    if (lang === "my") return myMap[text] || enMap[text] || text;
-    return text;
-  };
-
-  useEffect(() => {
-    async function loadTranslations() {
-      try {
-        const [optRes, folderRes] = await Promise.all([
-          fetch("/api/order-options", { cache: "no-store" }),
-          fetch("/api/folders", { cache: "no-store" }),
-        ]);
-        const en = {};
-        const my = {};
-        if (optRes.ok) {
-          const { options } = await optRes.json();
-          for (const group of [options?.sizes, options?.flavors, options?.fillings, options?.townships]) {
-            for (const item of group || []) {
-              if (item.label && item.labelEn) en[item.label] = item.labelEn;
-              if (item.label && item.labelMy) my[item.label] = item.labelMy;
-            }
-          }
-        }
-        if (folderRes.ok) {
-          const { folders } = await folderRes.json();
-          for (const f of folders || []) {
-            if (f.name && f.name_en) en[f.name] = f.name_en;
-            if (f.name && f.name_my) my[f.name] = f.name_my;
-          }
-        }
-        setEnMap(en);
-        setMyMap(my);
-      } catch {
-        // fall back to the original text
-      }
-    }
-    loadTranslations();
-  }, []);
-
-  const lookup = useCallback(async (phoneToLookup) => {
-    const p = (phoneToLookup ?? phone).trim();
-    if (!p) return;
-
+  async function load() {
     setLoading(true);
     setError("");
-
     try {
-      // cache: "no-store" & timestamp query param force a fresh DB fetch every time
-      const res = await fetch(`/api/orders/lookup?phone=${encodeURIComponent(p)}&_t=${Date.now()}`, {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      });
-
-      setLoading(false);
+      const url = filter ? `/api/orders?status=${filter}` : "/api/orders";
+      const res = await fetch(url);
 
       if (!res.ok) {
-        setError(t("orders.loadFail"));
+        const data = await res.json().catch(() => ({}));
+        setError(
+          data.error
+            ? `${data.error}${data.details ? " — " + data.details : ""}`
+            : `Failed to load orders (HTTP ${res.status})`
+        );
+        setOrders([]);
         return;
       }
 
       const data = await res.json();
       setOrders(data.orders || []);
-      setSubmittedPhone(p);
-      localStorage.setItem("memory_cake_phone", p);
+      notifyNotificationsChanged();
     } catch (err) {
+      setError("Network error while loading orders.");
+      setOrders([]);
+    } finally {
       setLoading(false);
-      setError(t("orders.loadFail"));
     }
-  }, [phone, t]);
+  }
 
   useEffect(() => {
-    const saved = localStorage.getItem("memory_cake_phone");
-    if (saved) {
-      setPhone(saved);
-      lookup(saved);
-    }
-  }, [lookup]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
-  useEffect(() => {
-    function refreshIfVisible() {
-      if (document.visibilityState !== "visible") return;
-      const saved = localStorage.getItem("memory_cake_phone");
-      if (saved) lookup(saved);
-    }
-
-    window.addEventListener("focus", refreshIfVisible);
-    document.addEventListener("visibilitychange", refreshIfVisible);
-
-    return () => {
-      window.removeEventListener("focus", refreshIfVisible);
-      document.removeEventListener("visibilitychange", refreshIfVisible);
-    };
-  }, [lookup]);
-
-  async function handleCancel(order) {
-    if (!confirm(t("orders.cancelConfirm"))) return;
-    setCancellingId(order.id);
-
-    const res = await fetch(`/api/orders/${order.id}/cancel`, {
-      method: "POST",
+  async function updateStatus(id, status) {
+    await fetch(`/api/orders/${id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: submittedPhone }),
+      body: JSON.stringify({ status }),
     });
+    load();
+  }
 
-    setCancellingId(null);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || t("orders.cancelFail"));
-      return;
-    }
-
-    lookup(submittedPhone);
+  async function deleteOrder(id) {
+    if (!confirm("删除这条订单记录？此操作无法撤销。")) return;
+    await fetch(`/api/orders/${id}`, { method: "DELETE" });
+    load();
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0E6DA]">
-      <PublicHeader />
+    <div className="min-h-screen bg-cream">
+      <AdminHeader />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 sm:py-12">
-        <h1 className="font-serif font-semibold text-3xl sm:text-4xl text-cocoa-900 mb-2">{t("orders.title")}</h1>
-        <p className="text-cocoa-500 text-sm mb-8">{t("orders.intro")}</p>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <h1 className="font-serif font-medium text-3xl text-cocoa-900 mb-6">订购信息</h1>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            lookup();
-          }}
-          className="flex flex-col sm:flex-row gap-3 mb-8"
-        >
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={t("common.yourPhone")}
-            className="flex-1 rounded-lg border border-cocoa-200 bg-white px-4 py-3 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-lg bg-cocoa-800 text-cream px-5 py-3 font-medium hover:bg-cocoa-900 disabled:opacity-60"
-          >
-            {loading ? t("orders.looking") : t("orders.view")}
-          </button>
-        </form>
+        {/* Status Filters */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {["", "new", "confirmed", "done", "cancelled"].map((s) => (
+            <button
+              key={s || "all"}
+              onClick={() => setFilter(s)}
+              className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+                filter === s
+                  ? "bg-cocoa-800 text-cream border-cocoa-800"
+                  : "border-cocoa-200 text-cocoa-600 hover:border-cocoa-400"
+              }`}
+            >
+              {s ? STATUS_LABELS[s] : "全部"}
+            </button>
+          ))}
+        </div>
 
-        {error && <p className="text-sm text-red-600 mb-6">{error}</p>}
-
-        {submittedPhone && !loading && orders.length === 0 && !error && (
-          <p className="text-cocoa-400">{t("orders.none")}</p>
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p className="font-medium">Could not load orders</p>
+            <p className="mt-0.5 text-red-600">{error}</p>
+            <button
+              onClick={load}
+              className="mt-2 text-xs font-medium text-red-700 underline hover:text-red-900"
+            >
+              Try again
+            </button>
+          </div>
         )}
 
-        <div className="space-y-4">
-          {orders.map((order) => {
-            const cancellable = canCancel(order);
-            const cakeImage = order.photo_url;
-            const hasTotal = order.total_price !== null && order.total_price !== undefined;
-            const fee = Number(order.delivery_fee) || 0;
+        {/* Orders List */}
+        {loading ? (
+          <p className="text-cocoa-400">Loading...</p>
+        ) : orders.length === 0 ? (
+          !error && <p className="text-cocoa-400">暂无订购信息。</p>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((o) => {
+              const cakeImage = o.photo_url || o.photo_path || o.photoUrl;
+              const hasTotal = o.total_price !== null && o.total_price !== undefined;
+              const fee = Number(o.delivery_fee) || 0;
 
-            return (
-              <div key={order.id} className="bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-5">
-                <div className="flex gap-4">
-                  {cakeImage ? (
-                    <div
-                      onClick={() => setPreviewImage(cakeImage)}
-                      className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-cocoa-100 bg-cocoa-50 cursor-pointer group shadow-sm"
-                    >
-                      <img
-                        src={cakeImage}
-                        alt="Cake"
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-medium">
-                        {t("orders.zoom")}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl bg-cocoa-50 border border-cocoa-100 flex items-center justify-center text-2xl">
-                      🎂
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs text-cocoa-400">
-                          {new Date(order.created_at).toLocaleString(locale)}
-                          {order.folder_name ? ` · ${tr(order.folder_name)}` : ""}
-                        </p>
-                        <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
-                          {tr(order.size_label)} {order.size_price ? `· MMK ${order.size_price}` : ""}
-                          {order.quantity > 1 ? ` × ${order.quantity}` : ""}
-                        </p>
-                        <p className="text-sm text-cocoa-700 mt-1">
-                          {[order.flavor, order.filling1, order.filling2].filter(Boolean).map(tr).join(" · ") ||
-                            t("orders.noFlavor")}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${
-                          STATUS_STYLES[order.status] || "bg-cocoa-100 text-cocoa-700"
-                        }`}
-                      >
-                        {STATUS_STYLES[order.status] ? t(`status.${order.status}`) : order.status}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-cocoa-100/60 text-sm text-cocoa-700 space-y-1">
-                      <p>
-                        <span className="text-cocoa-400">{t("orders.delivery")}</span>{" "}
-                        {order.delivery_date || t("orders.notSet")} {order.delivery_time || ""}
-                      </p>
-                      <p>
-                        <span className="text-cocoa-400">{t("orders.addressLabel")}</span>{" "}
-                        {[order.township ? tr(order.township) : "", order.delivery_place].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-
-                    {hasTotal && (
-                      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-cocoa-800 text-cream px-3.5 py-2.5">
-                        <span className="text-xs text-cream/70">
-                          {t("orders.deliveryFee")} · {fee > 0 ? `MMK ${mmk(fee)}` : t("orders.free")}
-                        </span>
-                        <span className="font-serif font-semibold text-base sm:text-lg">
-                          {t("orders.total")} MMK {mmk(order.total_price)}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <button
-                        onClick={() => setChatOrderId(order.id)}
-                        className="text-sm text-cocoa-700 hover:text-cocoa-900 font-medium flex items-center gap-1.5"
-                      >
-                        {t("orders.message")}
-                      </button>
-
-                      {order.status !== "cancelled" && order.status !== "done" && (
-                        <button
-                          onClick={() => handleCancel(order)}
-                          disabled={!cancellable || cancellingId === order.id}
-                          title={!cancellable ? t("orders.cancelTitle") : ""}
-                          className="text-sm text-red-500 hover:text-red-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              return (
+                <div key={o.id} className="bg-white rounded-2xl border border-cocoa-100 shadow-card p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="shrink-0 flex sm:block items-center justify-between">
+                      {cakeImage ? (
+                        <div
+                          onClick={() => setPreviewImage(cakeImage)}
+                          className="relative w-20 h-20 sm:w-28 sm:h-28 rounded-xl overflow-hidden border border-cocoa-100 bg-cocoa-50 cursor-pointer group shadow-sm"
                         >
-                          {cancellingId === order.id ? t("orders.cancelling") : t("orders.cancel")}
+                          <img
+                            src={cakeImage}
+                            alt="Cake Preview"
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                            放大查看
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl bg-cocoa-50 border border-cocoa-100 flex flex-col items-center justify-center text-cocoa-300 text-xs">
+                          <span className="text-2xl mb-1">🎂</span>
+                          无图片
+                        </div>
+                      )}
+
+                      <div className="sm:hidden">
+                        <select
+                          value={o.status}
+                          onChange={(e) => updateStatus(o.id, e.target.value)}
+                          className="text-xs font-medium rounded-lg border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                        >
+                          {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                            <option key={val} value={val}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs text-cocoa-400">
+                            {new Date(o.created_at).toLocaleString("zh-CN")}
+                            {o.folder_name ? ` · ${o.folder_name}` : ""}
+                          </p>
+                          <p className="font-serif font-semibold text-lg text-cocoa-900 mt-0.5">
+                            {o.size_label || o.sizeLabel} {o.size_price || o.sizePrice ? `· MMK ${o.size_price || o.sizePrice}` : ""}
+                            {o.quantity > 1 ? ` × ${o.quantity}` : ""}
+                          </p>
+                          {o.quantity > 1 && (o.size_price || o.sizePrice) && (
+                            <p className="text-xs text-cocoa-500 mt-0.5">
+                              商品小计 MMK {(o.size_price || o.sizePrice) * o.quantity}
+                            </p>
+                          )}
+                          <p className="text-sm font-medium text-cocoa-700 mt-1">
+                            {[o.flavor, o.filling1, o.filling2].filter(Boolean).join(" · ") || "未指定口味/夹心"}
+                          </p>
+                        </div>
+
+                        <div className="hidden sm:block shrink-0">
+                          <select
+                            value={o.status}
+                            onChange={(e) => updateStatus(o.id, e.target.value)}
+                            className="text-xs font-medium rounded-lg border border-cocoa-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
+                          >
+                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 mt-3 text-sm text-cocoa-700 pt-2 border-t border-cocoa-100/60">
+                        <p><span className="text-cocoa-400">微信：</span>{o.wechat_name || "未填写"}</p>
+                        <p><span className="text-cocoa-400">配送日期：</span>{o.delivery_date || "未填写"} {o.delivery_time || ""}</p>
+                        <p><span className="text-cocoa-400">配送区域：</span>{o.township || "未填写"}</p>
+                        <p><span className="text-cocoa-400">联系电话：</span>{o.phone || "未填写"}</p>
+                        <p className="sm:col-span-2"><span className="text-cocoa-400">配送地址：</span>{o.delivery_place || "未填写"}</p>
+                      </div>
+
+                      {hasTotal && (
+                        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-cocoa-800 text-cream px-3.5 py-2.5">
+                          <span className="text-xs text-cream/70">
+                            配送费 {fee > 0 ? `MMK ${mmk(fee)}` : "免费"}
+                          </span>
+                          <span className="font-serif font-semibold text-base sm:text-lg">
+                            应付 MMK {mmk(o.total_price)}
+                          </span>
+                        </div>
+                      )}
+
+                      {o.remark && (
+                        <p className="mt-2 text-sm text-cocoa-700 bg-cocoa-50/80 border border-cocoa-100 rounded-lg px-3 py-1.5">
+                          备注：{o.remark}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex items-center justify-end gap-4">
+                        <button
+                          onClick={() => setChatOrder(o)}
+                          className="relative text-xs text-cocoa-600 hover:text-cocoa-900 font-medium flex items-center gap-1"
+                        >
+                          💬 联系客户
+                          {o.unread_messages > 0 && (
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                              {o.unread_messages}
+                            </span>
+                          )}
                         </button>
-                      )}
-                      {!cancellable && order.status !== "cancelled" && order.status !== "done" && (
-                        <span className="text-xs text-cocoa-400">{t("orders.cancelHint")}</span>
-                      )}
+                        <button onClick={() => deleteOrder(o.id)} className="text-xs text-red-500 hover:text-red-700 font-medium">
+                          删除订单
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {previewImage && (
@@ -322,18 +257,20 @@ export default function MyOrdersPage() {
               onClick={() => setPreviewImage(null)}
               className="absolute -top-10 right-0 text-white text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full"
             >
-              {t("orders.closePreview")}
+              ✕ 关闭
             </button>
           </div>
         </div>
       )}
 
-      {chatOrderId && (
-        <OrderChatPanel orderId={chatOrderId} role="customer" phone={submittedPhone} onClose={() => setChatOrderId(null)} />
+      {chatOrder && (
+        <OrderChatPanel
+          orderId={chatOrder.id}
+          customerName={chatOrder.wechat_name}
+          role="admin"
+          onClose={() => setChatOrder(null)}
+        />
       )}
-
-      <Footer />
-      <ChatWidget />
     </div>
   );
 }
