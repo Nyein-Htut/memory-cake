@@ -15,8 +15,10 @@ export default function AdminDashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newName, setNewName] = useState("");
   const [newNameEn, setNewNameEn] = useState("");
+  const [newNameMy, setNewNameMy] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newDescriptionEn, setNewDescriptionEn] = useState("");
+  const [newDescriptionMy, setNewDescriptionMy] = useState("");
   const [newOrderable, setNewOrderable] = useState(true);
   const [newFormType, setNewFormType] = useState("cake");
 
@@ -32,28 +34,23 @@ export default function AdminDashboardPage() {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editNameEn, setEditNameEn] = useState("");
+  const [editNameMy, setEditNameMy] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editDescriptionEn, setEditDescriptionEn] = useState("");
+  const [editDescriptionMy, setEditDescriptionMy] = useState("");
   const [editOrderable, setEditOrderable] = useState(true);
   const [editFormType, setEditFormType] = useState("cake");
   const [savingEdit, setSavingEdit] = useState(false);
 
   // ---- Shared drag/reorder hook ----
   // IMPORTANT: Do not change useDragReorder.js.
-  const {
-    draggingId,
-    handlePointerDown,
-    registerItemRef,
-    wasDragRef,
-  } = useDragReorder(
+  const { draggingId, handlePointerDown, registerItemRef, wasDragRef } = useDragReorder(
     folders,
     setFolders,
     async (orderedIds) => {
       await fetch("/api/folders/reorder", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderedIds }),
       });
     }
@@ -61,11 +58,9 @@ export default function AdminDashboardPage() {
 
   async function loadFolders() {
     setLoading(true);
-
     try {
       const res = await fetch("/api/folders");
       const data = await res.json();
-
       setFolders(data.folders || []);
     } catch (err) {
       console.error("Failed to load folders:", err);
@@ -79,15 +74,16 @@ export default function AdminDashboardPage() {
   }, []);
 
   function updateNewDessertPrice(rawValue) {
-    const digits = rawValue.replace(/[^0-9]/g, "");
-    setNewDessertPrice(digits);
+    setNewDessertPrice(rawValue.replace(/[^0-9]/g, ""));
   }
 
   function openCreateModal() {
     setNewName("");
     setNewNameEn("");
+    setNewNameMy("");
     setNewDescription("");
     setNewDescriptionEn("");
+    setNewDescriptionMy("");
     setNewOrderable(true);
     setNewFormType("cake");
     setNewDessertPrice("");
@@ -103,7 +99,6 @@ export default function AdminDashboardPage() {
 
   async function handleCreate(e) {
     e.preventDefault();
-
     if (!newName.trim()) return;
 
     setCreating(true);
@@ -114,56 +109,35 @@ export default function AdminDashboardPage() {
     try {
       const res = await fetch("/api/folders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName.trim(),
           nameEn: newNameEn.trim(),
+          nameMy: newNameMy.trim(),
           description: newDescription.trim(),
           descriptionEn: newDescriptionEn.trim(),
+          descriptionMy: newDescriptionMy.trim(),
           orderable: newOrderable,
           orderFormType: newFormType,
           dessertOptions:
-            newOrderable &&
-            newFormType === "dessert" &&
-            price > 0
-              ? [
-                  {
-                    label: newName.trim(),
-                    price,
-                  },
-                ]
+            newOrderable && newFormType === "dessert" && price > 0
+              ? [{ label: newName.trim(), price }]
               : [],
           minQuantity: newMinQuantity,
         }),
       });
 
       if (!res.ok) {
-        const data = await res
-          .json()
-          .catch(() => ({}));
-
-        setError(
-          data.error ||
-            "Could not create folder"
-        );
-
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Could not create folder");
         return;
       }
 
       setShowCreateModal(false);
-
       await loadFolders();
     } catch (err) {
-      console.error(
-        "Failed to create folder:",
-        err
-      );
-
-      setError(
-        "Could not create folder"
-      );
+      console.error("Failed to create folder:", err);
+      setError("Could not create folder");
     } finally {
       setCreating(false);
     }
@@ -171,25 +145,14 @@ export default function AdminDashboardPage() {
 
   function startEditing(folder) {
     setEditingId(folder.id);
-
     setEditName(folder.name);
     setEditNameEn(folder.name_en || "");
-    setEditDescription(
-      folder.description || ""
-    );
-    setEditDescriptionEn(
-      folder.description_en || ""
-    );
-
-    setEditOrderable(
-      folder.orderable !== false
-    );
-
-    setEditFormType(
-      folder.order_form_type === "dessert"
-        ? "dessert"
-        : "cake"
-    );
+    setEditNameMy(folder.name_my || "");
+    setEditDescription(folder.description || "");
+    setEditDescriptionEn(folder.description_en || "");
+    setEditDescriptionMy(folder.description_my || "");
+    setEditOrderable(folder.orderable !== false);
+    setEditFormType(folder.order_form_type === "dessert" ? "dessert" : "cake");
   }
 
   async function handleSaveEdit(id) {
@@ -200,52 +163,36 @@ export default function AdminDashboardPage() {
     try {
       await fetch(`/api/folders/${id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editName.trim(),
-          nameEn: editName,
+          nameEn: editNameEn,
+          nameMy: editNameMy,
           description: editDescription,
           descriptionEn: editDescriptionEn,
+          descriptionMy: editDescriptionMy,
           orderable: editOrderable,
           orderFormType: editFormType,
         }),
       });
 
       setEditingId(null);
-
       await loadFolders();
     } catch (err) {
-      console.error(
-        "Failed to save folder:",
-        err
-      );
+      console.error("Failed to save folder:", err);
     } finally {
       setSavingEdit(false);
     }
   }
 
   async function handleDelete(id, name) {
-    if (
-      !confirm(
-        `Delete "${name}" and all photos inside it? This cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    if (!confirm(`Delete "${name}" and all photos inside it? This cannot be undone.`)) return;
 
     try {
-      await fetch(`/api/folders/${id}`, {
-        method: "DELETE",
-      });
-
+      await fetch(`/api/folders/${id}`, { method: "DELETE" });
       await loadFolders();
     } catch (err) {
-      console.error(
-        "Failed to delete folder:",
-        err
-      );
+      console.error("Failed to delete folder:", err);
     }
   }
 
@@ -254,14 +201,8 @@ export default function AdminDashboardPage() {
       <AdminHeader />
 
       <main className="max-w-5xl mx-auto px-6 py-10">
-        {/* ============================================================
-            HEADER
-            ============================================================ */}
-
         <div className="flex items-center justify-between mb-6 gap-3">
-          <h1 className="font-serif font-medium text-3xl text-cocoa-900">
-            Your Albums
-          </h1>
+          <h1 className="font-serif font-medium text-3xl text-cocoa-900">Your Albums</h1>
 
           <button
             type="button"
@@ -272,75 +213,36 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        {/* ============================================================
-            FOLDER LIST
-            ============================================================ */}
-
         {loading ? (
-          <p className="text-cocoa-400">
-            Loading albums...
-          </p>
+          <p className="text-cocoa-400">Loading albums...</p>
         ) : folders.length === 0 ? (
-          <p className="text-cocoa-400">
-            No folders yet. Create your first one
-            above.
-          </p>
+          <p className="text-cocoa-400">No folders yet. Create your first one above.</p>
         ) : (
           <>
             {folders.length > 1 && (
-              <p className="text-xs text-cocoa-400 mb-3">
-                Press and hold a card, then drag
-                to reorder albums.
-              </p>
+              <p className="text-xs text-cocoa-400 mb-3">Press and hold a card, then drag to reorder albums.</p>
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  ref={registerItemRef(
-                    folder.id
-                  )}
-                  onPointerDown={handlePointerDown(
-                    folder.id
-                  )}
-                  onContextMenu={(e) =>
-                    e.preventDefault()
-                  }
-                  style={{
-                    touchAction: "pan-y",
-                    WebkitTouchCallout:
-                      "none",
-                    WebkitUserSelect:
-                      "none",
-                  }}
+                  ref={registerItemRef(folder.id)}
+                  onPointerDown={handlePointerDown(folder.id)}
+                  onContextMenu={(e) => e.preventDefault()}
+                  style={{ touchAction: "pan-y", WebkitTouchCallout: "none", WebkitUserSelect: "none" }}
                   className={`relative rounded-2xl overflow-hidden bg-white shadow-card border select-none cursor-grab active:cursor-grabbing ${
-                    draggingId === folder.id
-                      ? "border-cocoa-500"
-                      : "border-cocoa-100"
+                    draggingId === folder.id ? "border-cocoa-500" : "border-cocoa-100"
                   }`}
                 >
-                  {/* ==================================================
-                      IMAGE / DRAG AREA
-
-                      IMPORTANT:
-                      The Link no longer WRAPS the image.
-
-                      The Image itself is pointer-events-none,
-                      allowing the folder card's pointerdown handler
-                      to receive the gesture.
-
-                      The transparent Link sits above it for normal
-                      tap/click navigation.
-                      ================================================== */}
-
+                  {/* The Image is pointer-events-none so the card's pointerdown
+                      handler gets the gesture; the transparent Link on top handles taps. */}
                   <div className="relative aspect-[4/3] bg-cocoa-100">
                     {folder.orderable === false ? (
                       <div className="absolute top-2 left-2 z-10 rounded-full bg-cocoa-900/80 text-cream text-[10px] uppercase tracking-wide px-2 py-1 pointer-events-none">
                         仅展示价格
                       </div>
-                    ) : folder.order_form_type ===
-                      "dessert" ? (
+                    ) : folder.order_form_type === "dessert" ? (
                       <div className="absolute top-2 left-2 z-10 rounded-full bg-cocoa-900/80 text-cream text-[10px] uppercase tracking-wide px-2 py-1 pointer-events-none">
                         甜品表单
                       </div>
@@ -348,10 +250,7 @@ export default function AdminDashboardPage() {
 
                     {folder.cover_url ? (
                       <Image
-                        src={cldThumb(
-                          folder.cover_url,
-                          500
-                        )}
+                        src={cldThumb(folder.cover_url, 500)}
                         alt={folder.name}
                         fill
                         sizes="33vw"
@@ -369,20 +268,13 @@ export default function AdminDashboardPage() {
                       aria-label={`Open ${folder.name}`}
                       className="absolute inset-0 z-20"
                       onClick={(e) => {
-                        if (
-                          wasDragRef.current
-                        ) {
+                        if (wasDragRef.current) {
                           e.preventDefault();
-                          wasDragRef.current =
-                            false;
+                          wasDragRef.current = false;
                         }
                       }}
                     />
                   </div>
-
-                  {/* ==================================================
-                      CARD INFORMATION
-                      ================================================== */}
 
                   <div className="p-4">
                     {editingId === folder.id ? (
@@ -390,50 +282,41 @@ export default function AdminDashboardPage() {
                         <input
                           autoFocus
                           value={editName}
-                          onChange={(e) =>
-                            setEditName(
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => setEditName(e.target.value)}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                           placeholder="中文名称 Folder name"
                         />
-
                         <input
                           value={editNameEn}
-                          onChange={(e) =>
-                            setEditNameEn(
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => setEditNameEn(e.target.value)}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                           placeholder="English name (optional)"
                         />
+                        <input
+                          value={editNameMy}
+                          onChange={(e) => setEditNameMy(e.target.value)}
+                          className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                          placeholder="မြန်မာအမည် (optional)"
+                        />
 
                         <textarea
-                          value={
-                            editDescription
-                          }
-                          onChange={(e) =>
-                            setEditDescription(
-                              e.target.value
-                            )
-                          }
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
                           placeholder="Description shown under the album title (optional)"
                           rows={2}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
-
                         <textarea
-                          value={
-                            editDescriptionEn
-                          }
-                          onChange={(e) =>
-                            setEditDescriptionEn(
-                              e.target.value
-                            )
-                          }
+                          value={editDescriptionEn}
+                          onChange={(e) => setEditDescriptionEn(e.target.value)}
                           placeholder="English description (optional)"
+                          rows={2}
+                          className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                        />
+                        <textarea
+                          value={editDescriptionMy}
+                          onChange={(e) => setEditDescriptionMy(e.target.value)}
+                          placeholder="မြန်မာ ဖော်ပြချက် (optional)"
                           rows={2}
                           className="w-full rounded-md border border-cocoa-200 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                         />
@@ -441,129 +324,67 @@ export default function AdminDashboardPage() {
                         <label className="flex items-start gap-2 text-xs text-cocoa-600 bg-cocoa-50/60 border border-cocoa-100 rounded-lg px-3 py-2.5">
                           <input
                             type="checkbox"
-                            checked={
-                              editOrderable
-                            }
-                            onChange={(e) =>
-                              setEditOrderable(
-                                e.target
-                                  .checked
-                              )
-                            }
+                            checked={editOrderable}
+                            onChange={(e) => setEditOrderable(e.target.checked)}
                             className="mt-0.5 accent-cocoa-800"
                           />
-
                           <span>
-                            <span className="block font-medium text-cocoa-800">
-                              顾客可直接下单
-                            </span>
+                            <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
                           </span>
                         </label>
 
                         {editOrderable ? (
                           <div className="space-y-1.5">
-                            <span className="block text-xs font-medium text-cocoa-800">
-                              下单表单类型
-                            </span>
+                            <span className="block text-xs font-medium text-cocoa-800">下单表单类型</span>
 
                             <label
                               className={`block rounded-lg border px-3 py-2 text-xs cursor-pointer ${
-                                editFormType ===
-                                "cake"
-                                  ? "border-cocoa-800 bg-cocoa-50"
-                                  : "border-cocoa-200"
+                                editFormType === "cake" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
                               }`}
                             >
                               <input
                                 type="radio"
                                 name={`edit-form-type-${folder.id}`}
                                 className="mr-2 accent-cocoa-800"
-                                checked={
-                                  editFormType ===
-                                  "cake"
-                                }
-                                onChange={() =>
-                                  setEditFormType(
-                                    "cake"
-                                  )
-                                }
+                                checked={editFormType === "cake"}
+                                onChange={() => setEditFormType("cake")}
                               />
-
-                              蛋糕表单 —
-                              尺寸 + 口味 +
-                              两种夹心
+                              蛋糕表单 — 尺寸 + 口味 + 两种夹心
                             </label>
 
                             <label
                               className={`block rounded-lg border px-3 py-2 text-xs cursor-pointer ${
-                                editFormType ===
-                                "dessert"
-                                  ? "border-cocoa-800 bg-cocoa-50"
-                                  : "border-cocoa-200"
+                                editFormType === "dessert" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
                               }`}
                             >
                               <input
                                 type="radio"
                                 name={`edit-form-type-${folder.id}`}
                                 className="mr-2 accent-cocoa-800"
-                                checked={
-                                  editFormType ===
-                                  "dessert"
-                                }
-                                onChange={() =>
-                                  setEditFormType(
-                                    "dessert"
-                                  )
-                                }
+                                checked={editFormType === "dessert"}
+                                onChange={() => setEditFormType("dessert")}
                               />
-
-                              甜品表单 —
-                              单一价格
+                              甜品表单 — 单一价格
                             </label>
 
-                            {editFormType ===
-                              "dessert" && (
-                              <p className="text-[11px] text-cocoa-400">
-                                保存后，进入
-                                该相册页面
-                                设置价格。
-                              </p>
+                            {editFormType === "dessert" && (
+                              <p className="text-[11px] text-cocoa-400">保存后，进入该相册页面设置价格。</p>
                             )}
                           </div>
                         ) : (
-                          <p className="text-[11px] text-cocoa-400">
-                            仅展示价格模式下
-                            不显示下单表单。
-                          </p>
+                          <p className="text-[11px] text-cocoa-400">仅展示价格模式下不显示下单表单。</p>
                         )}
 
                         <div className="flex gap-3 pt-1">
                           <button
                             type="button"
-                            onClick={() =>
-                              handleSaveEdit(
-                                folder.id
-                              )
-                            }
-                            disabled={
-                              savingEdit
-                            }
+                            onClick={() => handleSaveEdit(folder.id)}
+                            disabled={savingEdit}
                             className="text-xs text-cocoa-700 font-medium disabled:opacity-60"
                           >
-                            {savingEdit
-                              ? "Saving..."
-                              : "Save"}
+                            {savingEdit ? "Saving..." : "Save"}
                           </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditingId(
-                                null
-                              )
-                            }
-                            className="text-xs text-cocoa-400"
-                          >
+                          <button type="button" onClick={() => setEditingId(null)} className="text-xs text-cocoa-400">
                             Cancel
                           </button>
                         </div>
@@ -574,51 +395,27 @@ export default function AdminDashboardPage() {
                           <Link
                             href={`/admin/folder/${folder.id}`}
                             onClick={(e) => {
-                              if (
-                                wasDragRef.current
-                              ) {
+                              if (wasDragRef.current) {
                                 e.preventDefault();
-                                wasDragRef.current =
-                                  false;
+                                wasDragRef.current = false;
                               }
                             }}
                           >
-                            <h2 className="font-serif text-lg text-cocoa-900 hover:underline truncate">
-                              {folder.name}
-                            </h2>
+                            <h2 className="font-serif text-lg text-cocoa-900 hover:underline truncate">{folder.name}</h2>
                           </Link>
 
-                          {folder.name_en && (
-                            <p className="text-xs text-cocoa-400 truncate">
-                              {
-                                folder.name_en
-                              }
-                            </p>
-                          )}
+                          {folder.name_en && <p className="text-xs text-cocoa-400 truncate">{folder.name_en}</p>}
+                          {folder.name_my && <p className="text-xs text-cocoa-400 truncate">{folder.name_my}</p>}
 
                           {folder.description && (
-                            <p className="text-xs text-cocoa-500 mt-0.5 line-clamp-2">
-                              {
-                                folder.description
-                              }
-                            </p>
+                            <p className="text-xs text-cocoa-500 mt-0.5 line-clamp-2">{folder.description}</p>
                           )}
 
                           <p className="text-xs text-cocoa-400 mt-0.5">
-                            {
-                              folder.photo_count
-                            }{" "}
-                            photo
-                            {folder.photo_count ===
-                            1
-                              ? ""
-                              : "s"}
-
-                            {folder.orderable ===
-                            false
+                            {folder.photo_count} photo{folder.photo_count === 1 ? "" : "s"}
+                            {folder.orderable === false
                               ? " · 仅展示价格"
-                              : folder.order_form_type ===
-                                "dessert"
+                              : folder.order_form_type === "dessert"
                               ? " · 甜品表单"
                               : ""}
                           </p>
@@ -627,24 +424,14 @@ export default function AdminDashboardPage() {
                         <div className="flex flex-col items-end gap-1 text-xs shrink-0">
                           <button
                             type="button"
-                            onClick={() =>
-                              startEditing(
-                                folder
-                              )
-                            }
+                            onClick={() => startEditing(folder)}
                             className="text-cocoa-500 hover:text-cocoa-800"
                           >
                             Rename
                           </button>
-
                           <button
                             type="button"
-                            onClick={() =>
-                              handleDelete(
-                                folder.id,
-                                folder.name
-                              )
-                            }
+                            onClick={() => handleDelete(folder.id, folder.name)}
                             className="text-red-500 hover:text-red-700"
                           >
                             Delete
@@ -660,10 +447,7 @@ export default function AdminDashboardPage() {
         )}
       </main>
 
-      {/* ================================================================
-          CREATE FOLDER MODAL
-          ================================================================ */}
-
+      {/* CREATE FOLDER MODAL */}
       {showCreateModal && (
         <div
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center px-0 sm:px-4"
@@ -671,17 +455,10 @@ export default function AdminDashboardPage() {
         >
           <div
             className="w-full sm:max-w-md bg-cream rounded-t-2xl sm:rounded-2xl shadow-soft max-h-[90vh] overflow-y-auto"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal header */}
-
             <div className="flex items-center justify-between px-5 py-4 border-b border-cocoa-200/60 sticky top-0 bg-cream z-10">
-              <h2 className="font-serif font-medium text-xl text-cocoa-900">
-                New Album
-              </h2>
-
+              <h2 className="font-serif font-medium text-xl text-cocoa-900">New Album</h2>
               <button
                 type="button"
                 onClick={closeCreateModal}
@@ -692,246 +469,151 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-            {/* Create form */}
-
-            <form
-              onSubmit={handleCreate}
-              className="p-5 space-y-4"
-            >
-              {/* Chinese name */}
-
+            <form onSubmit={handleCreate} className="p-5 space-y-4">
               <div>
-                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  相册名称 *
-                </label>
-
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">相册名称 *</label>
                 <input
                   type="text"
                   autoFocus
                   value={newName}
-                  onChange={(e) =>
-                    setNewName(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setNewName(e.target.value)}
                   placeholder="例如：生日蛋糕"
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                   required
                 />
               </div>
 
-              {/* English name */}
-
               <div>
-                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  英文名称（可选）
-                </label>
-
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">英文名称（可选）</label>
                 <input
                   type="text"
                   value={newNameEn}
-                  onChange={(e) =>
-                    setNewNameEn(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setNewNameEn(e.target.value)}
                   placeholder="e.g. Birthday Cakes"
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
               </div>
 
-              {/* Chinese description */}
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">缅文名称（可选）</label>
+                <input
+                  type="text"
+                  value={newNameMy}
+                  onChange={(e) => setNewNameMy(e.target.value)}
+                  placeholder="ဥပမာ - မွေးနေ့ကိတ်"
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  描述（可选）
-                </label>
-
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">描述（可选）</label>
                 <textarea
                   value={newDescription}
-                  onChange={(e) =>
-                    setNewDescription(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="这段文字会显示在相册标题下方，向顾客介绍这个系列"
                   rows={3}
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
               </div>
 
-              {/* English description */}
-
               <div>
-                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  英文描述（可选）
-                </label>
-
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">英文描述（可选）</label>
                 <textarea
-                  value={
-                    newDescriptionEn
-                  }
-                  onChange={(e) =>
-                    setNewDescriptionEn(
-                      e.target.value
-                    )
-                  }
+                  value={newDescriptionEn}
+                  onChange={(e) => setNewDescriptionEn(e.target.value)}
                   placeholder="English description shown under the album title"
                   rows={3}
                   className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
               </div>
 
-              {/* Orderable */}
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">缅文描述（可选）</label>
+                <textarea
+                  value={newDescriptionMy}
+                  onChange={(e) => setNewDescriptionMy(e.target.value)}
+                  placeholder="မြန်မာဘာသာ ဖော်ပြချက်"
+                  rows={3}
+                  className="w-full rounded-lg border border-cocoa-200 bg-white px-3 py-2.5 text-sm text-cocoa-900 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+              </div>
 
               <label className="flex items-start gap-2.5 text-sm text-cocoa-600 bg-white border border-cocoa-200 rounded-lg px-4 py-3">
                 <input
                   type="checkbox"
                   checked={newOrderable}
-                  onChange={(e) =>
-                    setNewOrderable(
-                      e.target.checked
-                    )
-                  }
+                  onChange={(e) => setNewOrderable(e.target.checked)}
                   className="mt-0.5 accent-cocoa-800"
                 />
-
                 <span>
-                  <span className="block font-medium text-cocoa-800">
-                    顾客可直接下单
-                  </span>
-
+                  <span className="block font-medium text-cocoa-800">顾客可直接下单</span>
                   <span className="block text-xs text-cocoa-400 mt-0.5">
                     取消勾选后，此相册仅展示价格（使用每张照片的说明文字），顾客无法在线下单。
                   </span>
                 </span>
               </label>
 
-              {/* Form type */}
-
               {newOrderable ? (
                 <div className="bg-white border border-cocoa-200 rounded-lg px-4 py-3">
-                  <span className="block text-sm font-medium text-cocoa-800 mb-2">
-                    下单表单类型
-                  </span>
+                  <span className="block text-sm font-medium text-cocoa-800 mb-2">下单表单类型</span>
 
                   <div className="flex flex-col gap-2">
-                    {/* Cake */}
-
                     <label
                       className={`rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
-                        newFormType ===
-                        "cake"
-                          ? "border-cocoa-800 bg-cocoa-50"
-                          : "border-cocoa-200"
+                        newFormType === "cake" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
                       }`}
                     >
                       <input
                         type="radio"
                         name="new-form-type"
                         className="mr-2 accent-cocoa-800"
-                        checked={
-                          newFormType ===
-                          "cake"
-                        }
-                        onChange={() =>
-                          setNewFormType(
-                            "cake"
-                          )
-                        }
+                        checked={newFormType === "cake"}
+                        onChange={() => setNewFormType("cake")}
                       />
-
-                      蛋糕表单（默认）
-                      — 尺寸 + 口味 +
-                      两种夹心
+                      蛋糕表单（默认）— 尺寸 + 口味 + 两种夹心
                     </label>
 
-                    {/* Dessert */}
-
                     <label
                       className={`rounded-lg border px-3 py-2.5 text-sm cursor-pointer ${
-                        newFormType ===
-                        "dessert"
-                          ? "border-cocoa-800 bg-cocoa-50"
-                          : "border-cocoa-200"
+                        newFormType === "dessert" ? "border-cocoa-800 bg-cocoa-50" : "border-cocoa-200"
                       }`}
                     >
                       <input
                         type="radio"
                         name="new-form-type"
                         className="mr-2 accent-cocoa-800"
-                        checked={
-                          newFormType ===
-                          "dessert"
-                        }
-                        onChange={() =>
-                          setNewFormType(
-                            "dessert"
-                          )
-                        }
+                        checked={newFormType === "dessert"}
+                        onChange={() => setNewFormType("dessert")}
                       />
-
                       甜品表单 — 单一价格
                     </label>
                   </div>
 
-                  {/* Dessert settings */}
-
-                  {newFormType ===
-                    "dessert" && (
+                  {newFormType === "dessert" && (
                     <div className="mt-4 pt-4 border-t border-cocoa-100 flex flex-wrap items-end gap-4">
-                      {/* Price */}
-
                       <div>
-                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                          价格
-                        </label>
-
+                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">价格</label>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-cocoa-500 text-xs font-medium">
-                            MMK
-                          </span>
-
+                          <span className="text-cocoa-500 text-xs font-medium">MMK</span>
                           <input
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            value={
-                              newDessertPrice
-                            }
-                            onChange={(e) =>
-                              updateNewDessertPrice(
-                                e.target
-                                  .value
-                              )
-                            }
+                            value={newDessertPrice}
+                            onChange={(e) => updateNewDessertPrice(e.target.value)}
                             placeholder="0"
                             className="w-32 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                           />
                         </div>
                       </div>
 
-                      {/* Minimum quantity */}
-
                       <div>
-                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                          最少购买数量
-                        </label>
-
+                        <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">最少购买数量</label>
                         <input
                           type="number"
                           min={1}
-                          value={
-                            newMinQuantity
-                          }
-                          onChange={(e) =>
-                            setNewMinQuantity(
-                              Number(
-                                e.target
-                                  .value
-                              )
-                            )
-                          }
+                          value={newMinQuantity}
+                          onChange={(e) => setNewMinQuantity(Number(e.target.value))}
                           className="w-28 rounded-lg border border-cocoa-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500 bg-white"
                         />
                       </div>
@@ -939,35 +621,19 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-cocoa-400 px-1">
-                  已取消勾选「顾客可直接下单」，此相册不会显示下单表单。
-                </p>
+                <p className="text-xs text-cocoa-400 px-1">已取消勾选「顾客可直接下单」，此相册不会显示下单表单。</p>
               )}
 
-              {/* Error */}
-
-              {error && (
-                <p className="text-sm text-red-600">
-                  {error}
-                </p>
-              )}
-
-              {/* Buttons */}
+              {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
-                  disabled={
-                    creating ||
-                    !newName.trim()
-                  }
+                  disabled={creating || !newName.trim()}
                   className="flex-1 rounded-lg bg-cocoa-800 text-cream py-2.5 font-medium hover:bg-cocoa-900 transition-colors disabled:opacity-60"
                 >
-                  {creating
-                    ? "Creating..."
-                    : "Create Album"}
+                  {creating ? "Creating..." : "Create Album"}
                 </button>
-
                 <button
                   type="button"
                   onClick={closeCreateModal}
