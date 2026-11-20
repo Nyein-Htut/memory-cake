@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DEFAULT_LANG, LANG_COOKIE, translate } from "./dictionaries";
+import { DEFAULT_LANG, LANG_COOKIE, LANGS, htmlLang, translate } from "./dictionaries";
 
 const LanguageContext = createContext(null);
 
@@ -12,11 +12,11 @@ export function LanguageProvider({ initialLang = DEFAULT_LANG, children }) {
 
   const setLang = useCallback(
     (next) => {
-      if (next !== "zh" && next !== "en") return;
+      if (!LANGS.includes(next)) return;
       setLangState(next);
       // Cookie (not localStorage) so server components can read it too.
       document.cookie = `${LANG_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-      document.documentElement.lang = next === "en" ? "en" : "zh-CN";
+      document.documentElement.lang = htmlLang(next);
       // Re-render server components (homepage, folder pages) in the new language.
       router.refresh();
     },
