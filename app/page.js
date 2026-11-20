@@ -16,7 +16,8 @@ export const dynamic = "force-dynamic";
 // removes any dependency on NEXT_PUBLIC_SITE_URL being set correctly.
 async function getFolders() {
   const folders = await sql`
-    SELECT f.id, f.name, f.name_en, f.description, f.description_en, f.cover_url, f.position, f.orderable,
+    SELECT f.id, f.name, f.name_en, f.name_my, f.description, f.description_en, f.description_my,
+           f.cover_url, f.position, f.orderable,
            f.order_form_type, f.dessert_options, f.dessert_min_quantity, f.created_at,
            COUNT(p.id)::int AS photo_count
     FROM folders f
@@ -54,10 +55,7 @@ function StackIcon(props) {
 export default async function HomePage() {
   const lang = getLang();
   const t = getT(lang);
-  const [folders, heroSlides] = await Promise.all([
-    getFolders(),
-    getHeroSlides(),
-  ]);
+  const [folders, heroSlides] = await Promise.all([getFolders(), getHeroSlides()]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0E6DA]">
@@ -71,9 +69,7 @@ export default async function HomePage() {
             {t("home.title")}
           </h2>
           <div className="mx-auto w-14 h-px bg-cocoa-400/60 mb-3" />
-          <p className="text-cocoa-500 text-sm sm:text-base">
-            {t("home.subtitle")}
-          </p>
+          <p className="text-cocoa-500 text-sm sm:text-base">{t("home.subtitle")}</p>
         </div>
 
         {folders.length === 0 ? (
@@ -85,7 +81,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-8 gap-y-8 pr-6 sm:pr-8">
             {folders.map((folder) => {
               const hasMultiple = folder.photo_count > 1;
-              const displayName = pickLang(lang, folder.name, folder.name_en);
+              const displayName = pickLang(lang, folder.name, folder.name_en, folder.name_my);
 
               return (
                 <div key={folder.id} className="relative group">
@@ -119,9 +115,7 @@ export default async function HomePage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-cocoa-300">
-                          <span className="font-serif text-sm sm:text-base">
-                            {t("home.noPhotos")}
-                          </span>
+                          <span className="font-serif text-sm sm:text-base">{t("home.noPhotos")}</span>
                         </div>
                       )}
 
