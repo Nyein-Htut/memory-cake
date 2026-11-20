@@ -26,8 +26,10 @@ export default function AdminFolderPage({ params }) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [nameEnDraft, setNameEnDraft] = useState("");
+  const [nameMyDraft, setNameMyDraft] = useState("");
   const [descDraft, setDescDraft] = useState("");
   const [descEnDraft, setDescEnDraft] = useState("");
+  const [descMyDraft, setDescMyDraft] = useState("");
   const [editOrderable, setEditOrderable] = useState(true);
   const [editFormType, setEditFormType] = useState("cake");
   const [savingInfo, setSavingInfo] = useState(false);
@@ -35,14 +37,13 @@ export default function AdminFolderPage({ params }) {
   const [editingCaptionId, setEditingCaptionId] = useState(null);
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionEnDraft, setCaptionEnDraft] = useState("");
+  const [captionMyDraft, setCaptionMyDraft] = useState("");
 
   const [settingCoverId, setSettingCoverId] = useState(null);
 
-  // Dessert folders now carry a single price (the folder/photo IS the
-  // item — no separate "label" needed, that was redundant with the
-  // folder name). Internally still saved as a one-item dessert_options
-  // array (label = folder name) so the order form / receipt code
-  // doesn't need to change.
+  // Dessert folders carry a single price (the folder/photo IS the item).
+  // Internally still saved as a one-item dessert_options array
+  // (label = folder name) so the order form / receipt code doesn't change.
   const [dessertPrice, setDessertPrice] = useState("");
   const [minQuantity, setMinQuantity] = useState(6);
   const [savingDessertOptions, setSavingDessertOptions] = useState(false);
@@ -63,10 +64,7 @@ export default function AdminFolderPage({ params }) {
   async function loadData() {
     setLoading(true);
 
-    const res = await fetch(
-      `/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`,
-      { cache: "no-store" }
-    );
+    const res = await fetch(`/api/folders/${folderId}?limit=${PAGE_SIZE}&offset=0`, { cache: "no-store" });
 
     if (res.ok) {
       const data = await res.json();
@@ -77,8 +75,10 @@ export default function AdminFolderPage({ params }) {
       setHasMore(data.hasMore || false);
       setNameDraft(data.folder.name);
       setNameEnDraft(data.folder.name_en || "");
+      setNameMyDraft(data.folder.name_my || "");
       setDescDraft(data.folder.description || "");
       setDescEnDraft(data.folder.description_en || "");
+      setDescMyDraft(data.folder.description_my || "");
       setEditOrderable(data.folder.orderable !== false);
       setEditFormType(data.folder.order_form_type === "dessert" ? "dessert" : "cake");
       const existingPrice = data.folder.dessert_options?.[0]?.price;
@@ -94,13 +94,10 @@ export default function AdminFolderPage({ params }) {
 
     setLoadingMore(true);
 
-    const res = await fetch(
-      `/api/folders/${folderId}/photos?limit=${PAGE_SIZE}&offset=${photos.length}`
-    );
+    const res = await fetch(`/api/folders/${folderId}/photos?limit=${PAGE_SIZE}&offset=${photos.length}`);
 
     if (res.ok) {
       const data = await res.json();
-
       setPhotos((prev) => [...prev, ...data.photos]);
       setTotal(data.total);
       setHasMore(data.hasMore);
@@ -129,8 +126,10 @@ export default function AdminFolderPage({ params }) {
       body: JSON.stringify({
         name: nameDraft.trim(),
         nameEn: nameEnDraft.trim(),
+        nameMy: nameMyDraft.trim(),
         description: descDraft,
         descriptionEn: descEnDraft,
+        descriptionMy: descMyDraft,
         orderable: editOrderable,
         orderFormType: editFormType,
       }),
@@ -148,8 +147,7 @@ export default function AdminFolderPage({ params }) {
   }
 
   function updateDessertPrice(rawValue) {
-    const digits = rawValue.replace(/[^0-9]/g, "");
-    setDessertPrice(digits);
+    setDessertPrice(rawValue.replace(/[^0-9]/g, ""));
   }
 
   async function handleSaveDessertOptions() {
@@ -180,7 +178,6 @@ export default function AdminFolderPage({ params }) {
 
   async function handleFilesSelected(e) {
     const files = Array.from(e.target.files || []);
-
     if (files.length === 0) return;
 
     setUploading(true);
@@ -199,14 +196,8 @@ export default function AdminFolderPage({ params }) {
         throw new Error("Could not get upload permission");
       }
 
-      const {
-        timestamp,
-        signature,
-        apiKey,
-        cloudName,
-        folder: cloudFolder,
-        transformation,
-      } = await signRes.json();
+      const { timestamp, signature, apiKey, cloudName, folder: cloudFolder, transformation } =
+        await signRes.json();
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -223,16 +214,14 @@ export default function AdminFolderPage({ params }) {
           formData.append("folder", cloudFolder);
           formData.append("transformation", transformation);
 
-          const uploadRes = await fetch(
-            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-            { method: "POST", body: formData }
-          );
+          const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: "POST",
+            body: formData,
+          });
 
           if (!uploadRes.ok) {
             const errData = await uploadRes.json().catch(() => ({}));
-            throw new Error(
-              errData.error?.message || `Cloudinary upload failed for ${file.name}`
-            );
+            throw new Error(errData.error?.message || `Cloudinary upload failed for ${file.name}`);
           }
 
           const uploaded = await uploadRes.json();
@@ -280,7 +269,7 @@ export default function AdminFolderPage({ params }) {
     const res = await fetch(`/api/photos/${photoId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caption: captionDraft, captionEn: captionEnDraft }),
+      body: JSON.stringify({ caption: captionDraft, captionEn: captionEnDraft, captionMy: captionMyDraft }),
     });
 
     if (!res.ok) {
@@ -327,8 +316,10 @@ export default function AdminFolderPage({ params }) {
   function startEditingInfo() {
     setNameDraft(folder.name);
     setNameEnDraft(folder.name_en || "");
+    setNameMyDraft(folder.name_my || "");
     setDescDraft(folder.description || "");
     setDescEnDraft(folder.description_en || "");
+    setDescMyDraft(folder.description_my || "");
     setEditOrderable(folder.orderable !== false);
     setEditFormType(folder.order_form_type === "dessert" ? "dessert" : "cake");
     setEditingName(true);
@@ -379,6 +370,13 @@ export default function AdminFolderPage({ params }) {
                   className="w-full rounded-lg border border-cocoa-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
 
+                <input
+                  value={nameMyDraft}
+                  onChange={(e) => setNameMyDraft(e.target.value)}
+                  placeholder="မြန်မာအမည် (optional)"
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+
                 <textarea
                   value={descDraft}
                   onChange={(e) => setDescDraft(e.target.value)}
@@ -391,6 +389,14 @@ export default function AdminFolderPage({ params }) {
                   value={descEnDraft}
                   onChange={(e) => setDescEnDraft(e.target.value)}
                   placeholder="English description (optional)"
+                  rows={2}
+                  className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
+                />
+
+                <textarea
+                  value={descMyDraft}
+                  onChange={(e) => setDescMyDraft(e.target.value)}
+                  placeholder="မြန်မာ ဖော်ပြချက် (optional)"
                   rows={2}
                   className="w-full rounded-lg border border-cocoa-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cocoa-500"
                 />
@@ -445,15 +451,11 @@ export default function AdminFolderPage({ params }) {
                     </label>
                   </div>
                   {editFormType === "dessert" && (
-                    <p className="text-xs text-cocoa-400 mt-2">
-                      保存后可在下方设置价格。
-                    </p>
+                    <p className="text-xs text-cocoa-400 mt-2">保存后可在下方设置价格。</p>
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-cocoa-400 px-1">
-                  仅展示价格模式下不显示下单表单，无需选择表单类型。
-                </p>
+                <p className="text-xs text-cocoa-400 px-1">仅展示价格模式下不显示下单表单，无需选择表单类型。</p>
               )}
 
               {error && <p className="text-sm text-red-600">{error}</p>}
@@ -468,7 +470,10 @@ export default function AdminFolderPage({ params }) {
                 </button>
 
                 <button
-                  onClick={() => { setEditingName(false); setError(""); }}
+                  onClick={() => {
+                    setEditingName(false);
+                    setError("");
+                  }}
                   className="text-sm text-cocoa-400 px-2"
                 >
                   Cancel
@@ -478,20 +483,19 @@ export default function AdminFolderPage({ params }) {
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 truncate">
-                  {folder.name}
-                </h1>
+                <h1 className="font-serif font-medium text-2xl sm:text-3xl text-cocoa-900 truncate">{folder.name}</h1>
 
-                {folder.name_en && (
-                  <p className="text-sm text-cocoa-400 mt-0.5 truncate">{folder.name_en}</p>
-                )}
+                {folder.name_en && <p className="text-sm text-cocoa-400 mt-0.5 truncate">{folder.name_en}</p>}
+                {folder.name_my && <p className="text-sm text-cocoa-400 mt-0.5 truncate">{folder.name_my}</p>}
 
                 {folder.description && (
                   <p className="text-cocoa-500 mt-1 text-sm sm:text-base">{folder.description}</p>
                 )}
-
                 {folder.description_en && (
                   <p className="text-cocoa-400 mt-1 text-xs sm:text-sm">{folder.description_en}</p>
+                )}
+                {folder.description_my && (
+                  <p className="text-cocoa-400 mt-1 text-xs sm:text-sm">{folder.description_my}</p>
                 )}
 
                 <p className="text-xs text-cocoa-400 mt-1.5">
@@ -515,7 +519,7 @@ export default function AdminFolderPage({ params }) {
 
         {folder.orderable === false && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            此相册为「仅展示价格」模式：顾客无法在线下单，"订购此蛋糕"按钮会被替换成每张照片的说明文字。请为下方每张照片点击 "Edit" 填写价格信息（可同时填写中文和英文说明）。
+            此相册为「仅展示价格」模式：顾客无法在线下单，"订购此蛋糕"按钮会被替换成每张照片的说明文字。请为下方每张照片点击 "Edit" 填写价格信息（可同时填写中文、英文和缅文说明）。
           </div>
         )}
 
@@ -525,9 +529,7 @@ export default function AdminFolderPage({ params }) {
 
             <div className="flex flex-wrap items-end gap-4 mb-4">
               <div>
-                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  价格
-                </label>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">价格</label>
                 <div className="flex items-center gap-1.5">
                   <span className="text-cocoa-500 text-xs font-medium">MMK</span>
                   <input
@@ -543,9 +545,7 @@ export default function AdminFolderPage({ params }) {
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">
-                  最少购买数量
-                </label>
+                <label className="block text-xs uppercase tracking-wide text-cocoa-500 mb-1">最少购买数量</label>
                 <input
                   type="number"
                   min={1}
@@ -593,139 +593,3 @@ export default function AdminFolderPage({ params }) {
           <p className="text-xs text-cocoa-400 mt-2">You can select multiple photos at once.</p>
 
           {error && !editingName && (
-            <p className="text-sm text-red-600 mt-3 whitespace-pre-wrap break-words">{error}</p>
-          )}
-        </div>
-
-        {photos.length === 0 ? (
-          <p className="text-cocoa-400">No photos in this album yet.</p>
-        ) : (
-          <>
-            {photos.length > 1 && (
-              <p className="text-xs text-cocoa-400 mb-3">
-                Press and hold a photo, then drag to reorder. Use "Set as cover" to choose the album thumbnail.
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {photos.map((photo) => {
-                const isCover = folder.cover_url === photo.url;
-
-                return (
-                  <div
-                    key={photo.id}
-                    ref={registerItemRef(photo.id)}
-                    onPointerDown={handlePointerDown(photo.id)}
-                    onContextMenu={(e) => e.preventDefault()}
-                    style={{
-                      touchAction: "pan-y",
-                      WebkitTouchCallout: "none",
-                      WebkitUserSelect: "none",
-                    }}
-                    className={`rounded-xl overflow-hidden bg-white border shadow-card select-none ${
-                      draggingId === photo.id
-                        ? "cursor-grabbing border-cocoa-500"
-                        : "cursor-grab border-cocoa-100"
-                    }`}
-                  >
-                    <div className="relative aspect-square bg-cocoa-100">
-                      {isCover && (
-                        <div className="absolute top-2 right-2 z-10 rounded-full bg-cocoa-800 text-cream text-[10px] uppercase tracking-wide px-2 py-1">
-                          Cover
-                        </div>
-                      )}
-
-                      <Image
-                        src={cldThumb(photo.url, 400)}
-                        alt={photo.caption || "photo"}
-                        fill
-                        sizes="(max-width: 640px) 50vw, 25vw"
-                        className="object-cover pointer-events-none"
-                      />
-                    </div>
-
-                    <div className="p-2.5">
-                      {editingCaptionId === photo.id ? (
-                        <div className="space-y-1.5">
-                          <input
-                            autoFocus
-                            value={captionDraft}
-                            onChange={(e) => setCaptionDraft(e.target.value)}
-                            placeholder="中文说明 (optional)"
-                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                          />
-
-                          <input
-                            value={captionEnDraft}
-                            onChange={(e) => setCaptionEnDraft(e.target.value)}
-                            placeholder="English caption (optional)"
-                            className="w-full text-xs rounded-md border border-cocoa-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-cocoa-500"
-                          />
-
-                          <div className="flex gap-3 text-xs">
-                            <button onClick={() => handleSaveCaption(photo.id)} className="text-cocoa-700 font-medium py-1">
-                              Save
-                            </button>
-                            <button onClick={() => setEditingCaptionId(null)} className="text-cocoa-400 py-1">
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5">
-                          <p className="text-xs text-cocoa-500 truncate">{photo.caption || "No caption"}</p>
-                          {photo.caption_en && (
-                            <p className="text-[11px] text-cocoa-400 truncate">{photo.caption_en}</p>
-                          )}
-
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                            <button
-                              onClick={() => {
-                                setEditingCaptionId(photo.id);
-                                setCaptionDraft(photo.caption || "");
-                                setCaptionEnDraft(photo.caption_en || "");
-                              }}
-                              className="text-cocoa-500 hover:text-cocoa-800 py-1"
-                            >
-                              Edit
-                            </button>
-
-                            {!isCover && (
-                              <button
-                                onClick={() => handleSetCover(photo)}
-                                disabled={settingCoverId === photo.id}
-                                className="text-cocoa-500 hover:text-cocoa-800 py-1 disabled:opacity-60"
-                              >
-                                {settingCoverId === photo.id ? "Setting..." : "Set as cover"}
-                              </button>
-                            )}
-
-                            <button onClick={() => handleDeletePhoto(photo.id)} className="text-red-500 hover:text-red-700 py-1">
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {hasMore && (
-              <div className="mt-6 text-center">
-                <button
-                  onClick={loadMorePhotos}
-                  disabled={loadingMore}
-                  className="rounded-lg border border-cocoa-300 text-cocoa-700 px-5 py-2 text-sm font-medium hover:bg-cocoa-50 disabled:opacity-60"
-                >
-                  {loadingMore ? "Loading..." : `Load more (${photos.length} of ${total})`}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-    </div>
-  );
-}
