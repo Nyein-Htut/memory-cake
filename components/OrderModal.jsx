@@ -16,6 +16,7 @@ export default function OrderModal({
   folderId,
   folderName,
   folderNameEn = "",
+  folderNameMy = "",
   orderFormType = "cake",
   dessertOptions = [],
   minQuantity = 6,
@@ -104,8 +105,8 @@ export default function OrderModal({
 
   // Display text only. What gets saved with the order is always the
   // original (Chinese) label, so the admin side keeps working unchanged.
-  const labelOf = (item) => pickLang(lang, item.label, item.labelEn);
-  const sizeText = (s) => (isDessert ? pickLang(lang, s.label, folderNameEn) : labelOf(s));
+  const labelOf = (item) => pickLang(lang, item.label, item.labelEn, item.labelMy);
+  const sizeText = (s) => (isDessert ? pickLang(lang, s.label, folderNameEn, folderNameMy) : labelOf(s));
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -182,13 +183,17 @@ export default function OrderModal({
         wechatName: wechatName.trim(),
         sizeLabel,
         sizeLabelEn: isDessert ? folderNameEn : selectedSize?.labelEn || "",
+        sizeLabelMy: isDessert ? folderNameMy : selectedSize?.labelMy || "",
         sizePrice: unit,
         flavor: isDessert ? "" : flavor,
         flavorEn: isDessert ? "" : selectedFlavorOption?.labelEn || "",
+        flavorMy: isDessert ? "" : selectedFlavorOption?.labelMy || "",
         filling1: isDessert ? "" : filling1,
         filling1En: isDessert ? "" : selectedFilling1Option?.labelEn || "",
+        filling1My: isDessert ? "" : selectedFilling1Option?.labelMy || "",
         filling2: isDessert ? "" : filling2,
         filling2En: isDessert ? "" : selectedFilling2Option?.labelEn || "",
+        filling2My: isDessert ? "" : selectedFilling2Option?.labelMy || "",
         flavorImageUrl: isDessert ? null : selectedFlavorOption?.imageUrl || null,
         filling1ImageUrl: isDessert ? null : selectedFilling1Option?.imageUrl || null,
         filling2ImageUrl: isDessert ? null : selectedFilling2Option?.imageUrl || null,
@@ -198,6 +203,7 @@ export default function OrderModal({
         totalPrice: Number(saved.total_price) || subtotal + savedFee,
         township: selectedTownship.label,
         townshipEn: selectedTownship.labelEn || "",
+        townshipMy: selectedTownship.labelMy || "",
         deliveryDate,
         deliveryTime,
         deliveryPlace: deliveryPlace.trim(),
