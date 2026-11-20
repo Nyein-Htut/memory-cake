@@ -25,6 +25,7 @@ export async function PATCH(request) {
     .map((s) => ({
       label: String(s.label || "").trim(),
       labelEn: String(s.labelEn || "").trim(),
+      labelMy: String(s.labelMy || "").trim(),
       price: Number(s.price) || 0,
     }))
     .filter((s) => s.label);
@@ -32,6 +33,7 @@ export async function PATCH(request) {
     .map((f) => ({
       label: String(f.label || "").trim(),
       labelEn: String(f.labelEn || "").trim(),
+      labelMy: String(f.labelMy || "").trim(),
       imageUrl: f.imageUrl || null,
     }))
     .filter((f) => f.label);
@@ -39,6 +41,7 @@ export async function PATCH(request) {
     .map((f) => ({
       label: String(f.label || "").trim(),
       labelEn: String(f.labelEn || "").trim(),
+      labelMy: String(f.labelMy || "").trim(),
       imageUrl: f.imageUrl || null,
     }))
     .filter((f) => f.label);
@@ -55,6 +58,7 @@ export async function PATCH(request) {
       cleanTownships.push({
         label,
         labelEn: String(t.labelEn || "").trim(),
+        labelMy: String(t.labelMy || "").trim(),
         fee: Math.max(0, Math.floor(Number(t.fee) || 0)),
       });
     }
