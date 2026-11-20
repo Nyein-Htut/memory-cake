@@ -9,11 +9,16 @@ export async function PATCH(request, { params }) {
   }
 
   const id = Number(params.id);
-  const { caption, captionEn } = await request.json();
+  const { caption, captionEn, captionMy } = await request.json();
+
+  // If captionMy isn't sent at all, keep the saved Burmese caption.
+  const hasCaptionMy = captionMy !== undefined;
 
   const rows = await sql`
     UPDATE photos
-    SET caption = ${caption || null}, caption_en = ${captionEn?.trim() || null}
+    SET caption = ${caption || null},
+        caption_en = ${captionEn?.trim() || null},
+        caption_my = CASE WHEN ${hasCaptionMy}::boolean THEN ${captionMy?.trim() || null} ELSE caption_my END
     WHERE id = ${id}
     RETURNING *
   `;
